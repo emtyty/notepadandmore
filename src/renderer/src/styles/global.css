@@ -15,6 +15,8 @@
   --toolbar-bg: #3c3c3c;
   --toolbar-btn-hover: #505050;
   --toolbar-btn-active: #606060;
+  --toolbar-icon: #cccccc;
+  --toolbar-icon-hover: #ffffff;
 
   --tab-bar-bg: #2d2d2d;
   --tab-inactive-bg: #2d2d2d;
@@ -53,6 +55,8 @@
   --toolbar-bg: #f3f3f3;
   --toolbar-btn-hover: #e8e8e8;
   --toolbar-btn-active: #d4d4d4;
+  --toolbar-icon: #444444;
+  --toolbar-icon-hover: #000000;
 
   --tab-bar-bg: #ececec;
   --tab-inactive-bg: #ececec;

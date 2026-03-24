@@ -81,7 +81,10 @@ export default function App() {
       const dirty = useEditorStore.getState().buffers.filter((b) => b.isDirty)
       if (dirty.length > 0) {
         const names = dirty.map((b) => b.title).join(', ')
-        if (!confirm(`Unsaved changes in: ${names}\n\nClose without saving?`)) return
+        if (!confirm(`Unsaved changes in: ${names}\n\nClose without saving?`)) {
+          window.api.send('app:close-cancelled')
+          return
+        }
       }
       window.api.send('app:close-confirmed')
     })

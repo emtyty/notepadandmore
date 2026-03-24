@@ -2,6 +2,9 @@ import { contextBridge, ipcRenderer } from 'electron'
 
 // Expose safe IPC API to renderer via window.api
 const api = {
+  // Platform info
+  platform: process.platform,
+
   // File operations
   file: {
     read: (filePath: string) => ipcRenderer.invoke('file:read', filePath),
@@ -85,6 +88,7 @@ const api = {
   send: (channel: string, ...args: unknown[]) => {
     const allowedChannels = [
       'app:close-confirmed',
+      'app:close-cancelled',
       'plugin:editor-get-text:reply',
       'plugin:editor-get-selection:reply',
       'plugin:editor-get-path:reply'

@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow } from 'electron'
+import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { buildMenu } from './menu'
 import { registerFileHandlers } from './ipc/fileHandlers'
@@ -8,6 +8,9 @@ import { PluginLoader } from './plugins/PluginLoader'
 import { SessionManager } from './sessions/SessionManager'
 
 let mainWindow: BrowserWindow | null = null
+
+/** True when quit was initiated (Cmd+Q / Quit); false for macOS red close button only. */
+let isQuitting = false
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -70,18 +73,34 @@ app.whenReady().then(() => {
   SessionManager.getInstance().restore(mainWindow!)
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.show()
+    } else if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow()
+    }
   })
+})
+
+app.on('before-quit', () => {
+  isQuitting = true
 })
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
 })
 
-// Allow renderer to confirm close is safe
-import { ipcMain } from 'electron'
+ipcMain.on('app:close-cancelled', () => {
+  isQuitting = false
+})
+
 ipcMain.on('app:close-confirmed', () => {
+  // macOS: close window (red button) keeps app in Dock; Cmd+Q / Quit still exits.
+  if (process.platform === 'darwin' && !isQuitting) {
+    mainWindow?.hide()
+    return
+  }
   mainWindow?.destroy()
+  app.quit()
 })
 
 export { mainWindow }

@@ -19,7 +19,9 @@ declare global {
         addRecent: (p: string) => void
       }
       on: (channel: string, cb: (...args: unknown[]) => void) => void
+      off: (channel: string) => void
       send: (channel: string, ...args: unknown[]) => void
+      platform: string
     }
   }
 }
@@ -72,7 +74,7 @@ export function useFileOps() {
     )
     let n = 1
     while (usedNumbers.has(n)) n++
-    addBuffer({
+    const id = addBuffer({
       filePath: null,
       title: `new ${n}`,
       content: '',
@@ -83,6 +85,7 @@ export function useFileOps() {
       mtime: 0,
       viewState: null
     })
+    useEditorStore.getState().setActive(id)
   }, [addBuffer])
 
   const saveBuffer = useCallback(async (id: string): Promise<boolean> => {
@@ -91,7 +94,7 @@ export function useFileOps() {
 
     let filePath = buf.filePath
     if (!filePath) {
-      const res = await window.api.file.saveDialog()
+      const res = await window.api.file.saveDialog(buf.title)
       if (res.canceled || !res.filePath) return false
       filePath = res.filePath
     }
@@ -117,7 +120,7 @@ export function useFileOps() {
     const buf = getActive()
     if (!buf) return false
 
-    const res = await window.api.file.saveDialog(buf.filePath ?? undefined)
+    const res = await window.api.file.saveDialog(buf.filePath ?? buf.title)
     if (res.canceled || !res.filePath) return false
 
     const content = buf.model?.getValue() ?? buf.content

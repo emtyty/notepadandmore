@@ -4,10 +4,27 @@
   height: 36px;
   background: var(--toolbar-bg);
   border-bottom: 1px solid var(--border);
-  padding: 0 4px;
-  gap: 1px;
   flex-shrink: 0;
   user-select: none;
+  /* Allow dragging the window from the toolbar background */
+  -webkit-app-region: drag;
+}
+
+/* On macOS, reserve space for the traffic light buttons (78px) */
+.trafficLightSpacer {
+  width: 78px;
+  flex-shrink: 0;
+  height: 100%;
+  -webkit-app-region: drag;
+}
+
+.buttons {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  padding: 0 4px;
+  /* Buttons must NOT be draggable */
+  -webkit-app-region: no-drag;
 }
 
 .btn {
@@ -22,6 +39,7 @@
   cursor: pointer;
   font-size: 14px;
   transition: background 0.1s, border-color 0.1s;
+  flex-shrink: 0;
 }
 
 .btn:hover {
@@ -35,7 +53,8 @@
 
 .sep {
   width: 1px;
-  height: 20px;
+  height: 18px;
   background: var(--border);
-  margin: 0 4px;
+  margin: 0 3px;
+  flex-shrink: 0;
 }
