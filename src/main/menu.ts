@@ -273,6 +273,13 @@ export function buildMenu(win: BrowserWindow): void {
         },
         { type: 'separator' },
         {
+          label: 'Column Selection Mode',
+          type: 'checkbox',
+          checked: false,
+          click: (item) => win.webContents.send('editor:set-option', { columnSelection: item.checked })
+        },
+        { type: 'separator' },
+        {
           label: 'Split View',
           type: 'checkbox',
           checked: false,

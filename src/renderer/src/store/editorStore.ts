@@ -13,6 +13,7 @@ export interface Buffer {
   eol: EOLType
   language: string
   mtime: number                // last known on-disk mtime
+  bookmarks: number[]
   viewState: monaco.editor.ICodeEditorViewState | null
   model: monaco.editor.ITextModel | null
 }
@@ -24,7 +25,7 @@ interface EditorState {
   splitActiveId: string | null
 
   // Actions
-  addBuffer: (buf: Omit<Buffer, 'id' | 'model'>) => string
+  addBuffer: (buf: Omit<Buffer, 'id' | 'model' | 'bookmarks'> & { bookmarks?: number[] }) => string
   removeBuffer: (id: string) => void
   updateBuffer: (id: string, patch: Partial<Buffer>) => void
   setActive: (id: string) => void
@@ -48,8 +49,9 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   addBuffer: (buf) => {
     const id = newId()
     const model = monaco.editor.createModel(buf.content, buf.language || 'plaintext')
+    const bookmarks = 'bookmarks' in buf ? buf.bookmarks : []
     set((s) => ({
-      buffers: [...s.buffers, { ...buf, id, model }],
+      buffers: [...s.buffers, { ...buf, id, model, bookmarks }],
       activeId: s.activeId ?? id
     }))
     return id

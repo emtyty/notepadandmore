@@ -84,6 +84,18 @@ const api = {
     }
   },
 
+  // Generic invoke for IPC handlers
+  invoke: (channel: string, ...args: unknown[]) => {
+    const allowedChannels = [
+      'search:find-in-files',
+      'dialog:open-folder'
+    ]
+    if (allowedChannels.includes(channel)) {
+      return ipcRenderer.invoke(channel, ...args)
+    }
+    return Promise.reject(new Error(`Channel ${channel} not allowed`))
+  },
+
   // Renderer -> main replies
   send: (channel: string, ...args: unknown[]) => {
     const allowedChannels = [

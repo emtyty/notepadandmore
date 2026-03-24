@@ -1,0 +1,139 @@
+.container {
+  position: absolute;
+  top: 0;
+  right: 20px;
+  z-index: 100;
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  padding: 8px 12px;
+  min-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2px;
+}
+
+.tab {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  padding: 4px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  border-bottom: 2px solid transparent;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tabActive {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.input {
+  flex: 1;
+  background: var(--input-bg);
+  color: var(--input-fg);
+  border: 1px solid var(--input-border);
+  border-radius: 3px;
+  padding: 4px 8px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+}
+
+.input:focus {
+  border-color: var(--input-focus-border);
+}
+
+.btn {
+  background: var(--toolbar-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn:hover {
+  background: var(--toolbar-btn-hover);
+}
+
+.toggle {
+  background: none;
+  color: var(--text-muted);
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 2px 6px;
+  font-size: 12px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.toggle:hover {
+  background: var(--toolbar-btn-hover);
+}
+
+.toggleActive {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(0, 122, 204, 0.1);
+}
+
+.options {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.status {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 0 4px;
+  min-width: 80px;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 2px 4px;
+  line-height: 1;
+}
+
+.closeBtn:hover {
+  color: var(--text);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fifRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}

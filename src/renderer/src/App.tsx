@@ -7,13 +7,22 @@ import { StatusBar } from './components/StatusBar/StatusBar'
 import { useEditorStore } from './store/editorStore'
 import { useUIStore } from './store/uiStore'
 import { useFileOps } from './hooks/useFileOps'
+import { FindInFilesResults } from './components/FindReplace/FindInFilesResults'
 import styles from './App.module.css'
 
 export default function App() {
   const { activeId, buffers, setActive } = useEditorStore()
-  const { theme, showToolbar, showStatusBar, showSidebar, toggleTheme } = useUIStore()
+  const { theme, showToolbar, showStatusBar, showSidebar, showFindResults, toggleTheme } = useUIStore()
   const { openFiles, newFile, saveBuffer, saveActiveAs, closeBuffer, reloadBuffer } = useFileOps()
   const editorRef = useRef<{ focus: () => void } | null>(null)
+
+  const openFileAtLine = useCallback(async (filePath: string, line: number) => {
+    await openFiles([filePath])
+    // After opening, navigate to line via editor:command
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('find-result:goto', { detail: { line } }))
+    }, 200)
+  }, [openFiles])
 
   // Apply theme to root
   useEffect(() => {
@@ -151,6 +160,8 @@ export default function App() {
           </Panel>
         </PanelGroup>
       </div>
+
+      {showFindResults && <FindInFilesResults onOpenFile={openFileAtLine} />}
 
       {showStatusBar && <StatusBar />}
 

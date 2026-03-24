@@ -18,6 +18,7 @@ declare global {
         reveal: (p: string) => Promise<void>
         addRecent: (p: string) => void
       }
+      invoke: (channel: string, ...args: unknown[]) => Promise<unknown>
       on: (channel: string, cb: (...args: unknown[]) => void) => void
       off: (channel: string) => void
       send: (channel: string, ...args: unknown[]) => void
