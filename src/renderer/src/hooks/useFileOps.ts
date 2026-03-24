@@ -47,7 +47,7 @@ export function useFileOps() {
       }
 
       const language = detectLanguage(fp)
-      addBuffer({
+      const id = addBuffer({
         filePath: fp,
         title: basename(fp),
         content: result.content,
@@ -58,6 +58,7 @@ export function useFileOps() {
         mtime: result.mtime,
         viewState: null
       })
+      useEditorStore.getState().setActive(id)
       window.api.file.addRecent(fp)
     }
   }, [buffers, addBuffer, addToast])
