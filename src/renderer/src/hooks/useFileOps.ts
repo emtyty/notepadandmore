@@ -60,10 +60,21 @@ export function useFileOps() {
   }, [buffers, addBuffer, addToast])
 
   const newFile = useCallback(() => {
-    const untitledCount = buffers.filter((b) => !b.filePath).length
+    const currentBuffers = useEditorStore.getState().buffers
+    const usedNumbers = new Set(
+      currentBuffers
+        .filter((b) => !b.filePath)
+        .map((b) => {
+          const m = b.title.match(/^new (\d+)$/)
+          return m ? parseInt(m[1], 10) : null
+        })
+        .filter((n): n is number => n !== null)
+    )
+    let n = 1
+    while (usedNumbers.has(n)) n++
     addBuffer({
       filePath: null,
-      title: `new ${untitledCount + 1}`,
+      title: `new ${n}`,
       content: '',
       isDirty: false,
       encoding: 'UTF-8',
@@ -72,7 +83,7 @@ export function useFileOps() {
       mtime: 0,
       viewState: null
     })
-  }, [buffers, addBuffer])
+  }, [addBuffer])
 
   const saveBuffer = useCallback(async (id: string): Promise<boolean> => {
     const buf = useEditorStore.getState().getBuffer(id)

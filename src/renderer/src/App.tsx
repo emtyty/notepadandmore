@@ -85,6 +85,29 @@ export default function App() {
       }
       window.api.send('app:close-confirmed')
     })
+
+    return () => {
+      window.api.off('menu:file-new')
+      window.api.off('menu:file-open')
+      window.api.off('menu:file-save')
+      window.api.off('menu:file-save-as')
+      window.api.off('menu:file-save-all')
+      window.api.off('menu:file-close')
+      window.api.off('menu:file-close-all')
+      window.api.off('menu:file-reload')
+      window.api.off('menu:find')
+      window.api.off('menu:replace')
+      window.api.off('menu:find-in-files')
+      window.api.off('ui:toggle-theme')
+      window.api.off('ui:toggle-toolbar')
+      window.api.off('ui:toggle-statusbar')
+      window.api.off('ui:toggle-sidebar')
+      window.api.off('ui:show-toast')
+      window.api.off('tab:next')
+      window.api.off('tab:prev')
+      window.api.off('session:restore')
+      window.api.off('app:before-close')
+    }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // On startup: open with new untitled file if nothing loaded

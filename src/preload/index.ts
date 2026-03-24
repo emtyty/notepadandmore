@@ -59,6 +59,28 @@ const api = {
     }
   },
 
+  off: (channel: string) => {
+    const allowedChannels = [
+      'menu:file-new', 'menu:file-open', 'menu:file-save', 'menu:file-save-as',
+      'menu:file-save-all', 'menu:file-close', 'menu:file-close-all', 'menu:file-reload',
+      'menu:folder-open', 'menu:find', 'menu:replace', 'menu:find-in-files',
+      'menu:preferences', 'menu:shortcut-mapper', 'menu:udl-editor',
+      'menu:style-configurator', 'menu:plugin-manager', 'menu:about',
+      'editor:command', 'editor:set-option', 'editor:set-language',
+      'editor:set-encoding', 'editor:set-eol',
+      'ui:toggle-toolbar', 'ui:toggle-statusbar', 'ui:toggle-sidebar',
+      'ui:toggle-split-view', 'ui:toggle-theme', 'ui:show-toast',
+      'tab:next', 'tab:prev',
+      'macro:start-record', 'macro:stop-record', 'macro:playback',
+      'session:restore', 'app:before-close',
+      'plugin:add-menu-item', 'plugin:insert-text',
+      'plugin:editor-get-text', 'plugin:editor-get-selection', 'plugin:editor-get-path'
+    ]
+    if (allowedChannels.includes(channel)) {
+      ipcRenderer.removeAllListeners(channel)
+    }
+  },
+
   // Renderer -> main replies
   send: (channel: string, ...args: unknown[]) => {
     const allowedChannels = [
