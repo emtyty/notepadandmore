@@ -1,0 +1,115 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  /* Dark theme (default) */
+  --bg: #1e1e1e;
+  --text: #d4d4d4;
+  --text-muted: #888;
+  --border: #3c3c3c;
+  --accent: #007acc;
+
+  --toolbar-bg: #3c3c3c;
+  --toolbar-btn-hover: #505050;
+  --toolbar-btn-active: #606060;
+
+  --tab-bar-bg: #2d2d2d;
+  --tab-inactive-bg: #2d2d2d;
+  --tab-inactive-fg: #969696;
+  --tab-hover-bg: #3a3a3a;
+  --tab-active-bg: #1e1e1e;
+  --tab-active-fg: #ffffff;
+
+  --sidebar-bg: #252526;
+  --sidebar-header-bg: #2d2d2d;
+
+  --statusbar-bg: #007acc;
+  --statusbar-fg: #ffffff;
+
+  --context-menu-bg: #252526;
+
+  --panel-bg: #1e1e1e;
+  --panel-header-bg: #2d2d2d;
+
+  --input-bg: #3c3c3c;
+  --input-fg: #d4d4d4;
+  --input-border: #555;
+  --input-focus-border: #007acc;
+
+  --scrollbar-thumb: #555;
+  --scrollbar-track: #2d2d2d;
+}
+
+[data-theme='light'] {
+  --bg: #ffffff;
+  --text: #333333;
+  --text-muted: #666;
+  --border: #e0e0e0;
+  --accent: #0066b8;
+
+  --toolbar-bg: #f3f3f3;
+  --toolbar-btn-hover: #e8e8e8;
+  --toolbar-btn-active: #d4d4d4;
+
+  --tab-bar-bg: #ececec;
+  --tab-inactive-bg: #ececec;
+  --tab-inactive-fg: #666;
+  --tab-hover-bg: #e0e0e0;
+  --tab-active-bg: #ffffff;
+  --tab-active-fg: #333;
+
+  --sidebar-bg: #f3f3f3;
+  --sidebar-header-bg: #e8e8e8;
+
+  --statusbar-bg: #0066b8;
+  --statusbar-fg: #ffffff;
+
+  --context-menu-bg: #ffffff;
+
+  --panel-bg: #f8f8f8;
+  --panel-header-bg: #ececec;
+
+  --input-bg: #ffffff;
+  --input-fg: #333;
+  --input-border: #ccc;
+  --input-focus-border: #0066b8;
+
+  --scrollbar-thumb: #ccc;
+  --scrollbar-track: #f0f0f0;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 13px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #777;
+}

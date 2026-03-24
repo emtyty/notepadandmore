@@ -1,0 +1,41 @@
+.toolbar {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  background: var(--toolbar-bg);
+  border-bottom: 1px solid var(--border);
+  padding: 0 4px;
+  gap: 1px;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 28px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.btn:hover {
+  background: var(--toolbar-btn-hover);
+  border-color: var(--border);
+}
+
+.btn:active {
+  background: var(--toolbar-btn-active);
+}
+
+.sep {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  margin: 0 4px;
+}

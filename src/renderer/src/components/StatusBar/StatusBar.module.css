@@ -1,0 +1,34 @@
+.statusBar {
+  display: flex;
+  align-items: center;
+  height: 24px;
+  background: var(--statusbar-bg);
+  color: var(--statusbar-fg);
+  font-size: 12px;
+  padding: 0 8px;
+  flex-shrink: 0;
+  user-select: none;
+  border-top: 1px solid var(--border);
+}
+
+.section {
+  padding: 0 8px;
+  cursor: default;
+  white-space: nowrap;
+}
+
+.section:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.divider {
+  width: 1px;
+  height: 14px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.spacer {
+  flex: 1;
+}
