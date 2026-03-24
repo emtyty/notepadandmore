@@ -1,6 +1,99 @@
+# ── Dependencies ────────────────────────────────────────────────────────────────
 node_modules/
+.pnp
+.pnp.js
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# ── Build outputs ────────────────────────────────────────────────────────────────
 out/
 dist/
+build/
+*.tsbuildinfo
+
+# ── Electron builder artifacts ───────────────────────────────────────────────────
+dist-electron/
+release/
+*.exe
+*.dmg
+*.pkg
+*.deb
+*.rpm
+*.AppImage
+*.snap
+*.blockmap
+
+# ── Environment & secrets ────────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+.env.staging
+*.pem
+*.key
+*.p12
+*.pfx
+secrets.json
+credentials.json
+serviceAccountKey.json
+*secret*
+*password*
+*apikey*
+*api_key*
+
+# ── Logs ─────────────────────────────────────────────────────────────────────────
+logs/
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+electron-builder.log
+
+# ── OS files ─────────────────────────────────────────────────────────────────────
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+Desktop.ini
+
+# ── IDE / editor ─────────────────────────────────────────────────────────────────
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swp
+.project
+.classpath
+.c9/
+
+# ── Testing ──────────────────────────────────────────────────────────────────────
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+
+# ── Cache ────────────────────────────────────────────────────────────────────────
+.cache/
+.parcel-cache/
+.eslintcache
+.stylelintcache
+.vite/
+*.tgz
+
+# ── Misc ─────────────────────────────────────────────────────────────────────────
+*.local
+.vercel
+.netlify
