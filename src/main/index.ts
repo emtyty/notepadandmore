@@ -4,7 +4,6 @@ import { buildMenu } from './menu'
 import { registerFileHandlers } from './ipc/fileHandlers'
 import { registerConfigHandlers } from './ipc/configHandlers'
 import { registerPluginHandlers } from './ipc/pluginHandlers'
-import { registerSearchHandlers } from './ipc/searchHandlers'
 import { PluginLoader } from './plugins/PluginLoader'
 import { SessionManager } from './sessions/SessionManager'
 
@@ -61,7 +60,6 @@ app.whenReady().then(() => {
   registerFileHandlers()
   registerConfigHandlers()
   registerPluginHandlers()
-  registerSearchHandlers()
 
   createWindow()
 

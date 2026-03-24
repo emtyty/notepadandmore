@@ -2,14 +2,6 @@ import { create } from 'zustand'
 
 type Theme = 'light' | 'dark'
 
-export interface SearchResult {
-  filePath: string
-  lineNumber: number
-  lineText: string
-  matchStart: number
-  matchEnd: number
-}
-
 interface UIState {
   theme: Theme
   showToolbar: boolean
@@ -22,9 +14,6 @@ interface UIState {
   showPluginManager: boolean
   showUDLEditor: boolean
   showAbout: boolean
-  isRecording: boolean
-  showFindResults: boolean
-  findResults: SearchResult[]
   toasts: Array<{ id: string; message: string; level: 'info' | 'warn' | 'error' }>
 
   setTheme: (t: Theme) => void
@@ -39,9 +28,6 @@ interface UIState {
   setShowPluginManager: (v: boolean) => void
   setShowUDLEditor: (v: boolean) => void
   setShowAbout: (v: boolean) => void
-  setIsRecording: (v: boolean) => void
-  setShowFindResults: (v: boolean) => void
-  setFindResults: (results: SearchResult[]) => void
   addToast: (message: string, level?: 'info' | 'warn' | 'error') => void
   removeToast: (id: string) => void
 }
@@ -58,9 +44,6 @@ export const useUIStore = create<UIState>((set) => ({
   showPluginManager: false,
   showUDLEditor: false,
   showAbout: false,
-  isRecording: false,
-  showFindResults: false,
-  findResults: [],
   toasts: [],
 
   setTheme: (t) => set({ theme: t }),
@@ -75,9 +58,6 @@ export const useUIStore = create<UIState>((set) => ({
   setShowPluginManager: (v) => set({ showPluginManager: v }),
   setShowUDLEditor: (v) => set({ showUDLEditor: v }),
   setShowAbout: (v) => set({ showAbout: v }),
-  setIsRecording: (v) => set({ isRecording: v }),
-  setShowFindResults: (v) => set({ showFindResults: v }),
-  setFindResults: (results) => set({ findResults: results, showFindResults: true }),
 
   addToast: (message, level = 'info') => {
     const id = Date.now().toString()
