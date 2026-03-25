@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useCallback } from 'react'
 import * as monaco from 'monaco-editor'
 import { useEditorStore } from '../../store/editorStore'
 import { useUIStore } from '../../store/uiStore'
+import { editorRegistry } from '../../utils/editorRegistry'
 import styles from './EditorPane.module.css'
 
 interface EditorPaneProps {
@@ -52,6 +53,7 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
     })
 
     editorRef.current = editor
+    editorRegistry.set(editor)
 
     // Track content changes -> mark dirty
     editor.onDidChangeModelContent(() => {
@@ -76,6 +78,7 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
 
     return () => {
       ro.disconnect()
+      editorRegistry.set(null)
       editor.dispose()
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps

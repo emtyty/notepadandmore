@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 
 type Theme = 'light' | 'dark'
+export type BottomPanelId = 'findResults' | 'console'
 
 interface UIState {
   theme: Theme
@@ -14,6 +15,8 @@ interface UIState {
   showPluginManager: boolean
   showUDLEditor: boolean
   showAbout: boolean
+  showBottomPanel: boolean
+  activeBottomPanel: BottomPanelId
   toasts: Array<{ id: string; message: string; level: 'info' | 'warn' | 'error' }>
 
   setTheme: (t: Theme) => void
@@ -28,6 +31,8 @@ interface UIState {
   setShowPluginManager: (v: boolean) => void
   setShowUDLEditor: (v: boolean) => void
   setShowAbout: (v: boolean) => void
+  setShowBottomPanel: (v: boolean) => void
+  setActiveBottomPanel: (p: BottomPanelId) => void
   addToast: (message: string, level?: 'info' | 'warn' | 'error') => void
   removeToast: (id: string) => void
 }
@@ -44,6 +49,8 @@ export const useUIStore = create<UIState>((set) => ({
   showPluginManager: false,
   showUDLEditor: false,
   showAbout: false,
+  showBottomPanel: false,
+  activeBottomPanel: 'findResults',
   toasts: [],
 
   setTheme: (t) => set({ theme: t }),
@@ -58,6 +65,8 @@ export const useUIStore = create<UIState>((set) => ({
   setShowPluginManager: (v) => set({ showPluginManager: v }),
   setShowUDLEditor: (v) => set({ showUDLEditor: v }),
   setShowAbout: (v) => set({ showAbout: v }),
+  setShowBottomPanel: (v) => set({ showBottomPanel: v }),
+  setActiveBottomPanel: (p) => set({ activeBottomPanel: p }),
 
   addToast: (message, level = 'info') => {
     const id = Date.now().toString()

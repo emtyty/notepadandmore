@@ -1,17 +1,19 @@
-import React, { useEffect, useCallback, useRef } from 'react'
+import React, { useEffect, useRef } from 'react'
 import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels'
 import { EditorPane } from './components/EditorPane/EditorPane'
 import { TabBar } from './components/TabBar/TabBar'
 import { ToolBar } from './components/ToolBar/ToolBar'
 import { StatusBar } from './components/StatusBar/StatusBar'
+import { BottomPanelContainer } from './components/Panels/BottomPanelContainer'
+import { FindReplaceDialog } from './components/Dialogs/FindReplace/FindReplaceDialog'
 import { useEditorStore } from './store/editorStore'
 import { useUIStore } from './store/uiStore'
 import { useFileOps } from './hooks/useFileOps'
 import styles from './App.module.css'
 
 export default function App() {
-  const { activeId, buffers, setActive } = useEditorStore()
-  const { theme, showToolbar, showStatusBar, showSidebar, toggleTheme } = useUIStore()
+  const { activeId } = useEditorStore()
+  const { theme, showToolbar, showStatusBar, toggleTheme, showBottomPanel } = useUIStore()
   const { openFiles, newFile, saveBuffer, saveActiveAs, closeBuffer, reloadBuffer } = useFileOps()
   const editorRef = useRef<{ focus: () => void } | null>(null)
 
@@ -138,22 +140,35 @@ export default function App() {
         />
       )}
 
-      <div className={styles.workArea}>
-        <PanelGroup direction="horizontal">
-          {/* Main editor column */}
-          <Panel defaultSize={100} minSize={30}>
-            <div className={styles.editorColumn}>
-              <TabBar onClose={closeBuffer} />
-              <div className={styles.editorArea}>
-                <EditorPane activeId={activeId} />
+      <PanelGroup direction="vertical" className={styles.mainPanelGroup}>
+        {/* Editor area */}
+        <Panel minSize={15}>
+          <PanelGroup direction="horizontal">
+            <Panel defaultSize={100} minSize={20}>
+              <div className={styles.editorColumn}>
+                <TabBar onClose={closeBuffer} />
+                <div className={styles.editorArea}>
+                  <EditorPane activeId={activeId} />
+                </div>
               </div>
-            </div>
-          </Panel>
-        </PanelGroup>
-      </div>
+            </Panel>
+          </PanelGroup>
+        </Panel>
+
+        {/* Bottom panel (resizable) */}
+        {showBottomPanel && (
+          <>
+            <PanelResizeHandle className={styles.vResizeHandle} />
+            <Panel defaultSize={25} minSize={8} maxSize={70}>
+              <BottomPanelContainer />
+            </Panel>
+          </>
+        )}
+      </PanelGroup>
 
       {showStatusBar && <StatusBar />}
 
+      <FindReplaceDialog />
       <ToastContainer />
     </div>
   )

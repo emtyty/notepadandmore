@@ -8,10 +8,21 @@
   color: var(--text);
 }
 
-.workArea {
-  display: flex;
+.mainPanelGroup {
   flex: 1;
   overflow: hidden;
+}
+
+.vResizeHandle {
+  height: 4px;
+  background: var(--border);
+  cursor: row-resize;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.vResizeHandle:hover,
+.vResizeHandle[data-resize-handle-active] {
+  background: var(--accent);
 }
 
 .editorColumn {

@@ -11,6 +11,7 @@ const api = {
     write: (filePath: string, content: string, encoding?: string, eol?: string) =>
       ipcRenderer.invoke('file:write', filePath, content, encoding, eol),
     saveDialog: (defaultPath?: string) => ipcRenderer.invoke('file:save-dialog', defaultPath),
+    openDirDialog: () => ipcRenderer.invoke('file:open-dir-dialog'),
     checkMtime: (filePath: string, mtime: number) => ipcRenderer.invoke('file:check-mtime', filePath, mtime),
     stat: (filePath: string) => ipcRenderer.invoke('file:stat', filePath),
     listDir: (dirPath: string) => ipcRenderer.invoke('file:list-dir', dirPath),
@@ -37,6 +38,11 @@ const api = {
   plugin: {
     list: () => ipcRenderer.invoke('plugin:list'),
     reload: () => ipcRenderer.invoke('plugin:reload')
+  },
+
+  // Search operations
+  search: {
+    findInFiles: (opts: object) => ipcRenderer.invoke('search:find-in-files', opts)
   },
 
   // IPC event listeners (main -> renderer)
