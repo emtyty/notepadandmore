@@ -11,7 +11,10 @@
     "preview": "env -u ELECTRON_RUN_AS_NODE electron-vite preview",
     "package": "electron-builder",
     "package:win": "electron-builder --win",
-    "package:mac": "electron-builder --mac"
+    "package:mac": "electron-builder --mac",
+    "test:e2e": "npm run build && playwright test",
+    "test:e2e:headed": "npm run build && playwright test --headed",
+    "test:e2e:report": "playwright show-report"
   },
   "dependencies": {
     "@electron-toolkit/tsconfig": "^2.0.0",
@@ -28,6 +31,7 @@
     "zustand": "^5.0.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.49.0",
     "@types/node": "^22.10.5",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",

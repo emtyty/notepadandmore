@@ -38,8 +38,8 @@ export const StatusBar: React.FC = () => {
   }, [buf])
 
   return (
-    <div className={styles.statusBar}>
-      <span className={styles.section}>
+    <div className={styles.statusBar} data-testid="statusbar">
+      <span className={styles.section} data-testid="cursor-position">
         Ln {cursor.line}, Col {cursor.col}
       </span>
       <span className={styles.divider} />

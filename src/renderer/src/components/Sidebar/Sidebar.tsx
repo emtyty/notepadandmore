@@ -26,7 +26,7 @@ export function Sidebar() {
   }
 
   return (
-    <div className={styles.sidebar}>
+    <div className={styles.sidebar} data-testid="sidebar">
       <div className={styles.tabBar}>
         {TABS.map((t) => (
           <button

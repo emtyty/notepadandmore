@@ -21,7 +21,7 @@ export function BottomPanelContainer() {
   const active = panels.find((p) => p.id === activeBottomPanel) ?? panels[0]
 
   return (
-    <div className={styles.container}>
+    <div className={styles.container} data-testid="bottom-panel">
       <div className={styles.tabBar}>
         {panels.map((p) => (
           <button

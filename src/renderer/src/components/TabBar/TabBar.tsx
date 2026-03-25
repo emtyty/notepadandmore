@@ -66,7 +66,7 @@ export const TabBar: React.FC<TabBarProps> = ({ onClose }) => {
 
   return (
     <>
-      <div className={styles.tabBar} onClick={closeContextMenu}>
+      <div className={styles.tabBar} data-testid="tabbar" onClick={closeContextMenu}>
         {buffers.map((buf) => (
           <div
             key={buf.id}
@@ -78,8 +78,10 @@ export const TabBar: React.FC<TabBarProps> = ({ onClose }) => {
             onDragOver={(e) => handleDragOver(e, buf.id)}
             onDrop={handleDrop}
             title={buf.filePath ?? buf.title}
+            data-tab-title={buf.title}
+            data-tab-dirty={buf.isDirty ? 'true' : 'false'}
           >
-            <span className={styles.dirtyDot}>{buf.isDirty ? '●' : ''}</span>
+            <span className={styles.dirtyDot} data-testid="dirty-dot">{buf.isDirty ? '●' : ''}</span>
             <span className={styles.title}>{buf.title}</span>
             <button
               className={styles.closeBtn}

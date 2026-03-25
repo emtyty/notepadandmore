@@ -12,7 +12,36 @@ npm run package:win  # Build Windows NSIS + portable EXE
 npm run package:mac  # Build macOS DMG
 ```
 
-No test runner is configured yet.
+```bash
+npm run build              # Required before first test run
+npm run test:e2e           # Build + run all E2E tests
+npm run test:e2e:headed    # With visible Electron window
+npm run test:e2e:report    # Open HTML report
+```
+
+## E2E Testing (Playwright + Test Agents)
+
+### Test Agents workflow (run once to initialize)
+```bash
+npx playwright init-agents --loop=claude
+```
+Then invoke agents via Claude Code prompts:
+- `"Run Planner agent"` — explores app, creates `specs/*.md` test plans
+- `"Run Generator agent"` — reads specs, writes `tests/*.spec.ts`
+- `"Run Healer agent"` — runs failing tests and auto-repairs them
+
+### Architecture
+- Tests launch built app (`out/main/index.js`) — always build first
+- `E2E_TEST=1` env var bypasses close handler in `src/main/index.ts`
+- Session restore is disabled in E2E mode — each test starts clean
+- `workers: 1` — one Electron instance at a time
+- `testDir: ./tests` — Generator agent writes tests here
+
+### Monaco gotchas
+1. Click `.monaco-editor textarea` before `keyboard.type()`
+2. Fixture already waits for textarea (~1-2s after React mount)
+3. IntelliSense popup: press Escape before asserting if needed
+4. Native menu actions: use `app.evaluate()` + `webContents.send(channel)`
 
 ## Architecture
 

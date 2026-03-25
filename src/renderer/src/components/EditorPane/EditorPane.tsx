@@ -322,7 +322,7 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
   }, [getBuffer, updateBuffer])
 
   return (
-    <div className={styles.container}>
+    <div className={styles.container} data-testid="editor-pane">
       <div ref={containerRef} className={styles.editor} />
     </div>
   )

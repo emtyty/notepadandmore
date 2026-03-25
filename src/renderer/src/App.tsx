@@ -167,7 +167,7 @@ export default function App() {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className={styles.app}>
+    <div className={styles.app} data-testid="app">
       {showToolbar && (
         <ToolBar
           onNew={newFile}

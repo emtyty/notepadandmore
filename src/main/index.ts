@@ -42,6 +42,7 @@ function createWindow(): void {
   })
 
   mainWindow.on('close', (e) => {
+    if (process.env['E2E_TEST'] === '1') return // allow Playwright teardown
     // Let renderer handle unsaved changes check before close
     e.preventDefault()
     mainWindow?.webContents.send('app:before-close')
@@ -76,8 +77,10 @@ app.whenReady().then(() => {
   // Load plugins
   PluginLoader.getInstance().loadAll(mainWindow!)
 
-  // Restore last session
-  SessionManager.getInstance().restore(mainWindow!)
+  // Restore last session (skip in E2E mode for clean test state)
+  if (process.env['E2E_TEST'] !== '1') {
+    SessionManager.getInstance().restore(mainWindow!)
+  }
 
   app.on('activate', () => {
     if (mainWindow && !mainWindow.isDestroyed()) {
@@ -93,7 +96,7 @@ app.on('before-quit', () => {
 })
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit()
+  if (process.platform !== 'darwin' || process.env['E2E_TEST'] === '1') app.quit()
 })
 
 ipcMain.on('app:close-cancelled', () => {

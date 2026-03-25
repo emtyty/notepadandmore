@@ -26,7 +26,7 @@ export const ToolBar: React.FC<ToolBarProps> = ({
   onNew, onOpen, onSave, onSaveAll, onFind, onReplace, onUndo, onRedo
 }) => {
   return (
-    <div className={`${styles.toolbar} ${isMac ? styles.mac : ''}`}>
+    <div className={`${styles.toolbar} ${isMac ? styles.mac : ''}`} data-testid="toolbar">
       {isMac && <div className={styles.trafficLightSpacer} />}
       <div className={styles.buttons}>
         <Btn title="New (Ctrl+N)" onClick={onNew}>📄</Btn>
