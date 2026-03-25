@@ -1,8 +1,10 @@
 import React, { useRef, useEffect, useCallback } from 'react'
 import * as monaco from 'monaco-editor'
-import { useEditorStore } from '../../store/editorStore'
+import { useEditorStore, EOLType } from '../../store/editorStore'
 import { useUIStore } from '../../store/uiStore'
 import { editorRegistry } from '../../utils/editorRegistry'
+import { useBookmarks } from '../../hooks/useBookmarks'
+import { useMacroRecorder } from '../../hooks/useMacroRecorder'
 import styles from './EditorPane.module.css'
 
 interface EditorPaneProps {
@@ -15,6 +17,112 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
   const { buffers, updateBuffer, getBuffer } = useEditorStore()
   const { theme } = useUIStore()
   const currentIdRef = useRef<string | null>(null)
+
+  const { toggleBookmark, nextBookmark, prevBookmark, clearBookmarks, restoreDecorations } = useBookmarks()
+  const { start: macroStart, stop: macroStop, playback: macroPlayback, recordStep } = useMacroRecorder()
+
+  // Extracted command dispatch — also called by macro:replay-command event
+  const dispatchCommand = useCallback((command: string) => {
+    const editor = editorRef.current
+    if (!editor) return
+
+    // Record command steps during macro recording
+    if (useUIStore.getState().isRecording) {
+      recordStep({ type: 'command', value: command })
+    }
+
+    switch (command) {
+      case 'duplicateLine':
+        editor.getAction('editor.action.copyLinesDownAction')?.run()
+        break
+      case 'deleteLine':
+        editor.getAction('editor.action.deleteLines')?.run()
+        break
+      case 'moveLineUp':
+        editor.getAction('editor.action.moveLinesUpAction')?.run()
+        break
+      case 'moveLineDown':
+        editor.getAction('editor.action.moveLinesDownAction')?.run()
+        break
+      case 'toUpperCase':
+        editor.getAction('editor.action.transformToUppercase')?.run()
+        break
+      case 'toLowerCase':
+        editor.getAction('editor.action.transformToLowercase')?.run()
+        break
+      case 'toTitleCase':
+        editor.getAction('editor.action.transformToTitlecase')?.run()
+        break
+      case 'toggleComment':
+        editor.getAction('editor.action.commentLine')?.run()
+        break
+      case 'toggleBlockComment':
+        editor.getAction('editor.action.blockComment')?.run()
+        break
+      case 'trimTrailingWhitespace':
+        editor.getAction('editor.action.trimTrailingWhitespace')?.run()
+        break
+      case 'goToLine':
+        editor.getAction('editor.action.gotoLine')?.run()
+        break
+      case 'zoomIn':
+        editor.trigger('keyboard', 'editor.action.fontZoomIn', {})
+        break
+      case 'zoomOut':
+        editor.trigger('keyboard', 'editor.action.fontZoomOut', {})
+        break
+      case 'zoomReset':
+        editor.trigger('keyboard', 'editor.action.fontZoomReset', {})
+        break
+      case 'sortLinesAsc':
+        editor.getAction('editor.action.sortLinesAscending')?.run()
+        break
+      case 'sortLinesDesc':
+        editor.getAction('editor.action.sortLinesDescending')?.run()
+        break
+      case 'toggleBookmark': {
+        const id = currentIdRef.current
+        if (!id) break
+        const lineNumber = editor.getPosition()?.lineNumber ?? 1
+        toggleBookmark(id, lineNumber)
+        break
+      }
+      case 'nextBookmark': {
+        const id = currentIdRef.current
+        if (!id) break
+        const currentLine = editor.getPosition()?.lineNumber ?? 1
+        const line = nextBookmark(id, currentLine)
+        if (line != null) {
+          editor.revealLineInCenter(line)
+          editor.setPosition({ lineNumber: line, column: 1 })
+          editor.focus()
+        }
+        break
+      }
+      case 'prevBookmark': {
+        const id = currentIdRef.current
+        if (!id) break
+        const currentLine = editor.getPosition()?.lineNumber ?? 1
+        const line = prevBookmark(id, currentLine)
+        if (line != null) {
+          editor.revealLineInCenter(line)
+          editor.setPosition({ lineNumber: line, column: 1 })
+          editor.focus()
+        }
+        break
+      }
+      case 'clearBookmarks': {
+        const id = currentIdRef.current
+        if (id) clearBookmarks(id)
+        break
+      }
+      case 'toggleColumnSelect': {
+        const current = editor.getOption(monaco.editor.EditorOption.columnSelection)
+        editor.updateOptions({ columnSelection: !current })
+        break
+      }
+    }
+  }, [toggleBookmark, nextBookmark, prevBookmark, clearBookmarks, recordStep])
 
   // Initialize editor
   useEffect(() => {
@@ -73,7 +181,6 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
     editor.onDidChangeCursorPosition((e) => {
       const id = currentIdRef.current
       if (id) {
-        // Dispatch custom event for status bar
         window.dispatchEvent(new CustomEvent('editor:cursor', {
           detail: { line: e.position.lineNumber, col: e.position.column }
         }))
@@ -117,74 +224,43 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
     if (buf.model) {
       editor.setModel(buf.model)
       if (buf.viewState) editor.restoreViewState(buf.viewState)
+      restoreDecorations(activeId)
     }
 
     editor.focus()
-  }, [activeId, getBuffer, updateBuffer])
+  }, [activeId, getBuffer, updateBuffer, restoreDecorations])
 
   // Handle editor commands from menu
   useEffect(() => {
     const handler = (...args: unknown[]) => {
-      const command = args[0] as string
-      const editor = editorRef.current
-      if (!editor) return
-
-      switch (command) {
-        case 'duplicateLine':
-          editor.getAction('editor.action.copyLinesDownAction')?.run()
-          break
-        case 'deleteLine':
-          editor.getAction('editor.action.deleteLines')?.run()
-          break
-        case 'moveLineUp':
-          editor.getAction('editor.action.moveLinesUpAction')?.run()
-          break
-        case 'moveLineDown':
-          editor.getAction('editor.action.moveLinesDownAction')?.run()
-          break
-        case 'toUpperCase':
-          editor.getAction('editor.action.transformToUppercase')?.run()
-          break
-        case 'toLowerCase':
-          editor.getAction('editor.action.transformToLowercase')?.run()
-          break
-        case 'toTitleCase':
-          editor.getAction('editor.action.transformToTitlecase')?.run()
-          break
-        case 'toggleComment':
-          editor.getAction('editor.action.commentLine')?.run()
-          break
-        case 'toggleBlockComment':
-          editor.getAction('editor.action.blockComment')?.run()
-          break
-        case 'trimTrailingWhitespace':
-          editor.getAction('editor.action.trimTrailingWhitespace')?.run()
-          break
-        case 'goToLine':
-          editor.getAction('editor.action.gotoLine')?.run()
-          break
-        case 'zoomIn':
-          editor.trigger('keyboard', 'editor.action.fontZoomIn', {})
-          break
-        case 'zoomOut':
-          editor.trigger('keyboard', 'editor.action.fontZoomOut', {})
-          break
-        case 'zoomReset':
-          editor.trigger('keyboard', 'editor.action.fontZoomReset', {})
-          break
-        case 'sortLinesAsc':
-          editor.getAction('editor.action.sortLinesAscending')?.run()
-          break
-        case 'sortLinesDesc':
-          editor.getAction('editor.action.sortLinesDescending')?.run()
-          break
-        case 'toggleBookmark':
-          editor.trigger('keyboard', 'editor.action.toggleStickyScroll', {})
-          break
-      }
+      dispatchCommand(args[0] as string)
     }
     window.api.on('editor:command', handler)
-  }, [])
+  }, [dispatchCommand])
+
+  // Handle macro:replay-command from macro playback (avoids IPC round-trip)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      dispatchCommand((e as CustomEvent<string>).detail)
+    }
+    window.addEventListener('macro:replay-command', handler)
+    return () => window.removeEventListener('macro:replay-command', handler)
+  }, [dispatchCommand])
+
+  // Handle macro IPC events
+  useEffect(() => {
+    window.api.on('macro:start-record', () => {
+      const editor = editorRef.current
+      if (editor) macroStart(editor)
+    })
+    window.api.on('macro:stop-record', () => {
+      macroStop()
+    })
+    window.api.on('macro:playback', () => {
+      const editor = editorRef.current
+      if (editor) macroPlayback(editor)
+    })
+  }, [macroStart, macroStop, macroPlayback])
 
   // Handle editor option changes from menu
   useEffect(() => {
@@ -193,6 +269,40 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
       editorRef.current?.updateOptions(opts)
     })
   }, [])
+
+  // Handle EOL change from menu (IPC) or status bar click (CustomEvent)
+  useEffect(() => {
+    const applyEol = (eol: EOLType) => {
+      const id = currentIdRef.current
+      const editor = editorRef.current
+      if (!id || !editor) return
+      const monacoEol =
+        eol === 'CRLF'
+          ? monaco.editor.EndOfLineSequence.CRLF
+          : monaco.editor.EndOfLineSequence.LF
+      editor.getModel()?.setEOL(monacoEol)
+      updateBuffer(id, { eol })
+    }
+    const ipcHandler = (...args: unknown[]) => applyEol(args[0] as EOLType)
+    const customHandler = (e: Event) => applyEol((e as CustomEvent<EOLType>).detail)
+    window.api.on('editor:set-eol', ipcHandler)
+    window.addEventListener('editor:set-eol', customHandler)
+    return () => window.removeEventListener('editor:set-eol', customHandler)
+  }, [updateBuffer])
+
+  // Handle encoding change from menu (IPC) or status bar click (CustomEvent)
+  useEffect(() => {
+    const applyEncoding = (encoding: string) => {
+      const id = currentIdRef.current
+      if (!id) return
+      updateBuffer(id, { encoding, isDirty: true })
+    }
+    const ipcHandler = (...args: unknown[]) => applyEncoding(args[0] as string)
+    const customHandler = (e: Event) => applyEncoding((e as CustomEvent<string>).detail)
+    window.api.on('editor:set-encoding', ipcHandler)
+    window.addEventListener('editor:set-encoding', customHandler)
+    return () => window.removeEventListener('editor:set-encoding', customHandler)
+  }, [updateBuffer])
 
   // Handle language change from menu
   useEffect(() => {

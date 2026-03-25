@@ -15,6 +15,7 @@ export interface Buffer {
   mtime: number                // last known on-disk mtime
   viewState: monaco.editor.ICodeEditorViewState | null
   model: monaco.editor.ITextModel | null
+  bookmarks: number[]          // sorted list of 1-based bookmarked line numbers
 }
 
 interface EditorState {

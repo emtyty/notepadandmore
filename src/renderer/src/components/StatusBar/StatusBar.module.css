@@ -32,3 +32,22 @@
 .spacer {
   flex: 1;
 }
+
+.clickable {
+  cursor: pointer;
+}
+
+.clickable:hover {
+  text-decoration: underline dotted;
+}
+
+.recording {
+  color: #e74c3c;
+  font-weight: bold;
+  letter-spacing: 1px;
+  animation: blink 1s step-start infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}

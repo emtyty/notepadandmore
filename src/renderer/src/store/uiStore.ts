@@ -2,6 +2,9 @@ import { create } from 'zustand'
 
 type Theme = 'light' | 'dark'
 export type BottomPanelId = 'findResults' | 'console'
+export type MacroStep =
+  | { type: 'type'; value: string }
+  | { type: 'command'; value: string }
 
 interface UIState {
   theme: Theme
@@ -18,6 +21,9 @@ interface UIState {
   showBottomPanel: boolean
   activeBottomPanel: BottomPanelId
   toasts: Array<{ id: string; message: string; level: 'info' | 'warn' | 'error' }>
+  isRecording: boolean
+  macroSteps: MacroStep[]
+  hasMacro: boolean
 
   setTheme: (t: Theme) => void
   toggleTheme: () => void
@@ -35,6 +41,8 @@ interface UIState {
   setActiveBottomPanel: (p: BottomPanelId) => void
   addToast: (message: string, level?: 'info' | 'warn' | 'error') => void
   removeToast: (id: string) => void
+  startRecording: () => void
+  stopRecording: (steps: MacroStep[]) => void
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -52,6 +60,9 @@ export const useUIStore = create<UIState>((set) => ({
   showBottomPanel: false,
   activeBottomPanel: 'findResults',
   toasts: [],
+  isRecording: false,
+  macroSteps: [],
+  hasMacro: false,
 
   setTheme: (t) => set({ theme: t }),
   toggleTheme: () => set((s) => ({ theme: s.theme === 'dark' ? 'light' : 'dark' })),
@@ -73,5 +84,7 @@ export const useUIStore = create<UIState>((set) => ({
     set((s) => ({ toasts: [...s.toasts, { id, message, level }] }))
     setTimeout(() => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })), 4000)
   },
-  removeToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }))
+  removeToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
+  startRecording: () => set({ isRecording: true, macroSteps: [] }),
+  stopRecording: (steps) => set({ isRecording: false, macroSteps: steps, hasMacro: steps.length > 0 })
 }))

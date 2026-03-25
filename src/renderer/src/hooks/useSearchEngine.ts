@@ -16,7 +16,7 @@ const MARK_COLORS = [
 
 // Mark class names injected into document once
 let _stylesInjected = false
-function injectMarkStyles(): void {
+export function injectMarkStyles(): void {
   if (_stylesInjected) return
   _stylesInjected = true
   const style = document.createElement('style')

@@ -255,6 +255,13 @@ export function buildMenu(win: BrowserWindow): void {
           checked: true,
           click: (item) => win.webContents.send('editor:set-option', { guides: { indentation: item.checked } })
         },
+        {
+          label: 'Column Select Mode',
+          id: 'column-select',
+          type: 'checkbox',
+          checked: false,
+          click: () => win.webContents.send('editor:command', 'toggleColumnSelect')
+        },
         { type: 'separator' },
         {
           label: 'Zoom In',

@@ -55,7 +55,8 @@ export function useFileOps() {
         eol: result.eol as EOLType,
         language,
         mtime: result.mtime,
-        viewState: null
+        viewState: null,
+        bookmarks: []
       })
       useEditorStore.getState().setActive(id)
       window.api.file.addRecent(fp)
@@ -84,7 +85,8 @@ export function useFileOps() {
       eol: 'LF',
       language: 'plaintext',
       mtime: 0,
-      viewState: null
+      viewState: null,
+      bookmarks: []
     })
     useEditorStore.getState().setActive(id)
   }, [addBuffer])
