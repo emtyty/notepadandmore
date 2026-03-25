@@ -166,12 +166,23 @@ export function FindReplaceDialog() {
     }
   }, [showFindReplace, findReplaceMode])
 
-  // Dragging
-  const [pos, setPos] = useState({ x: 200, y: 80 })
+  // Dragging — null means "use CSS centering"
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
+  const dialogRef = useRef<HTMLDivElement>(null)
   const dragRef = useRef({ dragging: false, sx: 0, sy: 0, ox: 0, oy: 0 })
 
+  // Reset to centered position every time dialog opens
+  useEffect(() => {
+    if (showFindReplace) setPos(null)
+  }, [showFindReplace])
+
   const onTitleMouseDown = useCallback((e: React.MouseEvent) => {
-    dragRef.current = { dragging: true, sx: e.clientX, sy: e.clientY, ox: pos.x, oy: pos.y }
+    // Capture actual pixel position before first drag
+    const rect = dialogRef.current?.getBoundingClientRect()
+    const ox = rect ? rect.left : pos?.x ?? 0
+    const oy = rect ? rect.top : pos?.y ?? 0
+    dragRef.current = { dragging: true, sx: e.clientX, sy: e.clientY, ox, oy }
+    setPos({ x: ox, y: oy })
     e.preventDefault()
   }, [pos])
 
@@ -303,8 +314,9 @@ export function FindReplaceDialog() {
   return (
     <div className={styles.overlay}>
       <div
+        ref={dialogRef}
         className={styles.dialog}
-        style={{ left: pos.x, top: pos.y }}
+        style={pos ? { left: pos.x, top: pos.y } : { left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}
       >
         {/* Title bar */}
         <div className={styles.titleBar} onMouseDown={onTitleMouseDown}>

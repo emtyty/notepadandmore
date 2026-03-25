@@ -55,6 +55,14 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
     editorRef.current = editor
     editorRegistry.set(editor)
 
+    // Override Monaco's built-in Cmd+F / Ctrl+H to use our custom dialog
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyF, () => {
+      useUIStore.getState().openFind('find')
+    })
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyH, () => {
+      useUIStore.getState().openFind('replace')
+    })
+
     // Track content changes -> mark dirty
     editor.onDidChangeModelContent(() => {
       const id = currentIdRef.current
