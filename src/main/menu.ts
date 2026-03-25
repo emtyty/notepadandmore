@@ -1,6 +1,6 @@
 import { Menu, MenuItem, BrowserWindow, app, dialog } from 'electron'
 
-export function buildMenu(win: BrowserWindow): void {
+export function buildMenu(win: BrowserWindow, recentFiles: string[] = []): void {
   const isMac = process.platform === 'darwin'
 
   const template: Electron.MenuItemConstructorOptions[] = [
@@ -98,7 +98,9 @@ export function buildMenu(win: BrowserWindow): void {
         { type: 'separator' },
         {
           label: 'Recent Files',
-          submenu: [{ label: 'No recent files', enabled: false }],
+          submenu: recentFiles.length
+            ? recentFiles.map((f) => ({ label: f, click: () => win.webContents.send('menu:file-open', [f]) }))
+            : [{ label: 'No recent files', enabled: false }],
           id: 'recent-files'
         },
         { type: 'separator' },
@@ -456,19 +458,8 @@ export function buildMenu(win: BrowserWindow): void {
 }
 
 export function updateRecentFiles(win: BrowserWindow, files: string[]): void {
-  const menu = Menu.getApplicationMenu()
-  if (!menu) return
-  const recentItem = menu.getMenuItemById('recent-files')
-  if (!recentItem) return
-
-  const submenu = files.length
-    ? files.map((f) => ({
-        label: f,
-        click: () => win.webContents.send('menu:file-open', [f])
-      }))
-    : [{ label: 'No recent files', enabled: false }]
-
-  recentItem.submenu = Menu.buildFromTemplate(submenu)
+  // Menus are immutable after creation — rebuild the whole menu with updated recents
+  buildMenu(win, files)
 }
 
 export function addPluginMenuItem(

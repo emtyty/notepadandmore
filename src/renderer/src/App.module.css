@@ -25,6 +25,22 @@
   background: var(--accent);
 }
 
+.hResizeHandle {
+  width: 4px;
+  background: var(--border);
+  cursor: col-resize;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.hResizeHandle:hover,
+.hResizeHandle[data-resize-handle-active] {
+  background: var(--accent);
+}
+
+.sidebarPanel {
+  overflow: hidden;
+}
+
 .editorColumn {
   display: flex;
   flex-direction: column;

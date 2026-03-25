@@ -1,0 +1,73 @@
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--sidebar-bg);
+  overflow: hidden;
+}
+
+.tabBar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  background: var(--sidebar-header-bg);
+  border-bottom: 1px solid var(--border);
+  padding: 2px 4px;
+  flex-shrink: 0;
+  gap: 2px;
+}
+
+.tabBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 28px;
+  height: 26px;
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+}
+.tabBtn:hover {
+  background: var(--toolbar-btn-hover);
+  color: var(--text);
+}
+.tabBtnActive {
+  color: var(--accent);
+  background: var(--toolbar-btn-active);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+}
+.closeBtn:hover {
+  background: var(--toolbar-btn-hover);
+  color: var(--text);
+}
+
+.panelContent {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}

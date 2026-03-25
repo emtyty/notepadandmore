@@ -19,7 +19,9 @@ const api = {
     delete: (filePath: string) => ipcRenderer.invoke('file:delete', filePath),
     rename: (oldPath: string, newPath: string) => ipcRenderer.invoke('file:rename', oldPath, newPath),
     reveal: (filePath: string) => ipcRenderer.invoke('file:reveal', filePath),
-    addRecent: (filePath: string) => ipcRenderer.send('file:add-recent', filePath)
+    addRecent: (filePath: string) => ipcRenderer.send('file:add-recent', filePath),
+    mkdir: (dirPath: string) => ipcRenderer.invoke('file:mkdir', dirPath),
+    getRecents: () => ipcRenderer.invoke('file:get-recents')
   },
 
   // Config operations
@@ -45,6 +47,12 @@ const api = {
     findInFiles: (opts: object) => ipcRenderer.invoke('search:find-in-files', opts)
   },
 
+  // File watch operations
+  watch: {
+    add: (filePath: string) => ipcRenderer.invoke('watch:add', filePath),
+    remove: (filePath: string) => ipcRenderer.invoke('watch:remove', filePath)
+  },
+
   // IPC event listeners (main -> renderer)
   on: (channel: string, callback: (...args: unknown[]) => void) => {
     const allowedChannels = [
@@ -61,7 +69,8 @@ const api = {
       'macro:start-record', 'macro:stop-record', 'macro:playback',
       'session:restore', 'app:before-close',
       'plugin:add-menu-item', 'plugin:insert-text',
-      'plugin:editor-get-text', 'plugin:editor-get-selection', 'plugin:editor-get-path'
+      'plugin:editor-get-text', 'plugin:editor-get-selection', 'plugin:editor-get-path',
+      'file:externally-changed', 'file:externally-deleted'
     ]
     if (allowedChannels.includes(channel)) {
       ipcRenderer.on(channel, (_event, ...args) => callback(...args))
@@ -83,7 +92,8 @@ const api = {
       'macro:start-record', 'macro:stop-record', 'macro:playback',
       'session:restore', 'app:before-close',
       'plugin:add-menu-item', 'plugin:insert-text',
-      'plugin:editor-get-text', 'plugin:editor-get-selection', 'plugin:editor-get-path'
+      'plugin:editor-get-text', 'plugin:editor-get-selection', 'plugin:editor-get-path',
+      'file:externally-changed', 'file:externally-deleted'
     ]
     if (allowedChannels.includes(channel)) {
       ipcRenderer.removeAllListeners(channel)
@@ -97,7 +107,8 @@ const api = {
       'app:close-cancelled',
       'plugin:editor-get-text:reply',
       'plugin:editor-get-selection:reply',
-      'plugin:editor-get-path:reply'
+      'plugin:editor-get-path:reply',
+      'session:save'
     ]
     if (allowedChannels.includes(channel)) {
       ipcRenderer.send(channel, ...args)

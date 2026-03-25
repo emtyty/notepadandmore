@@ -17,6 +17,18 @@ declare global {
         checkMtime: (p: string, mtime: number) => Promise<{ changed: boolean; mtime: number }>
         reveal: (p: string) => Promise<void>
         addRecent: (p: string) => void
+        stat: (p: string) => Promise<{ exists: boolean; size: number; mtime: number; isDir: boolean }>
+        listDir: (p: string) => Promise<Array<{ name: string; path: string; isDir: boolean }>>
+        create: (p: string) => Promise<{ error: string | null }>
+        delete: (p: string) => Promise<{ error: string | null }>
+        rename: (oldPath: string, newPath: string) => Promise<{ error: string | null }>
+        mkdir: (p: string) => Promise<{ error: string | null }>
+        openDirDialog: () => Promise<string | null>
+        getRecents: () => Promise<string[]>
+      }
+      watch: {
+        add: (p: string) => Promise<void>
+        remove: (p: string) => Promise<void>
       }
       on: (channel: string, cb: (...args: unknown[]) => void) => void
       off: (channel: string) => void
@@ -60,6 +72,7 @@ export function useFileOps() {
       })
       useEditorStore.getState().setActive(id)
       window.api.file.addRecent(fp)
+      window.api.watch.add(fp)
     }
   }, [buffers, addBuffer, addToast])
 
@@ -149,6 +162,7 @@ export function useFileOps() {
     if (buf.isDirty) {
       if (!confirm(`'${buf.title}' has unsaved changes. Close anyway?`)) return
     }
+    if (buf.filePath) window.api.watch.remove(buf.filePath)
     removeBuffer(id)
   }, [removeBuffer])
 

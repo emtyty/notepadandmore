@@ -5,8 +5,10 @@ import { registerFileHandlers } from './ipc/fileHandlers'
 import { registerConfigHandlers } from './ipc/configHandlers'
 import { registerPluginHandlers } from './ipc/pluginHandlers'
 import { registerSearchHandlers } from './ipc/searchHandlers'
+import { registerWatchHandlers } from './ipc/watchHandlers'
 import { PluginLoader } from './plugins/PluginLoader'
 import { SessionManager } from './sessions/SessionManager'
+import { loadRecents } from './recentFiles'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -65,8 +67,11 @@ app.whenReady().then(() => {
 
   createWindow()
 
-  // Build native menu after window is created
-  buildMenu(mainWindow!)
+  // Build native menu after window is created (with persisted recent files)
+  buildMenu(mainWindow!, loadRecents())
+
+  // Register file watchers (needs mainWindow reference)
+  registerWatchHandlers(mainWindow!)
 
   // Load plugins
   PluginLoader.getInstance().loadAll(mainWindow!)
@@ -93,6 +98,10 @@ app.on('window-all-closed', () => {
 
 ipcMain.on('app:close-cancelled', () => {
   isQuitting = false
+})
+
+ipcMain.on('session:save', (_event, session) => {
+  SessionManager.getInstance().save(session)
 })
 
 ipcMain.on('app:close-confirmed', () => {

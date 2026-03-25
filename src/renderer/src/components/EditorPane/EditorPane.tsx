@@ -187,6 +187,11 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
       }
     })
 
+    // Dispatch scroll event for Document Map sync
+    editor.onDidScrollChange(() => {
+      window.dispatchEvent(new CustomEvent('editor:scroll'))
+    })
+
     // Handle resize
     const ro = new ResizeObserver(() => editor.layout())
     ro.observe(containerRef.current)

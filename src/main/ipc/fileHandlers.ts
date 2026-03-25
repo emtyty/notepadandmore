@@ -1,8 +1,10 @@
-import { ipcMain, dialog, BrowserWindow } from 'electron'
+import { ipcMain, dialog, BrowserWindow, app } from 'electron'
 import * as fs from 'fs'
 import * as path from 'path'
 import * as chardet from 'chardet'
 import * as iconv from 'iconv-lite'
+import { addRecent, loadRecents } from '../recentFiles'
+import { updateRecentFiles } from '../menu'
 
 export function registerFileHandlers(): void {
   // Read file with encoding detection
@@ -94,14 +96,34 @@ export function registerFileHandlers(): void {
     }
   })
 
-  // Delete file
+  // Delete file or directory
   ipcMain.handle('file:delete', async (_event, filePath: string) => {
     try {
-      fs.unlinkSync(filePath)
+      const stat = fs.statSync(filePath)
+      if (stat.isDirectory()) {
+        fs.rmSync(filePath, { recursive: true })
+      } else {
+        fs.unlinkSync(filePath)
+      }
       return { error: null }
     } catch (err: any) {
       return { error: err.message }
     }
+  })
+
+  // Create directory
+  ipcMain.handle('file:mkdir', async (_event, dirPath: string) => {
+    try {
+      fs.mkdirSync(dirPath, { recursive: true })
+      return { error: null }
+    } catch (err: any) {
+      return { error: err.message }
+    }
+  })
+
+  // Get recent files
+  ipcMain.handle('file:get-recents', () => {
+    return loadRecents()
   })
 
   // Rename/move file
@@ -122,7 +144,9 @@ export function registerFileHandlers(): void {
 
   // Add to recent documents
   ipcMain.on('file:add-recent', (_event, filePath: string) => {
-    const { app } = require('electron')
     app.addRecentDocument(filePath)
+    const updated = addRecent(filePath)
+    const win = BrowserWindow.getFocusedWindow()
+    if (win) updateRecentFiles(win, updated)
   })
 }

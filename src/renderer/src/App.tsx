@@ -6,6 +6,7 @@ import { ToolBar } from './components/ToolBar/ToolBar'
 import { StatusBar } from './components/StatusBar/StatusBar'
 import { BottomPanelContainer } from './components/Panels/BottomPanelContainer'
 import { FindReplaceDialog } from './components/Dialogs/FindReplace/FindReplaceDialog'
+import { Sidebar } from './components/Sidebar/Sidebar'
 import { useEditorStore } from './store/editorStore'
 import { useUIStore } from './store/uiStore'
 import { useFileOps } from './hooks/useFileOps'
@@ -13,7 +14,7 @@ import styles from './App.module.css'
 
 export default function App() {
   const { activeId } = useEditorStore()
-  const { theme, showToolbar, showStatusBar, toggleTheme, showBottomPanel } = useUIStore()
+  const { theme, showToolbar, showStatusBar, toggleTheme, showBottomPanel, showSidebar } = useUIStore()
   const { openFiles, newFile, saveBuffer, saveActiveAs, closeBuffer, reloadBuffer } = useFileOps()
   const editorRef = useRef<{ focus: () => void } | null>(null)
 
@@ -50,6 +51,12 @@ export default function App() {
     window.api.on('menu:find', () => useUIStore.getState().openFind('find'))
     window.api.on('menu:replace', () => useUIStore.getState().openFind('replace'))
     window.api.on('menu:find-in-files', () => useUIStore.getState().openFind('findInFiles'))
+    window.api.on('menu:folder-open', (...args) => {
+      const folder = args[0] as string
+      useUIStore.getState().setWorkspaceFolder(folder)
+      useUIStore.getState().setShowSidebar(true)
+      useUIStore.getState().setSidebarPanel('files')
+    })
     window.api.on('ui:toggle-theme', () => toggleTheme())
     window.api.on('ui:toggle-toolbar', (...args) => useUIStore.getState().setShowToolbar(args[0] as boolean))
     window.api.on('ui:toggle-statusbar', (...args) => useUIStore.getState().setShowStatusBar(args[0] as boolean))
@@ -70,15 +77,36 @@ export default function App() {
       if (prev) s.setActive(prev.id)
     })
 
+    // External file change notifications
+    window.api.on('file:externally-changed', (...args) => {
+      const fp = args[0] as string
+      const buf = useEditorStore.getState().buffers.find((b) => b.filePath === fp)
+      if (!buf) return
+      if (buf.isDirty) {
+        useUIStore.getState().addToast(`"${buf.title}" changed on disk. Use Reload to update.`, 'warn')
+      } else {
+        reloadBuffer(buf.id)
+        useUIStore.getState().addToast(`"${buf.title}" reloaded (external change)`, 'info')
+      }
+    })
+    window.api.on('file:externally-deleted', (...args) => {
+      const fp = args[0] as string
+      const buf = useEditorStore.getState().buffers.find((b) => b.filePath === fp)
+      if (buf) useUIStore.getState().addToast(`"${buf.title}" was deleted from disk.`, 'warn')
+    })
+
     // Restore session
     window.api.on('session:restore', (...args) => {
-      const session = args[0] as { files: Array<{ filePath: string }>; activeIndex: number }
+      const session = args[0] as { files: Array<{ filePath: string }>; activeIndex: number; workspaceFolder?: string }
       if (session?.files?.length) {
         openFiles(session.files.map((f) => f.filePath).filter(Boolean))
       }
+      if (session?.workspaceFolder) {
+        useUIStore.getState().setWorkspaceFolder(session.workspaceFolder)
+      }
     })
 
-    // Before close: check for unsaved buffers
+    // Before close: check for unsaved buffers, then save session
     window.api.on('app:before-close', () => {
       const dirty = useEditorStore.getState().buffers.filter((b) => b.isDirty)
       if (dirty.length > 0) {
@@ -88,6 +116,16 @@ export default function App() {
           return
         }
       }
+      // Save session before confirming close
+      const state = useEditorStore.getState()
+      const uiState = useUIStore.getState()
+      window.api.send('session:save', {
+        files: state.buffers
+          .filter((b) => b.filePath)
+          .map((b) => ({ filePath: b.filePath, cursorLine: 1, cursorColumn: 1, scrollTop: 0, language: b.language })),
+        activeIndex: Math.max(0, state.buffers.findIndex((b) => b.id === state.activeId)),
+        workspaceFolder: uiState.workspaceFolder
+      })
       window.api.send('app:close-confirmed')
     })
 
@@ -112,6 +150,9 @@ export default function App() {
       window.api.off('tab:prev')
       window.api.off('session:restore')
       window.api.off('app:before-close')
+      window.api.off('menu:folder-open')
+      window.api.off('file:externally-changed')
+      window.api.off('file:externally-deleted')
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -144,7 +185,15 @@ export default function App() {
         {/* Editor area */}
         <Panel minSize={15}>
           <PanelGroup direction="horizontal">
-            <Panel defaultSize={100} minSize={20}>
+            {showSidebar && (
+              <>
+                <Panel defaultSize={18} minSize={12} maxSize={40} className={styles.sidebarPanel}>
+                  <Sidebar />
+                </Panel>
+                <PanelResizeHandle className={styles.hResizeHandle} />
+              </>
+            )}
+            <Panel defaultSize={showSidebar ? 82 : 100} minSize={20}>
               <div className={styles.editorColumn}>
                 <TabBar onClose={closeBuffer} />
                 <div className={styles.editorArea}>
