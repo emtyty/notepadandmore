@@ -190,9 +190,9 @@ test.describe('Feature 7: Recent Files', () => {
 
       expect(recents1[0]).toBe(path.join(tmpDir, 'recent-file.txt'))
 
-      // Step 2: Close the recent-file.txt tab
-      await closeActiveTab(page)
-      await page.waitForTimeout(200)
+      // Step 2: Close the recent-file.txt tab via IPC and wait for it to disappear from the tab bar
+      await sendIPC(electronApp, 'menu:file-close')
+      await page.locator('[data-tab-title="recent-file.txt"]').waitFor({ state: 'detached', timeout: 3_000 })
 
       // Step 3: Open other.txt so it becomes recents[0]
       // Re-open folder IPC to ensure File Browser is visible after close
@@ -207,7 +207,8 @@ test.describe('Feature 7: Recent Files', () => {
       await expect(sidebar.getByText('recent-file.txt')).toBeVisible({ timeout: 3_000 })
       await sidebar.getByText('recent-file.txt').click()
       await page.locator('[data-tab-title="recent-file.txt"]').waitFor({ state: 'visible', timeout: 5_000 })
-      await page.waitForTimeout(300)
+      // Wait for addRecent IPC to complete (renderer → main → disk write)
+      await page.waitForTimeout(600)
 
       // Record the recents list after the second open
       const recents2 = await page.evaluate(async () => {

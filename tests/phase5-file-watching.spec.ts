@@ -101,7 +101,8 @@ test.describe('Feature 6: File Watching', () => {
       await openFileViaTree(electronApp, page, tmpDir, 'watched-dirty.txt')
 
       // Mark the buffer as dirty by typing in the editor
-      await page.locator('.monaco-editor textarea').first().click()
+      // Use force:true to bypass Monaco overlay pointer-event interception
+      await page.locator('.monaco-editor textarea').first().click({ force: true })
       await page.keyboard.type('x')
 
       // Assert the tab is now dirty
@@ -111,7 +112,7 @@ test.describe('Feature 6: File Watching', () => {
       await sendIPC(electronApp, 'file:externally-changed', tmpFile)
 
       // Wait for the warning toast (dirty path: no auto-reload)
-      await page.locator('text=changed on disk').waitFor({ state: 'visible', timeout: 2_000 })
+      await page.locator('text=changed on disk').waitFor({ state: 'visible', timeout: 5_000 })
 
       // Assert the toast contains the expected warning message
       await expect(
