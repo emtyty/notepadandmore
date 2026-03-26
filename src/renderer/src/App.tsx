@@ -6,9 +6,11 @@ import { ToolBar } from './components/ToolBar/ToolBar'
 import { StatusBar } from './components/StatusBar/StatusBar'
 import { BottomPanelContainer } from './components/Panels/BottomPanelContainer'
 import { FindReplaceDialog } from './components/Dialogs/FindReplace/FindReplaceDialog'
+import { PluginManagerDialog } from './components/Dialogs/PluginManager/PluginManagerDialog'
 import { Sidebar } from './components/Sidebar/Sidebar'
 import { useEditorStore } from './store/editorStore'
 import { useUIStore } from './store/uiStore'
+import { usePluginStore } from './store/pluginStore'
 import { useFileOps } from './hooks/useFileOps'
 import styles from './App.module.css'
 
@@ -63,6 +65,11 @@ export default function App() {
     window.api.on('ui:toggle-sidebar', (...args) => useUIStore.getState().setShowSidebar(args[0] as boolean))
     window.api.on('ui:show-toast', (...args) => {
       useUIStore.getState().addToast(args[0] as string, (args[1] as 'info' | 'warn' | 'error') ?? 'info')
+    })
+    window.api.on('menu:plugin-manager', () => useUIStore.getState().setShowPluginManager(true))
+    window.api.on('plugin:add-menu-item', (...args) => {
+      const [pluginName, label] = args as [string, string]
+      usePluginStore.getState().addDynamicMenuItem({ pluginName, label })
     })
     window.api.on('tab:next', () => {
       const s = useEditorStore.getState()
@@ -153,16 +160,19 @@ export default function App() {
       window.api.off('menu:folder-open')
       window.api.off('file:externally-changed')
       window.api.off('file:externally-deleted')
+      window.api.off('menu:plugin-manager')
+      window.api.off('plugin:add-menu-item')
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // On startup: open with new untitled file if nothing loaded
+  // On startup: open with new untitled file if nothing loaded; fetch plugin list
   useEffect(() => {
     const timer = setTimeout(() => {
       if (useEditorStore.getState().buffers.length === 0) {
         newFile()
       }
     }, 800)
+    usePluginStore.getState().fetchPlugins()
     return () => clearTimeout(timer)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -218,6 +228,7 @@ export default function App() {
       {showStatusBar && <StatusBar />}
 
       <FindReplaceDialog />
+      <PluginManagerDialog />
       <ToastContainer />
     </div>
   )

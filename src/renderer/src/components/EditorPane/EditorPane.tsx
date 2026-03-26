@@ -321,6 +321,33 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
     })
   }, [getBuffer, updateBuffer])
 
+  // Handle plugin API requests that need editor access
+  useEffect(() => {
+    window.api.on('plugin:editor-get-text', () => {
+      const buf = currentIdRef.current ? getBuffer(currentIdRef.current) : null
+      window.api.send('plugin:editor-get-text:reply', buf?.model?.getValue() ?? '')
+    })
+    window.api.on('plugin:editor-get-selection', () => {
+      const editor = editorRef.current
+      const selection = editor?.getSelection()
+      const text = selection ? editor?.getModel()?.getValueInRange(selection) ?? '' : ''
+      window.api.send('plugin:editor-get-selection:reply', text)
+    })
+    window.api.on('plugin:editor-get-path', () => {
+      const buf = currentIdRef.current ? getBuffer(currentIdRef.current) : null
+      window.api.send('plugin:editor-get-path:reply', buf?.filePath ?? null)
+    })
+    window.api.on('plugin:insert-text', (...args: unknown[]) => {
+      const text = args[1] as string
+      const editor = editorRef.current
+      if (!editor || !text) return
+      const selection = editor.getSelection()
+      if (selection) {
+        editor.executeEdits('plugin', [{ range: selection, text, forceMoveMarkers: true }])
+      }
+    })
+  }, [getBuffer])
+
   return (
     <div className={styles.container} data-testid="editor-pane">
       <div ref={containerRef} className={styles.editor} />

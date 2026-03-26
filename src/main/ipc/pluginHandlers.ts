@@ -7,8 +7,7 @@ export function registerPluginHandlers(): void {
   })
 
   ipcMain.handle('plugin:reload', async () => {
-    // Reloading requires app restart in this simple model
-    return { message: 'Restart the app to reload plugins.' }
+    return PluginLoader.getInstance().reloadAll()
   })
 
   // Renderer -> main: plugin API calls forwarded from plugin context

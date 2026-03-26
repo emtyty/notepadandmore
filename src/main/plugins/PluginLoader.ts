@@ -132,6 +132,12 @@ export class PluginLoader {
     })
   }
 
+  reloadAll(): PluginInfo[] {
+    this.plugins.clear()
+    if (this.win) this.loadAll(this.win)
+    return this.getPluginList()
+  }
+
   getPluginList(): PluginInfo[] {
     return Array.from(this.plugins.values())
   }
