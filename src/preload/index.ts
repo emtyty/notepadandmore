@@ -4,6 +4,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 const api = {
   // Platform info
   platform: process.platform,
+  appVersion: process.env['npm_package_version'] ?? '1.0.0',
 
   // File operations
   file: {

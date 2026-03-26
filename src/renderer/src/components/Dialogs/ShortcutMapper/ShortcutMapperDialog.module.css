@@ -1,0 +1,221 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  pointer-events: none;
+}
+
+.dialog {
+  position: fixed;
+  z-index: 9001;
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  width: 680px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  pointer-events: all;
+  user-select: none;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.titleBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: var(--panel-header-bg);
+  border-bottom: 1px solid var(--border);
+  border-radius: 6px 6px 0 0;
+  cursor: move;
+  flex-shrink: 0;
+}
+
+.titleText {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 16px;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+.closeBtn:hover { background: var(--toolbar-btn-hover); color: var(--text); }
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.filterInput {
+  background: var(--input-bg, var(--panel-bg));
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 4px 8px;
+  font-size: 12px;
+  width: 220px;
+}
+
+.hint {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.tableWrap {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.th {
+  text-align: left;
+  padding: 6px 10px;
+  background: var(--panel-header-bg);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  position: sticky;
+  top: 0;
+}
+
+.row {
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+}
+.row:hover { background: var(--toolbar-btn-hover); }
+.rowCapturing { background: rgba(14, 99, 156, 0.15) !important; }
+.rowModified { color: var(--accent, #4fc3f7); }
+
+.td {
+  padding: 5px 10px;
+  color: var(--text);
+  vertical-align: middle;
+}
+
+.kbd {
+  display: inline-block;
+  background: var(--panel-header-bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 6px;
+  font-size: 11px;
+  font-family: monospace;
+  color: var(--text);
+}
+.kbdModified {
+  border-color: var(--accent, #4fc3f7);
+  color: var(--accent, #4fc3f7);
+}
+
+.captureCell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.capturing {
+  font-family: monospace;
+  font-size: 12px;
+  color: var(--accent, #4fc3f7);
+  background: var(--panel-header-bg);
+  padding: 2px 8px;
+  border-radius: 3px;
+  border: 1px dashed var(--accent, #4fc3f7);
+  min-width: 80px;
+  display: inline-block;
+}
+
+.conflict {
+  font-size: 11px;
+  color: #e67e22;
+}
+
+.applyBtn, .cancelBtn {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+}
+.applyBtn {
+  background: var(--btn-primary-bg, #0e639c);
+  color: #fff;
+  border-color: transparent;
+}
+.cancelBtn {
+  background: none;
+  color: var(--text-muted);
+}
+
+.resetBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 14px;
+  padding: 0 4px;
+}
+.resetBtn:hover { color: var(--text); }
+
+.footer {
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.savedMsg {
+  font-size: 12px;
+  color: #4caf50;
+  margin-right: auto;
+}
+
+.saveBtn {
+  background: var(--btn-primary-bg, #0e639c);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 5px 20px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.saveBtn:hover { opacity: 0.9; }
+
+.closeFooterBtn {
+  background: none;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 5px 20px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.closeFooterBtn:hover { background: var(--toolbar-btn-hover); }

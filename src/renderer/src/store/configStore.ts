@@ -1,0 +1,106 @@
+import { create } from 'zustand'
+
+export interface AppConfig {
+  // General
+  language: string
+  maxRecentFiles: number
+
+  // Editor
+  fontSize: number
+  fontFamily: string
+  tabSize: number
+  insertSpaces: boolean
+  wordWrap: boolean
+  showLineNumbers: boolean
+  renderWhitespace: 'none' | 'boundary' | 'all'
+  renderIndentGuides: boolean
+  highlightCurrentLine: boolean
+  bracketPairColorization: boolean
+
+  // Auto-Completion
+  autoCompleteEnabled: boolean
+  autoCloseBrackets: boolean
+  autoCloseQuotes: boolean
+  wordBasedSuggestions: boolean
+
+  // New Document defaults
+  defaultEol: 'CRLF' | 'LF' | 'CR'
+  defaultEncoding: string
+  defaultLanguage: string
+
+  // Backup / AutoSave
+  autoSaveEnabled: boolean
+  autoSaveIntervalMs: number
+  backupEnabled: boolean
+  backupDir: string
+}
+
+export const CONFIG_DEFAULTS: AppConfig = {
+  language: 'en',
+  maxRecentFiles: 10,
+  fontSize: 14,
+  fontFamily: "'Cascadia Code', 'Fira Code', Consolas, 'Courier New', monospace",
+  tabSize: 4,
+  insertSpaces: true,
+  wordWrap: false,
+  showLineNumbers: true,
+  renderWhitespace: 'none',
+  renderIndentGuides: true,
+  highlightCurrentLine: true,
+  bracketPairColorization: true,
+  autoCompleteEnabled: true,
+  autoCloseBrackets: true,
+  autoCloseQuotes: true,
+  wordBasedSuggestions: true,
+  defaultEol: 'LF',
+  defaultEncoding: 'UTF-8',
+  defaultLanguage: 'plaintext',
+  autoSaveEnabled: false,
+  autoSaveIntervalMs: 60000,
+  backupEnabled: false,
+  backupDir: ''
+}
+
+let saveTimer: ReturnType<typeof setTimeout> | null = null
+
+interface ConfigState extends AppConfig {
+  loaded: boolean
+  load: () => Promise<void>
+  save: () => Promise<void>
+  setProp: <K extends keyof AppConfig>(key: K, value: AppConfig[K]) => void
+}
+
+export const useConfigStore = create<ConfigState>((set, get) => ({
+  ...CONFIG_DEFAULTS,
+  loaded: false,
+
+  load: async () => {
+    try {
+      const raw = await window.api.config.readRaw('config.json')
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<AppConfig>
+        set({ ...CONFIG_DEFAULTS, ...parsed, loaded: true })
+      } else {
+        set({ loaded: true })
+      }
+    } catch {
+      set({ loaded: true })
+    }
+  },
+
+  save: async () => {
+    const state = get()
+    const cfg: AppConfig = {} as AppConfig
+    for (const k of Object.keys(CONFIG_DEFAULTS) as (keyof AppConfig)[]) {
+      ;(cfg as Record<string, unknown>)[k] = state[k]
+    }
+    await window.api.config.writeRaw('config.json', JSON.stringify(cfg, null, 2))
+  },
+
+  setProp: (key, value) => {
+    set({ [key]: value } as Partial<ConfigState>)
+    // Debounced save
+    if (saveTimer) clearTimeout(saveTimer)
+    saveTimer = setTimeout(() => get().save(), 500)
+  }
+}))

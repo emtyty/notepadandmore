@@ -19,6 +19,8 @@ interface UIState {
   showPluginManager: boolean
   showUDLEditor: boolean
   showAbout: boolean
+  showShortcutMapper: boolean
+  showStyleConfigurator: boolean
   showBottomPanel: boolean
   activeBottomPanel: BottomPanelId
   toasts: Array<{ id: string; message: string; level: 'info' | 'warn' | 'error' }>
@@ -39,6 +41,8 @@ interface UIState {
   setShowPluginManager: (v: boolean) => void
   setShowUDLEditor: (v: boolean) => void
   setShowAbout: (v: boolean) => void
+  setShowShortcutMapper: (v: boolean) => void
+  setShowStyleConfigurator: (v: boolean) => void
   setShowBottomPanel: (v: boolean) => void
   setActiveBottomPanel: (p: BottomPanelId) => void
   addToast: (message: string, level?: 'info' | 'warn' | 'error') => void
@@ -60,6 +64,8 @@ export const useUIStore = create<UIState>((set) => ({
   showPluginManager: false,
   showUDLEditor: false,
   showAbout: false,
+  showShortcutMapper: false,
+  showStyleConfigurator: false,
   showBottomPanel: false,
   activeBottomPanel: 'findResults',
   toasts: [],
@@ -80,6 +86,8 @@ export const useUIStore = create<UIState>((set) => ({
   setShowPluginManager: (v) => set({ showPluginManager: v }),
   setShowUDLEditor: (v) => set({ showUDLEditor: v }),
   setShowAbout: (v) => set({ showAbout: v }),
+  setShowShortcutMapper: (v) => set({ showShortcutMapper: v }),
+  setShowStyleConfigurator: (v) => set({ showStyleConfigurator: v }),
   setShowBottomPanel: (v) => set({ showBottomPanel: v }),
   setActiveBottomPanel: (p) => set({ activeBottomPanel: p }),
 

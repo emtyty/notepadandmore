@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useCallback } from 'react'
 import * as monaco from 'monaco-editor'
 import { useEditorStore, EOLType } from '../../store/editorStore'
 import { useUIStore } from '../../store/uiStore'
+import { useConfigStore } from '../../store/configStore'
 import { editorRegistry } from '../../utils/editorRegistry'
 import { useBookmarks } from '../../hooks/useBookmarks'
 import { useMacroRecorder } from '../../hooks/useMacroRecorder'
@@ -128,31 +129,35 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
   useEffect(() => {
     if (!containerRef.current) return
 
+    const cfg = useConfigStore.getState()
     const editor = monaco.editor.create(containerRef.current, {
       theme: theme === 'dark' ? 'vs-dark' : 'vs',
-      fontSize: 14,
-      fontFamily: "'Cascadia Code', 'Fira Code', Consolas, 'Courier New', monospace",
-      lineNumbers: 'on',
+      fontSize: cfg.fontSize,
+      fontFamily: cfg.fontFamily,
+      lineNumbers: cfg.showLineNumbers ? 'on' : 'off',
       glyphMargin: true,
       folding: true,
       foldingHighlight: true,
       showFoldingControls: 'always',
       minimap: { enabled: true },
       scrollBeyondLastLine: false,
-      wordWrap: 'off',
-      renderWhitespace: 'none',
+      wordWrap: cfg.wordWrap ? 'on' : 'off',
+      renderWhitespace: cfg.renderWhitespace as monaco.editor.RenderWhitespace,
       renderControlCharacters: false,
-      guides: { indentation: true, bracketPairs: true },
-      bracketPairColorization: { enabled: true },
-      autoClosingBrackets: 'always',
-      autoClosingQuotes: 'always',
-      suggestOnTriggerCharacters: true,
-      quickSuggestions: true,
+      guides: { indentation: cfg.renderIndentGuides, bracketPairs: true },
+      bracketPairColorization: { enabled: cfg.bracketPairColorization },
+      autoClosingBrackets: cfg.autoCloseBrackets ? 'always' : 'never',
+      autoClosingQuotes: cfg.autoCloseQuotes ? 'always' : 'never',
+      suggestOnTriggerCharacters: cfg.autoCompleteEnabled,
+      quickSuggestions: cfg.autoCompleteEnabled,
       parameterHints: { enabled: true },
       multiCursorModifier: 'alt',
       columnSelection: false,
       links: true,
       colorDecorators: true,
+      renderLineHighlight: cfg.highlightCurrentLine ? 'line' : 'none',
+      tabSize: cfg.tabSize,
+      insertSpaces: cfg.insertSpaces,
       scrollbar: {
         verticalScrollbarSize: 10,
         horizontalScrollbarSize: 10
@@ -209,6 +214,31 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
       monaco.editor.setTheme(theme === 'dark' ? 'vs-dark' : 'vs')
     }
   }, [theme])
+
+  // Live-apply config changes from Preferences dialog
+  useEffect(() => {
+    const unsub = useConfigStore.subscribe((cfg) => {
+      const editor = editorRef.current
+      if (!editor) return
+      editor.updateOptions({
+        fontSize: cfg.fontSize,
+        fontFamily: cfg.fontFamily,
+        lineNumbers: cfg.showLineNumbers ? 'on' : 'off',
+        wordWrap: cfg.wordWrap ? 'on' : 'off',
+        renderWhitespace: cfg.renderWhitespace as monaco.editor.RenderWhitespace,
+        guides: { indentation: cfg.renderIndentGuides, bracketPairs: true },
+        bracketPairColorization: { enabled: cfg.bracketPairColorization },
+        autoClosingBrackets: cfg.autoCloseBrackets ? 'always' : 'never',
+        autoClosingQuotes: cfg.autoCloseQuotes ? 'always' : 'never',
+        suggestOnTriggerCharacters: cfg.autoCompleteEnabled,
+        quickSuggestions: cfg.autoCompleteEnabled,
+        renderLineHighlight: cfg.highlightCurrentLine ? 'line' : 'none',
+        tabSize: cfg.tabSize,
+        insertSpaces: cfg.insertSpaces
+      })
+    })
+    return unsub
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Swap model when active buffer changes
   useEffect(() => {

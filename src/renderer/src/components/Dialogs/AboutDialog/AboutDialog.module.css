@@ -1,0 +1,127 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dialog {
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  width: 360px;
+  overflow: hidden;
+}
+
+.titleBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: var(--panel-header-bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.titleText {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 16px;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+.closeBtn:hover {
+  background: var(--toolbar-btn-hover);
+  color: var(--text);
+}
+
+.body {
+  padding: 24px 24px 16px;
+  text-align: center;
+}
+
+.appName {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.version {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+.description {
+  font-size: 12px;
+  color: var(--text-secondary, var(--text-muted));
+  line-height: 1.6;
+  margin: 0 0 16px;
+}
+
+.stack {
+  margin-bottom: 16px;
+}
+
+.stackTitle {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.stackList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+}
+
+.stackList span {
+  background: var(--toolbar-btn-hover);
+  color: var(--text);
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+}
+
+.license {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.footer {
+  padding: 10px 24px 16px;
+  display: flex;
+  justify-content: center;
+}
+
+.okBtn {
+  background: var(--btn-primary-bg, #0e639c);
+  color: var(--btn-primary-text, #fff);
+  border: none;
+  border-radius: 4px;
+  padding: 6px 32px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.okBtn:hover {
+  opacity: 0.9;
+}

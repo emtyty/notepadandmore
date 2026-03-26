@@ -1,0 +1,342 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  pointer-events: none;
+}
+
+.dialog {
+  position: fixed;
+  z-index: 9001;
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  width: 720px;
+  max-height: 82vh;
+  display: flex;
+  flex-direction: column;
+  pointer-events: all;
+  user-select: none;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.titleBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: var(--panel-header-bg);
+  border-bottom: 1px solid var(--border);
+  border-radius: 6px 6px 0 0;
+  cursor: move;
+  flex-shrink: 0;
+}
+
+.titleText {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 16px;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+.closeBtn:hover { background: var(--toolbar-btn-hover); color: var(--text); }
+
+.body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.listPanel {
+  width: 180px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.listHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px 4px;
+  flex-shrink: 0;
+}
+
+.panelLabel {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.newBtn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1;
+  padding: 0 6px;
+  cursor: pointer;
+}
+.newBtn:hover { background: var(--toolbar-btn-hover); }
+
+.emptyList {
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 12px 10px;
+  line-height: 1.5;
+}
+
+.langItem {
+  background: none;
+  border: none;
+  text-align: left;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-bottom: 1px solid var(--border);
+}
+.langItem:hover { background: var(--toolbar-btn-hover); }
+.langItemActive { background: var(--tab-active-bg, var(--toolbar-btn-hover)); font-weight: 600; }
+
+.langExt {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.editorArea {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.tabList {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+
+.tabBtn {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 7px 14px;
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tabBtn:hover { color: var(--text); }
+.tabBtnActive { color: var(--text); border-bottom-color: var(--accent, #0e639c); font-weight: 600; }
+
+.tabContent {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.formRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.formLabel {
+  width: 160px;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text);
+  padding-top: 3px;
+}
+
+.formControl {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+}
+
+.textInput {
+  background: var(--input-bg, var(--panel-bg));
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 3px 8px;
+  font-size: 12px;
+  flex: 1;
+  max-width: 280px;
+}
+
+.smallInput {
+  background: var(--input-bg, var(--panel-bg));
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 3px 8px;
+  font-size: 12px;
+  width: 80px;
+}
+
+.hint {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.checkLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.helpText {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.kwGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.kwLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.kwArea {
+  background: var(--input-bg, var(--panel-bg));
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-family: monospace;
+  resize: vertical;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.delimRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.delimIdx {
+  font-size: 11px;
+  color: var(--text-muted);
+  width: 20px;
+  flex-shrink: 0;
+}
+
+.addDelimBtn {
+  background: none;
+  border: 1px dashed var(--border);
+  border-radius: 3px;
+  color: var(--text-muted);
+  font-size: 12px;
+  padding: 5px 12px;
+  cursor: pointer;
+  margin-top: 4px;
+  align-self: flex-start;
+}
+.addDelimBtn:hover { background: var(--toolbar-btn-hover); color: var(--text); }
+
+.errorMsg {
+  padding: 6px 16px;
+  font-size: 12px;
+  color: #c0392b;
+  background: rgba(192, 57, 43, 0.1);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.footer {
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.deleteBtn {
+  background: none;
+  border: 1px solid #c0392b;
+  border-radius: 4px;
+  color: #c0392b;
+  font-size: 12px;
+  padding: 5px 14px;
+  cursor: pointer;
+  margin-right: auto;
+}
+.deleteBtn:hover { background: rgba(192, 57, 43, 0.1); }
+
+.savedMsg {
+  font-size: 12px;
+  color: #4caf50;
+}
+
+.saveBtn {
+  background: var(--btn-primary-bg, #0e639c);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 5px 20px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.saveBtn:hover { opacity: 0.9; }
+
+.closeFooterBtn {
+  background: none;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 5px 20px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.closeFooterBtn:hover { background: var(--toolbar-btn-hover); }

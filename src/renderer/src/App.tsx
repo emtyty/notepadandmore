@@ -7,10 +7,16 @@ import { StatusBar } from './components/StatusBar/StatusBar'
 import { BottomPanelContainer } from './components/Panels/BottomPanelContainer'
 import { FindReplaceDialog } from './components/Dialogs/FindReplace/FindReplaceDialog'
 import { PluginManagerDialog } from './components/Dialogs/PluginManager/PluginManagerDialog'
+import { AboutDialog } from './components/Dialogs/AboutDialog/AboutDialog'
+import { PreferencesDialog } from './components/Dialogs/Preferences/PreferencesDialog'
+import { ShortcutMapperDialog } from './components/Dialogs/ShortcutMapper/ShortcutMapperDialog'
+import { StyleConfiguratorDialog } from './components/Dialogs/StyleConfigurator/StyleConfiguratorDialog'
+import { UDLEditorDialog } from './components/Dialogs/UDLEditor/UDLEditorDialog'
 import { Sidebar } from './components/Sidebar/Sidebar'
 import { useEditorStore } from './store/editorStore'
 import { useUIStore } from './store/uiStore'
 import { usePluginStore } from './store/pluginStore'
+import { useConfigStore } from './store/configStore'
 import { useFileOps } from './hooks/useFileOps'
 import styles from './App.module.css'
 
@@ -24,6 +30,11 @@ export default function App() {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
   }, [theme])
+
+  // Load config on startup
+  useEffect(() => {
+    useConfigStore.getState().load()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Wire up menu IPC events
   useEffect(() => {
@@ -67,6 +78,11 @@ export default function App() {
       useUIStore.getState().addToast(args[0] as string, (args[1] as 'info' | 'warn' | 'error') ?? 'info')
     })
     window.api.on('menu:plugin-manager', () => useUIStore.getState().setShowPluginManager(true))
+    window.api.on('menu:preferences',        () => useUIStore.getState().setShowPreferences(true))
+    window.api.on('menu:shortcut-mapper',    () => useUIStore.getState().setShowShortcutMapper(true))
+    window.api.on('menu:udl-editor',         () => useUIStore.getState().setShowUDLEditor(true))
+    window.api.on('menu:style-configurator', () => useUIStore.getState().setShowStyleConfigurator(true))
+    window.api.on('menu:about',              () => useUIStore.getState().setShowAbout(true))
     window.api.on('plugin:add-menu-item', (...args) => {
       const [pluginName, label] = args as [string, string]
       usePluginStore.getState().addDynamicMenuItem({ pluginName, label })
@@ -161,6 +177,11 @@ export default function App() {
       window.api.off('file:externally-changed')
       window.api.off('file:externally-deleted')
       window.api.off('menu:plugin-manager')
+      window.api.off('menu:preferences')
+      window.api.off('menu:shortcut-mapper')
+      window.api.off('menu:udl-editor')
+      window.api.off('menu:style-configurator')
+      window.api.off('menu:about')
       window.api.off('plugin:add-menu-item')
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -175,6 +196,18 @@ export default function App() {
     usePluginStore.getState().fetchPlugins()
     return () => clearTimeout(timer)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // AutoSave: save dirty buffers on interval when enabled
+  const { autoSaveEnabled, autoSaveIntervalMs } = useConfigStore()
+  useEffect(() => {
+    if (!autoSaveEnabled) return
+    const timer = setInterval(() => {
+      useEditorStore.getState().buffers
+        .filter((b) => b.isDirty && b.filePath)
+        .forEach((b) => saveBuffer(b.id))
+    }, autoSaveIntervalMs)
+    return () => clearInterval(timer)
+  }, [autoSaveEnabled, autoSaveIntervalMs, saveBuffer])
 
   return (
     <div className={styles.app} data-testid="app">
@@ -229,6 +262,11 @@ export default function App() {
 
       <FindReplaceDialog />
       <PluginManagerDialog />
+      <AboutDialog />
+      <PreferencesDialog />
+      <ShortcutMapperDialog />
+      <StyleConfiguratorDialog />
+      <UDLEditorDialog />
       <ToastContainer />
     </div>
   )
