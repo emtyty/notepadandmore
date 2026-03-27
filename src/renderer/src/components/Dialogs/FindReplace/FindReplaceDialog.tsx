@@ -297,7 +297,7 @@ export function FindReplaceDialog() {
   const handleBrowseDir = async () => {
     // Use Electron open dialog
     const result = await (window.api as any).file.openDirDialog?.()
-    if (result?.filePath) setFifDir(result.filePath)
+    if (result) setFifDir(result)
   }
 
   const findInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {

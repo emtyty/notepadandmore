@@ -183,13 +183,11 @@ export function registerSearchHandlers(): void {
   // Open directory dialog (for Find in Files "Browse" button)
   ipcMain.handle('file:open-dir-dialog', async () => {
     const win = BrowserWindow.getFocusedWindow()
-    if (!win) return { canceled: true, filePath: null }
+    if (!win) return null
     const result = await dialog.showOpenDialog(win, {
       properties: ['openDirectory']
     })
-    if (result.canceled || result.filePaths.length === 0) {
-      return { canceled: true, filePath: null }
-    }
-    return { canceled: false, filePath: result.filePaths[0] }
+    if (result.canceled || result.filePaths.length === 0) return null
+    return result.filePaths[0]
   })
 }
