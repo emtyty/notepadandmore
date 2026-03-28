@@ -4,19 +4,20 @@ import { FileBrowserPanel } from '../FileBrowser/FileBrowserPanel'
 import { ProjectPanel } from '../ProjectPanel/ProjectPanel'
 import { DocumentMapPanel } from '../DocumentMap/DocumentMapPanel'
 import { FunctionListPanel } from '../FunctionList/FunctionListPanel'
+import { Tooltip } from '../Tooltip/Tooltip'
 import styles from './Sidebar.module.css'
 
 type SidebarPanelId = 'files' | 'project' | 'docmap' | 'functions'
 
-const TABS: { id: SidebarPanelId; icon: string; title: string }[] = [
-  { id: 'files',     icon: '📁', title: 'File Browser' },
-  { id: 'project',   icon: '🗂', title: 'Project' },
-  { id: 'docmap',    icon: '🗺', title: 'Document Map' },
-  { id: 'functions', icon: 'ƒ',  title: 'Function List' },
-]
+const PANEL_TITLES: Record<SidebarPanelId, string> = {
+  files:     'File Browser',
+  project:   'Project',
+  docmap:    'Document Map',
+  functions: 'Symbols',
+}
 
 export function Sidebar() {
-  const { sidebarPanel, setSidebarPanel, setShowSidebar } = useUIStore()
+  const { sidebarPanel, setShowSidebar } = useUIStore()
 
   const panels: Record<SidebarPanelId, React.ReactNode> = {
     files:     <FileBrowserPanel />,
@@ -27,25 +28,16 @@ export function Sidebar() {
 
   return (
     <div className={styles.sidebar} data-testid="sidebar">
-      <div className={styles.tabBar}>
-        {TABS.map((t) => (
+      <div className={styles.header}>
+        <span className={styles.headerTitle}>{PANEL_TITLES[sidebarPanel]}</span>
+        <Tooltip text="Close Sidebar" side="bottom">
           <button
-            key={t.id}
-            className={`${styles.tabBtn} ${sidebarPanel === t.id ? styles.tabBtnActive : ''}`}
-            title={t.title}
-            onClick={() => setSidebarPanel(t.id)}
+            className={styles.closeBtn}
+            onClick={() => setShowSidebar(false)}
           >
-            {t.icon}
+            ✕
           </button>
-        ))}
-        <div className={styles.spacer} />
-        <button
-          className={styles.closeBtn}
-          title="Close Sidebar"
-          onClick={() => setShowSidebar(false)}
-        >
-          ✕
-        </button>
+        </Tooltip>
       </div>
       <div className={styles.panelContent}>
         {panels[sidebarPanel]}

@@ -1,5 +1,6 @@
 import React, { useRef, useState, useCallback } from 'react'
 import { useEditorStore, Buffer } from '../../store/editorStore'
+import { Tooltip } from '../Tooltip/Tooltip'
 import styles from './TabBar.module.css'
 
 interface TabBarProps {
@@ -83,13 +84,14 @@ export const TabBar: React.FC<TabBarProps> = ({ onClose }) => {
           >
             <span className={styles.dirtyDot} data-testid="dirty-dot">{buf.isDirty ? '●' : ''}</span>
             <span className={styles.title}>{buf.title}</span>
-            <button
-              className={styles.closeBtn}
-              onClick={(e) => { e.stopPropagation(); onClose?.(buf.id) }}
-              title="Close tab"
-            >
-              ×
-            </button>
+            <Tooltip text="Close tab" side="bottom">
+              <button
+                className={styles.closeBtn}
+                onClick={(e) => { e.stopPropagation(); onClose?.(buf.id) }}
+              >
+                ×
+              </button>
+            </Tooltip>
           </div>
         ))}
 

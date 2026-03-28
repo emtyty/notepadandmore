@@ -8,6 +8,13 @@
   color: var(--text);
 }
 
+.bodyArea {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  overflow: hidden;
+}
+
 .mainPanelGroup {
   flex: 1;
   overflow: hidden;

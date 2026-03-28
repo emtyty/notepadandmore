@@ -1,6 +1,7 @@
 import React from 'react'
 import { useUIStore, BottomPanelId } from '../../store/uiStore'
 import { FindResultsPanel } from './FindResults/FindResultsPanel'
+import { Tooltip } from '../Tooltip/Tooltip'
 import styles from './BottomPanelContainer.module.css'
 
 interface PanelDef {
@@ -33,13 +34,14 @@ export function BottomPanelContainer() {
           </button>
         ))}
         <div className={styles.spacer} />
-        <button
-          className={styles.closeBtn}
-          onClick={() => setShowBottomPanel(false)}
-          title="Close panel"
-        >
-          ✕
-        </button>
+        <Tooltip text="Close panel" side="top">
+          <button
+            className={styles.closeBtn}
+            onClick={() => setShowBottomPanel(false)}
+          >
+            ✕
+          </button>
+        </Tooltip>
       </div>
       <div className={styles.content}>
         {active.component}
