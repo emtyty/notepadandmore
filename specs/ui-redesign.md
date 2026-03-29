@@ -2,7 +2,7 @@
 
 ## Application Overview
 
-Notepad and More is an Electron + React + Monaco Editor desktop app (Notepad++ clone). This test plan covers the UI redesign features introduced on the `feature/ui-style-redesign` branch: the TopAppBar glass header, SideNav 80px left navigation rail, custom portal Tooltip component, redesigned Sidebar, redesigned StatusBar, and the MD3 teal CSS variable palette. All tests use the custom Playwright fixture in `tests/fixtures.ts`, which launches `out/main/index.js` with `E2E_TEST=1` and waits for `[data-testid="app"]`, `.monaco-editor textarea`, and a visible tab before handing the page to each test. CSS Modules hash all class names — only `data-testid`, ARIA roles, text content, and computed styles are used for assertions.
+Digital Artisan Editor is an Electron + React + Monaco Editor desktop app (Notepad++ clone). This test plan covers the UI redesign features introduced on the `feature/ui-style-redesign` branch: the TopAppBar glass header, SideNav 80px left navigation rail, custom portal Tooltip component, redesigned Sidebar, redesigned StatusBar, and the MD3 teal CSS variable palette. All tests use the custom Playwright fixture in `tests/fixtures.ts`, which launches `out/main/index.js` with `E2E_TEST=1` and waits for `[data-testid="app"]`, `.monaco-editor textarea`, and a visible tab before handing the page to each test. CSS Modules hash all class names — only `data-testid`, ARIA roles, text content, and computed styles are used for assertions.
 
 ## Test Scenarios
 
@@ -21,20 +21,20 @@ Notepad and More is an Electron + React + Monaco Editor desktop app (Notepad++ c
   3. Assert the element has height 64 px by evaluating `document.querySelector('[data-testid="topbar"]').getBoundingClientRect().height`.
     - expect: Computed height equals 64.
 
-#### 1.2. TopAppBar displays brand name 'Notepad & More'
+#### 1.2. TopAppBar displays brand name 'Digital Artisan Editor'
 
 **File:** `tests/ui-redesign/topappbar.spec.ts`
 
 **Steps:**
-  1. Locate `[data-testid="topbar"]` and within it find the element containing the text 'Notepad & More'.
-    - expect: The brand name text 'Notepad & More' is visible inside the topbar.
+  1. Locate `[data-testid="topbar"]` and within it find the element containing the text 'Digital Artisan Editor'.
+    - expect: The brand name text 'Digital Artisan Editor' is visible inside the topbar.
 
 #### 1.3. TopAppBar brand name has teal accent colour
 
 **File:** `tests/ui-redesign/topappbar.spec.ts`
 
 **Steps:**
-  1. Query the element that contains text 'Notepad & More' inside `[data-testid="topbar"]`.
+  1. Query the element that contains text 'Digital Artisan Editor' inside `[data-testid="topbar"]`.
   2. Evaluate `getComputedStyle(el).color` on that element.
     - expect: The computed colour resolves to the teal accent value (rgb(104, 229, 203) / #68e5cb in dark theme).
 

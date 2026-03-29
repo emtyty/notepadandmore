@@ -26,7 +26,7 @@ export function AboutDialog() {
           <button className={styles.closeBtn} onClick={() => setShowAbout(false)} title="Close">✕</button>
         </div>
         <div className={styles.body}>
-          <div className={styles.appName}>Notepad And More</div>
+          <div className={styles.appName}>Digital Artisan Editor</div>
           <div className={styles.version}>Version {version}</div>
           <p className={styles.description}>
             A cross-platform text editor with full Notepad++ feature parity,

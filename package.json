@@ -48,7 +48,7 @@
   },
   "build": {
     "appId": "com.notepadandmore.app",
-    "productName": "Notepad And More",
+    "productName": "Digital Artisan Editor",
     "directories": {
       "output": "dist"
     },

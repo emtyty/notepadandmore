@@ -440,7 +440,7 @@ export function buildMenu(win: BrowserWindow, recentFiles: string[] = []): void 
       label: '&Help',
       submenu: [
         {
-          label: 'About Notepad And More',
+          label: 'About Digital Artisan Editor',
           click: () => win.webContents.send('menu:about')
         },
         { type: 'separator' },

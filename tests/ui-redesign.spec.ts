@@ -50,11 +50,10 @@ test.describe('1. TopAppBar', () => {
     expect(height).toBe(64)
   })
 
-  // 1.2 TopAppBar displays brand name 'Notepad & More'
-  test('1.2 TopAppBar displays brand name "Notepad & More"', async ({ page }) => {
-    // Locate [data-testid="topbar"] and within it find the element containing 'Notepad & More'
+  // 1.2 TopAppBar displays brand name 'Digital Artisan Editor'
+  test('1.2 TopAppBar displays brand name "Digital Artisan Editor"', async ({ page }) => {
     await expect(
-      page.locator('[data-testid="topbar"]').getByText('Notepad & More')
+      page.locator('[data-testid="topbar"]').getByText('Digital Artisan Editor')
     ).toBeVisible()
   })
 
@@ -63,9 +62,8 @@ test.describe('1. TopAppBar', () => {
     // Query the brandName span inside the topbar and evaluate its computed color
     const color = await page.evaluate(() => {
       const topbar = document.querySelector('[data-testid="topbar"]')!
-      // Find the span element (brandName) whose text is exactly 'Notepad & More'
       const el = Array.from(topbar.querySelectorAll('span')).find(
-        (n) => n.textContent?.trim() === 'Notepad & More'
+        (n) => n.textContent?.trim() === 'Digital Artisan Editor'
       ) as HTMLElement | undefined
       return el ? getComputedStyle(el).color : null
     })

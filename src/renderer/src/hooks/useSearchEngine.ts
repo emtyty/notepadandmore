@@ -82,6 +82,9 @@ function buildSearchPattern(opts: SearchOptions): { pattern: string; isRegex: bo
 /** Word separator list for Monaco whole-word search */
 const WORD_SEPARATORS = '`~!@#$%^&*()-=+[{]}\\|;:\'",.<>/?'
 
+/** Monaco defaults findMatches to 999; use this to return every match. */
+const NO_FIND_MATCH_LIMIT = Number.MAX_SAFE_INTEGER
+
 // ─── Main hook ────────────────────────────────────────────────────────────────
 export function useSearchEngine() {
   const { options, pushPatternHistory, pushReplaceHistory, setFindResults, setIsSearching } =
@@ -233,7 +236,8 @@ export function useSearchEngine() {
         built.isRegex,
         opts.isCaseSensitive,
         opts.isWholeWord ? WORD_SEPARATORS : null,
-        false
+        false,
+        NO_FIND_MATCH_LIMIT
       )
     },
     []

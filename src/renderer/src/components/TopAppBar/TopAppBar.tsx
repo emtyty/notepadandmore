@@ -45,7 +45,7 @@ export const TopAppBar: React.FC<TopAppBarProps> = ({
       {isMac && <div className={styles.trafficSpacer} />}
 
       <div className={styles.brand}>
-        <span className={styles.brandName}>Notepad &amp; More</span>
+        <span className={styles.brandName}>Digital Artisan Editor</span>
       </div>
 
       <div className={styles.actions}>
