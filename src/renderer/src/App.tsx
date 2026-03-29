@@ -2,7 +2,8 @@ import React, { useEffect, useRef } from 'react'
 import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels'
 import { EditorPane } from './components/EditorPane/EditorPane'
 import { TabBar } from './components/TabBar/TabBar'
-import { ToolBar } from './components/ToolBar/ToolBar'
+import { TopAppBar } from './components/TopAppBar/TopAppBar'
+import { SideNav } from './components/SideNav/SideNav'
 import { StatusBar } from './components/StatusBar/StatusBar'
 import { BottomPanelContainer } from './components/Panels/BottomPanelContainer'
 import { FindReplaceDialog } from './components/Dialogs/FindReplace/FindReplaceDialog'
@@ -22,9 +23,10 @@ import styles from './App.module.css'
 
 export default function App() {
   const { activeId } = useEditorStore()
-  const { theme, showToolbar, showStatusBar, toggleTheme, showBottomPanel, showSidebar } = useUIStore()
+  const { theme, showToolbar, showStatusBar, toggleTheme, showBottomPanel, showSidebar, openFind } = useUIStore()
   const { openFiles, newFile, saveBuffer, saveActiveAs, closeBuffer, reloadBuffer } = useFileOps()
   const editorRef = useRef<{ focus: () => void } | null>(null)
+  const openFileInput = useRef<HTMLInputElement | null>(null)
 
   // Apply theme to root
   useEffect(() => {
@@ -212,51 +214,65 @@ export default function App() {
   return (
     <div className={styles.app} data-testid="app">
       {showToolbar && (
-        <ToolBar
+        <TopAppBar
           onNew={newFile}
-          onOpen={() => window.api.on('menu:file-open', () => {})} // triggered via menu
+          onOpen={() => openFileInput.current?.click()}
           onSave={() => { const id = useEditorStore.getState().activeId; if (id) saveBuffer(id) }}
           onSaveAll={() => useEditorStore.getState().buffers.forEach((b) => { if (b.isDirty) saveBuffer(b.id) })}
-          onFind={() => useUIStore.getState().openFind('find')}
-          onReplace={() => useUIStore.getState().openFind('replace')}
-          onUndo={() => window.dispatchEvent(new CustomEvent('editor:undo'))}
-          onRedo={() => window.dispatchEvent(new CustomEvent('editor:redo'))}
+          onFind={() => openFind('find')}
+          onClose={() => { const id = useEditorStore.getState().activeId; if (id) closeBuffer(id) }}
         />
       )}
 
-      <PanelGroup direction="vertical" className={styles.mainPanelGroup}>
-        {/* Editor area */}
-        <Panel minSize={15}>
-          <PanelGroup direction="horizontal">
-            {showSidebar && (
-              <>
-                <Panel defaultSize={18} minSize={12} maxSize={40} className={styles.sidebarPanel}>
-                  <Sidebar />
-                </Panel>
-                <PanelResizeHandle className={styles.hResizeHandle} />
-              </>
-            )}
-            <Panel defaultSize={showSidebar ? 82 : 100} minSize={20}>
-              <div className={styles.editorColumn}>
-                <TabBar onClose={closeBuffer} />
-                <div className={styles.editorArea}>
-                  <EditorPane activeId={activeId} />
-                </div>
-              </div>
-            </Panel>
-          </PanelGroup>
-        </Panel>
+      {/* Hidden file input for Open button */}
+      <input
+        ref={openFileInput}
+        type="file"
+        multiple
+        style={{ display: 'none' }}
+        onChange={(e) => {
+          const files = Array.from(e.target.files ?? [])
+          if (files.length) openFiles(files.map((f) => (f as File & { path: string }).path))
+          e.target.value = ''
+        }}
+      />
 
-        {/* Bottom panel (resizable) */}
-        {showBottomPanel && (
-          <>
-            <PanelResizeHandle className={styles.vResizeHandle} />
-            <Panel defaultSize={25} minSize={8} maxSize={70}>
-              <BottomPanelContainer />
-            </Panel>
-          </>
-        )}
-      </PanelGroup>
+      <div className={styles.bodyArea}>
+        <SideNav />
+        <PanelGroup direction="vertical" className={styles.mainPanelGroup}>
+          {/* Editor area */}
+          <Panel minSize={15}>
+            <PanelGroup direction="horizontal">
+              {showSidebar && (
+                <>
+                  <Panel defaultSize={18} minSize={12} maxSize={40} className={styles.sidebarPanel}>
+                    <Sidebar />
+                  </Panel>
+                  <PanelResizeHandle className={styles.hResizeHandle} />
+                </>
+              )}
+              <Panel defaultSize={showSidebar ? 82 : 100} minSize={20}>
+                <div className={styles.editorColumn}>
+                  <TabBar onClose={closeBuffer} />
+                  <div className={styles.editorArea}>
+                    <EditorPane activeId={activeId} />
+                  </div>
+                </div>
+              </Panel>
+            </PanelGroup>
+          </Panel>
+
+          {/* Bottom panel (resizable) */}
+          {showBottomPanel && (
+            <>
+              <PanelResizeHandle className={styles.vResizeHandle} />
+              <Panel defaultSize={25} minSize={8} maxSize={70}>
+                <BottomPanelContainer />
+              </Panel>
+            </>
+          )}
+        </PanelGroup>
+      </div>
 
       {showStatusBar && <StatusBar />}
 

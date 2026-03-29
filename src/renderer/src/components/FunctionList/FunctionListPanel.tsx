@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import * as monaco from 'monaco-editor'
 import { useEditorStore } from '../../store/editorStore'
 import { editorRegistry } from '../../utils/editorRegistry'
+import { Tooltip } from '../Tooltip/Tooltip'
 import styles from './FunctionListPanel.module.css'
 
 interface SymbolNode {
@@ -137,7 +138,9 @@ export function FunctionListPanel() {
     <div className={styles.panel}>
       <div className={styles.header}>
         <span>Functions</span>
-        <button className={styles.refreshBtn} onClick={refresh} title="Refresh">↻</button>
+        <Tooltip text="Refresh" side="bottom">
+          <button className={styles.refreshBtn} onClick={refresh}>↻</button>
+        </Tooltip>
       </div>
       <div className={styles.list}>
         {symbols.length === 0 ? (

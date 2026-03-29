@@ -1,14 +1,25 @@
 .statusBar {
   display: flex;
   align-items: center;
-  height: 24px;
+  height: 32px;
   background: var(--statusbar-bg);
   color: var(--statusbar-fg);
-  font-size: 12px;
-  padding: 0 8px;
+  font-size: 11px;
+  padding: 0 12px;
   flex-shrink: 0;
   user-select: none;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  font-family: 'Inter', sans-serif;
+  letter-spacing: 0.02em;
+}
+
+.statusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+  margin-right: 8px;
 }
 
 .section {
@@ -18,14 +29,14 @@
 }
 
 .section:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
   border-radius: 3px;
 }
 
 .divider {
   width: 1px;
-  height: 14px;
-  background: var(--border);
+  height: 12px;
+  background: rgba(255, 255, 255, 0.08);
   flex-shrink: 0;
 }
 
@@ -42,8 +53,8 @@
 }
 
 .recording {
-  color: #e74c3c;
-  font-weight: bold;
+  color: var(--tertiary);
+  font-weight: 600;
   letter-spacing: 1px;
   animation: blink 1s step-start infinite;
 }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useUIStore } from '../../store/uiStore'
 import { useFileOps } from '../../hooks/useFileOps'
+import { Tooltip } from '../Tooltip/Tooltip'
 import styles from './FileBrowserPanel.module.css'
 
 interface TreeNode {
@@ -240,7 +241,9 @@ export function FileBrowserPanel() {
     <div className={styles.panel}>
       <div className={styles.header}>
         <span>{workspaceFolder.replace(/\\/g, '/').split('/').pop()}</span>
-        <button className={styles.refreshBtn} onClick={handleRefresh} title="Refresh">↻</button>
+        <Tooltip text="Refresh" side="bottom">
+          <button className={styles.refreshBtn} onClick={handleRefresh}>↻</button>
+        </Tooltip>
       </div>
       <div className={styles.tree}>
         {tree.length === 0 ? (

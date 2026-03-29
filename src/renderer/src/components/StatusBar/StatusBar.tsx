@@ -39,6 +39,7 @@ export const StatusBar: React.FC = () => {
 
   return (
     <div className={styles.statusBar} data-testid="statusbar">
+      <span className={styles.statusDot} />
       <span className={styles.section} data-testid="cursor-position">
         Ln {cursor.line}, Col {cursor.col}
       </span>

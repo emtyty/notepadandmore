@@ -1,0 +1,129 @@
+.topbar {
+  display: flex;
+  align-items: center;
+  height: 64px;
+  background: rgba(15, 15, 15, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
+  user-select: none;
+  -webkit-app-region: drag;
+  position: relative;
+  z-index: 10;
+}
+
+/* macOS: leave 78px for traffic lights */
+.trafficSpacer {
+  width: 78px;
+  flex-shrink: 0;
+  height: 100%;
+  -webkit-app-region: drag;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  -webkit-app-region: drag;
+}
+
+.brandName {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+}
+
+.divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+  margin: 0 4px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 8px;
+  -webkit-app-region: no-drag;
+  flex-shrink: 0;
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--toolbar-icon);
+  transition: background 0.2s, color 0.2s, transform 0.1s;
+  flex-shrink: 0;
+}
+
+.btn:hover {
+  background: var(--toolbar-btn-hover);
+  color: var(--toolbar-icon-hover);
+}
+
+.btn:active {
+  transform: scale(0.93);
+  background: var(--toolbar-btn-active);
+}
+
+.spacer {
+  flex: 1;
+  -webkit-app-region: drag;
+}
+
+.searchWrap {
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  -webkit-app-region: no-drag;
+}
+
+.searchInput {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-highest);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 6px 14px 6px 10px;
+  min-width: 180px;
+  cursor: text;
+  transition: border-color 0.2s;
+}
+
+.searchInput:focus-within {
+  border-color: var(--accent);
+}
+
+.searchIcon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.searchInput input {
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 12px;
+  font-family: 'Inter', sans-serif;
+  width: 100%;
+}
+
+.searchInput input::placeholder {
+  color: var(--text-muted);
+}

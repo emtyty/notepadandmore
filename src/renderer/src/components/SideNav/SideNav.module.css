@@ -1,0 +1,109 @@
+.sidenav {
+  display: flex;
+  flex-direction: column;
+  width: 80px;
+  height: 100%;
+  background: var(--sidenav-bg);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
+  user-select: none;
+  overflow: hidden;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 0 10px;
+  flex-shrink: 0;
+}
+
+.logoIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-container) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #00201a;
+  box-shadow: 0 4px 12px rgba(104, 229, 203, 0.2);
+}
+
+.navList {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 2px;
+  padding: 4px 0;
+}
+
+.navBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 10px 0;
+  background: none;
+  border: none;
+  border-left: 2px solid transparent;
+  cursor: pointer;
+  color: var(--outline);
+  transition: color 0.2s, background 0.2s, transform 0.2s, border-color 0.2s;
+  gap: 4px;
+  min-height: 60px;
+}
+
+.navBtn:hover {
+  color: var(--text);
+  background: var(--surface);
+  transform: translateX(2px);
+}
+
+.navBtn.active {
+  color: var(--accent);
+  background: var(--surface-high);
+  border-left-color: var(--accent);
+}
+
+.navLabel {
+  font-family: 'Inter', sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.bottomActions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 0 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
+}
+
+.iconBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--outline);
+  transition: color 0.2s, background 0.2s;
+}
+
+.iconBtn:hover {
+  color: var(--text);
+  background: var(--surface);
+}
+
+.iconBtn:active {
+  background: var(--surface-high);
+}
