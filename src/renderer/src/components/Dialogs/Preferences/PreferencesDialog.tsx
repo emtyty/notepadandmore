@@ -149,6 +149,7 @@ export function PreferencesDialog() {
                 <CheckRow label="Highlight current line" checked={config.highlightCurrentLine} onChange={(v) => set('highlightCurrentLine', v)} />
                 <CheckRow label="Render indentation guides" checked={config.renderIndentGuides} onChange={(v) => set('renderIndentGuides', v)} />
                 <CheckRow label="Bracket pair colorization" checked={config.bracketPairColorization} onChange={(v) => set('bracketPairColorization', v)} />
+                <CheckRow label="Show minimap" checked={config.showMinimap} onChange={(v) => set('showMinimap', v)} />
               </div>
             )}
 
@@ -157,8 +158,12 @@ export function PreferencesDialog() {
                 <Row label="Theme">
                   <select
                     className={styles.select}
-                    value={useUIStore.getState().theme}
-                    onChange={(e) => useUIStore.getState().setTheme(e.target.value as 'light' | 'dark')}
+                    value={config.theme}
+                    onChange={(e) => {
+                      const t = e.target.value as 'light' | 'dark'
+                      useUIStore.getState().setTheme(t)
+                      set('theme', t)
+                    }}
                   >
                     <option value="dark">Dark</option>
                     <option value="light">Light</option>

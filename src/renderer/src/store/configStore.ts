@@ -5,6 +5,9 @@ export interface AppConfig {
   language: string
   maxRecentFiles: number
 
+  /** Persisted app chrome + Monaco theme */
+  theme: 'light' | 'dark'
+
   // Editor
   fontSize: number
   fontFamily: string
@@ -16,6 +19,7 @@ export interface AppConfig {
   renderIndentGuides: boolean
   highlightCurrentLine: boolean
   bracketPairColorization: boolean
+  showMinimap: boolean
 
   // Auto-Completion
   autoCompleteEnabled: boolean
@@ -38,6 +42,7 @@ export interface AppConfig {
 export const CONFIG_DEFAULTS: AppConfig = {
   language: 'en',
   maxRecentFiles: 10,
+  theme: 'dark',
   fontSize: 14,
   fontFamily: "'Cascadia Code', 'Fira Code', Consolas, 'Courier New', monospace",
   tabSize: 4,
@@ -48,6 +53,7 @@ export const CONFIG_DEFAULTS: AppConfig = {
   renderIndentGuides: true,
   highlightCurrentLine: true,
   bracketPairColorization: true,
+  showMinimap: false,
   autoCompleteEnabled: true,
   autoCloseBrackets: true,
   autoCloseQuotes: true,
@@ -89,12 +95,20 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
   },
 
   save: async () => {
+    if (saveTimer) {
+      clearTimeout(saveTimer)
+      saveTimer = null
+    }
     const state = get()
     const cfg: AppConfig = {} as AppConfig
     for (const k of Object.keys(CONFIG_DEFAULTS) as (keyof AppConfig)[]) {
       ;(cfg as Record<string, unknown>)[k] = state[k]
     }
-    await window.api.config.writeRaw('config.json', JSON.stringify(cfg, null, 2))
+    try {
+      await window.api.config.writeRaw('config.json', JSON.stringify(cfg, null, 2))
+    } catch (e) {
+      console.error('config save failed', e)
+    }
   },
 
   setProp: (key, value) => {

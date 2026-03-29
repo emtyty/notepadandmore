@@ -23,7 +23,7 @@ import styles from './App.module.css'
 
 export default function App() {
   const { activeId } = useEditorStore()
-  const { theme, showToolbar, showStatusBar, toggleTheme, showBottomPanel, showSidebar, openFind } = useUIStore()
+  const { theme, showToolbar, showStatusBar, showBottomPanel, showSidebar, openFind } = useUIStore()
   const { openFiles, newFile, saveBuffer, saveActiveAs, closeBuffer, reloadBuffer } = useFileOps()
   const editorRef = useRef<{ focus: () => void } | null>(null)
   const openFileInput = useRef<HTMLInputElement | null>(null)
@@ -33,9 +33,13 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', theme)
   }, [theme])
 
-  // Load config on startup
+  // Load config on startup and apply persisted theme to UI
   useEffect(() => {
-    useConfigStore.getState().load()
+    void (async () => {
+      await useConfigStore.getState().load()
+      const t = useConfigStore.getState().theme
+      useUIStore.getState().setTheme(t)
+    })()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Wire up menu IPC events
@@ -72,7 +76,10 @@ export default function App() {
       useUIStore.getState().setShowSidebar(true)
       useUIStore.getState().setSidebarPanel('files')
     })
-    window.api.on('ui:toggle-theme', () => toggleTheme())
+    window.api.on('ui:toggle-theme', () => {
+      useUIStore.getState().toggleTheme()
+      useConfigStore.getState().setProp('theme', useUIStore.getState().theme)
+    })
     window.api.on('ui:toggle-toolbar', (...args) => useUIStore.getState().setShowToolbar(args[0] as boolean))
     window.api.on('ui:toggle-statusbar', (...args) => useUIStore.getState().setShowStatusBar(args[0] as boolean))
     window.api.on('ui:toggle-sidebar', (...args) => useUIStore.getState().setShowSidebar(args[0] as boolean))
@@ -131,8 +138,8 @@ export default function App() {
       }
     })
 
-    // Before close: check for unsaved buffers, then save session
-    window.api.on('app:before-close', () => {
+    // Before close: check for unsaved buffers, flush config, then save session
+    window.api.on('app:before-close', async () => {
       const dirty = useEditorStore.getState().buffers.filter((b) => b.isDirty)
       if (dirty.length > 0) {
         const names = dirty.map((b) => b.title).join(', ')
@@ -141,7 +148,7 @@ export default function App() {
           return
         }
       }
-      // Save session before confirming close
+      await useConfigStore.getState().save()
       const state = useEditorStore.getState()
       const uiState = useUIStore.getState()
       window.api.send('session:save', {
@@ -253,7 +260,7 @@ export default function App() {
               )}
               <Panel defaultSize={showSidebar ? 82 : 100} minSize={20}>
                 <div className={styles.editorColumn}>
-                  <TabBar onClose={closeBuffer} />
+                  <TabBar onClose={closeBuffer} onNewFile={newFile} />
                   <div className={styles.editorArea}>
                     <EditorPane activeId={activeId} />
                   </div>

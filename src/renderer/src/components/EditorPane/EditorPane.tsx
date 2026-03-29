@@ -139,7 +139,7 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
       folding: true,
       foldingHighlight: true,
       showFoldingControls: 'always',
-      minimap: { enabled: true },
+      minimap: { enabled: cfg.showMinimap },
       scrollBeyondLastLine: false,
       wordWrap: cfg.wordWrap ? 'on' : 'off',
       renderWhitespace: cfg.renderWhitespace as monaco.editor.RenderWhitespace,
@@ -234,7 +234,8 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
         quickSuggestions: cfg.autoCompleteEnabled,
         renderLineHighlight: cfg.highlightCurrentLine ? 'line' : 'none',
         tabSize: cfg.tabSize,
-        insertSpaces: cfg.insertSpaces
+        insertSpaces: cfg.insertSpaces,
+        minimap: { enabled: cfg.showMinimap }
       })
     })
     return unsub

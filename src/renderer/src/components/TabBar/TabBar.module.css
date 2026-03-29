@@ -87,6 +87,17 @@
   font-size: 12px;
 }
 
+.tabFiller {
+  flex: 1;
+  min-width: 24px;
+  cursor: pointer;
+  align-self: stretch;
+}
+
+.tabFiller:not(.empty):hover {
+  background: var(--tab-hover-bg);
+}
+
 /* Context Menu */
 .contextMenu {
   position: fixed;

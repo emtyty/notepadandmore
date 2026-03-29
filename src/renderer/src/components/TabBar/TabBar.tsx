@@ -1,13 +1,14 @@
-import React, { useRef, useState, useCallback } from 'react'
-import { useEditorStore, Buffer } from '../../store/editorStore'
+import React, { useRef, useState } from 'react'
+import { useEditorStore } from '../../store/editorStore'
 import { Tooltip } from '../Tooltip/Tooltip'
 import styles from './TabBar.module.css'
 
 interface TabBarProps {
   onClose?: (id: string) => void
+  onNewFile?: () => void
 }
 
-export const TabBar: React.FC<TabBarProps> = ({ onClose }) => {
+export const TabBar: React.FC<TabBarProps> = ({ onClose, onNewFile }) => {
   const { buffers, activeId, setActive, removeBuffer } = useEditorStore()
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; id: string } | null>(null)
   const dragRef = useRef<string | null>(null)
@@ -95,8 +96,25 @@ export const TabBar: React.FC<TabBarProps> = ({ onClose }) => {
           </div>
         ))}
 
-        {buffers.length === 0 && (
-          <div className={styles.empty}>No files open</div>
+        {buffers.length === 0 ? (
+          <div
+            className={`${styles.empty} ${styles.tabFiller}`}
+            data-testid="tabbar-filler"
+            onClick={() => onNewFile?.()}
+            title="New file"
+            role="button"
+          >
+            No files open
+          </div>
+        ) : (
+          <div
+            className={styles.tabFiller}
+            data-testid="tabbar-filler"
+            onClick={() => onNewFile?.()}
+            title="New file"
+            role="button"
+            aria-label="New file"
+          />
         )}
       </div>
 
