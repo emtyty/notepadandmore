@@ -6,15 +6,16 @@
   "author": "",
   "license": "MIT",
   "scripts": {
-    "dev": "env -u ELECTRON_RUN_AS_NODE electron-vite dev",
-    "build": "electron-vite build",
+    "dev": "node scripts/build-worker.mjs && env -u ELECTRON_RUN_AS_NODE electron-vite dev",
+    "build": "electron-vite build && node scripts/build-worker.mjs",
     "preview": "env -u ELECTRON_RUN_AS_NODE electron-vite preview",
     "package": "electron-builder",
     "package:win": "electron-builder --win",
     "package:mac": "electron-builder --mac",
     "test:e2e": "npm run build && playwright test",
     "test:e2e:headed": "npm run build && playwright test --headed",
-    "test:e2e:report": "playwright show-report"
+    "test:e2e:report": "playwright show-report",
+    "build:worker": "node scripts/build-worker.mjs"
   },
   "dependencies": {
     "@electron-toolkit/tsconfig": "^2.0.0",

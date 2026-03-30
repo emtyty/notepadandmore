@@ -60,18 +60,18 @@ app.whenReady().then(() => {
     app.setAppUserModelId('com.notepadandmore.app')
   }
 
-  // Register IPC handlers
+  // Register IPC handlers (no window dependency)
   registerFileHandlers()
   registerConfigHandlers()
   registerPluginHandlers()
-  registerSearchHandlers()
 
   createWindow()
 
   // Build native menu after window is created (with persisted recent files)
   buildMenu(mainWindow!, loadRecents())
 
-  // Register file watchers (needs mainWindow reference)
+  // Register handlers that need mainWindow reference
+  registerSearchHandlers(mainWindow!)
   registerWatchHandlers(mainWindow!)
 
   // Load plugins

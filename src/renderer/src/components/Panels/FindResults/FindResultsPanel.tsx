@@ -93,7 +93,7 @@ function FileGroup({
 
 // ─── Main panel ───────────────────────────────────────────────────────────────
 export function FindResultsPanel() {
-  const { findResults } = useSearchStore()
+  const { findResults, isSearching, searchProgress } = useSearchStore()
   const { buffers, setActive } = useEditorStore()
   const { openFiles } = useFileOps()
 
@@ -135,6 +135,24 @@ export function FindResultsPanel() {
             <span className={styles.summary}>
               "{findResults.query}" — {findResults.totalHits} hit{findResults.totalHits !== 1 ? 's' : ''} in{' '}
               {findResults.files.length} file{findResults.files.length !== 1 ? 's' : ''} · {findResults.scope}
+              {findResults.searchDurationMs != null && !isSearching && (
+                <>
+                  {' '}
+                  <span className={styles.meta}>
+                    · {findResults.searchEngineLabel ?? 'Search'}{' '}
+                    {findResults.searchDurationMs >= 1000
+                      ? `${(findResults.searchDurationMs / 1000).toFixed(2)}s`
+                      : `${findResults.searchDurationMs}ms`}
+                  </span>
+                </>
+              )}
+            </span>
+          )}
+          {isSearching && searchProgress && (
+            <span className={styles.progressBadge}>
+              {searchProgress.scanned > 0
+                ? `Scanning ${searchProgress.scanned} files…`
+                : 'Collecting files…'}
             </span>
           )}
         </div>
@@ -142,7 +160,7 @@ export function FindResultsPanel() {
 
       <div className={styles.body}>
         {!findResults || findResults.files.length === 0 ? (
-          <div className={styles.empty}>No results.</div>
+          <div className={styles.empty}>{isSearching ? 'Searching…' : 'No results.'}</div>
         ) : (
           findResults.files.map((file, i) => (
             <FileGroup key={i} file={file} onNavigate={handleNavigate} />

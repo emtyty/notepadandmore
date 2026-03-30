@@ -249,6 +249,14 @@
   opacity: 0.9;
 }
 
+/* ─── Search progress row ─── */
+.progressRow {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 0 2px;
+}
+
 /* ─── Status bar ─── */
 .statusBar {
   padding: 5px 12px;

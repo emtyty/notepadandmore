@@ -5,19 +5,9 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   main: {
     plugins: [externalizeDepsPlugin({ exclude: ['fast-xml-parser'] })],
-    build: {
-      rollupOptions: {
-        external: ['electron', 'path', 'fs', 'os', 'crypto', 'stream', 'util', 'events', 'buffer', 'url', 'net', 'child_process']
-      }
-    }
   },
   preload: {
     plugins: [externalizeDepsPlugin()],
-    build: {
-      rollupOptions: {
-        external: ['electron', 'path', 'fs', 'os', 'crypto']
-      }
-    }
   },
   renderer: {
     resolve: {

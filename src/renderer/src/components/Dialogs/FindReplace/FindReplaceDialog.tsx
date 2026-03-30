@@ -154,7 +154,7 @@ function SearchOptionsPanel({ showInSelection }: SearchOptionsProps) {
 // ─── Main dialog ──────────────────────────────────────────────────────────────
 export function FindReplaceDialog() {
   const { showFindReplace, findReplaceMode, closeFind } = useUIStore()
-  const { options, setOptions, patternHistory, replaceHistory, markStyleIndex, setMarkStyleIndex, isSearching } =
+  const { options, setOptions, patternHistory, replaceHistory, markStyleIndex, setMarkStyleIndex, isSearching, searchProgress, currentSearchId } =
     useSearchStore()
   const engine = useSearchEngine()
 
@@ -285,13 +285,18 @@ export function FindReplaceDialog() {
     engine.bookmarkLines()
   }
 
-  const handleFindInFiles = async () => {
+  const handleFindInFiles = () => {
     if (!fifDir) {
       setStatus({ msg: 'Please select a directory.', type: 'warn' })
       return
     }
-    await engine.findInFiles(fifDir, fifFilter, fifRecursive)
-    setStatus({ msg: 'Search complete. See Find Results panel.', type: 'ok' })
+    engine.findInFilesStreaming(fifDir, fifFilter, fifRecursive)
+    setStatus({ msg: 'Searching… results appear in real-time.', type: 'ok' })
+  }
+
+  const handleCancelSearch = () => {
+    engine.cancelFindInFiles()
+    setStatus({ msg: '', type: 'none' })
   }
 
   const handleBrowseDir = async () => {
@@ -481,7 +486,17 @@ export function FindReplaceDialog() {
                   {isSearching ? <span className={styles.loading}>⟳</span> : null}
                   {isSearching ? ' Searching…' : 'Find All'}
                 </button>
+                {isSearching && currentSearchId && (
+                  <button className={styles.btn} onClick={handleCancelSearch}>
+                    Cancel
+                  </button>
+                )}
               </div>
+              {isSearching && searchProgress && searchProgress.scanned > 0 && (
+                <div className={styles.progressRow}>
+                  Scanning {searchProgress.scanned} files…
+                </div>
+              )}
             </>
           )}
 

@@ -45,7 +45,8 @@ const api = {
 
   // Search operations
   search: {
-    findInFiles: (opts: object) => ipcRenderer.invoke('search:find-in-files', opts)
+    start: (opts: object) => ipcRenderer.invoke('search:find-in-files-start', opts),
+    cancel: (searchId: string) => ipcRenderer.invoke('search:cancel', searchId)
   },
 
   // File watch operations
@@ -71,7 +72,8 @@ const api = {
       'session:restore', 'app:before-close',
       'plugin:add-menu-item', 'plugin:insert-text',
       'plugin:editor-get-text', 'plugin:editor-get-selection', 'plugin:editor-get-path',
-      'file:externally-changed', 'file:externally-deleted'
+      'file:externally-changed', 'file:externally-deleted',
+      'search:chunk', 'search:progress', 'search:done'
     ]
     if (allowedChannels.includes(channel)) {
       ipcRenderer.on(channel, (_event, ...args) => callback(...args))
@@ -94,7 +96,8 @@ const api = {
       'session:restore', 'app:before-close',
       'plugin:add-menu-item', 'plugin:insert-text',
       'plugin:editor-get-text', 'plugin:editor-get-selection', 'plugin:editor-get-path',
-      'file:externally-changed', 'file:externally-deleted'
+      'file:externally-changed', 'file:externally-deleted',
+      'search:chunk', 'search:progress', 'search:done'
     ]
     if (allowedChannels.includes(channel)) {
       ipcRenderer.removeAllListeners(channel)

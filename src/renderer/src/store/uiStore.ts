@@ -35,7 +35,7 @@ interface UIState {
   setShowSidebar: (v: boolean) => void
   setSidebarPanel: (p: UIState['sidebarPanel']) => void
   setWorkspaceFolder: (path: string | null) => void
-  openFind: (mode?: UIState['findReplaceMode']) => void
+  openFind: (mode?: 'find' | 'replace' | 'findInFiles') => void
   closeFind: () => void
   setShowPreferences: (v: boolean) => void
   setShowPluginManager: (v: boolean) => void

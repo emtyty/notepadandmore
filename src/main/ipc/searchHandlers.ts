@@ -1,193 +1,84 @@
-import { ipcMain, dialog, BrowserWindow } from 'electron'
-import * as fs from 'fs'
+import { ipcMain, BrowserWindow } from 'electron'
+import { Worker } from 'worker_threads'
 import * as path from 'path'
-import * as iconv from 'iconv-lite'
-import * as chardet from 'chardet'
+import { FindInFilesOptions } from './findInFilesLogic'
 
-interface FindInFilesOptions {
-  pattern: string
-  isRegex: boolean
-  isCaseSensitive: boolean
-  isWholeWord: boolean
-  directory: string
-  fileFilter: string    // "*.ts *.js" or "*.*"
-  isRecursive: boolean
+interface StartOpts extends FindInFilesOptions {
+  searchId: string
 }
 
-interface FindResultLine {
-  lineNumber: number
-  column: number
-  endColumn: number
-  lineText: string
-  matchText: string
-}
+const activeWorkers = new Map<string, Worker>()
 
-interface FindResultFile {
-  filePath: string
-  title: string
-  results: FindResultLine[]
-}
-
-/** Parse glob-style filter "*.ts *.js" → list of extensions or patterns */
-function parseFilter(filter: string): RegExp {
-  if (!filter || filter === '*' || filter === '*.*') return /.*/
-
-  const patterns = filter.trim().split(/\s+/).map((f) => {
-    // Convert glob to regex: *.ts → \.ts$, *.* → .*, foo.txt → foo\.txt
-    const escaped = f
-      .replace(/\./g, '\\.')
-      .replace(/\*/g, '.*')
-      .replace(/\?/g, '.')
-    return `(${escaped})`
-  })
-
-  return new RegExp(patterns.join('|') + '$', 'i')
-}
-
-/** Collect all files matching filter, optionally recursive */
-function collectFiles(dir: string, filterRe: RegExp, recursive: boolean): string[] {
-  const results: string[] = []
-
-  function walk(current: string): void {
-    let entries: fs.Dirent[]
-    try {
-      entries = fs.readdirSync(current, { withFileTypes: true })
-    } catch {
-      return
-    }
-
-    for (const entry of entries) {
-      // Skip hidden dirs like .git, node_modules
-      if (entry.name.startsWith('.') || entry.name === 'node_modules') continue
-
-      const full = path.join(current, entry.name)
-
-      if (entry.isDirectory()) {
-        if (recursive) walk(full)
-      } else if (entry.isFile()) {
-        if (filterRe.test(entry.name)) {
-          results.push(full)
-        }
-      }
-    }
-  }
-
-  walk(dir)
-  return results
-}
-
-/** Search within a single file */
-function searchFile(
-  filePath: string,
-  re: RegExp
-): FindResultLine[] {
-  let content: string
-  try {
-    const raw = fs.readFileSync(filePath)
-    const encoding = chardet.detect(raw) || 'UTF-8'
-    content = iconv.decode(raw, encoding)
-  } catch {
-    return []
-  }
-
-  // Skip binary files (heuristic: null bytes in first 8KB)
-  if (content.slice(0, 8192).includes('\0')) return []
-
-  const lines = content.split(/\r?\n/)
-  const results: FindResultLine[] = []
-
-  // Limit results per file to avoid OOM
-  const MAX_PER_FILE = 500
-
-  for (let i = 0; i < lines.length && results.length < MAX_PER_FILE; i++) {
-    const line = lines[i]
-    re.lastIndex = 0  // reset for global regex
-
-    let match: RegExpExecArray | null
-    while ((match = re.exec(line)) !== null) {
-      results.push({
-        lineNumber: i + 1,
-        column: match.index + 1,
-        endColumn: match.index + match[0].length + 1,
-        lineText: line.length > 500 ? line.slice(0, 500) + '…' : line,
-        matchText: match[0]
-      })
-
-      // Avoid infinite loop on zero-width matches
-      if (match[0].length === 0) {
-        re.lastIndex++
-      }
-
-      if (!re.global) break
-    }
-  }
-
-  return results
-}
-
-/** Build the RegExp from search options */
-function buildRegExp(opts: FindInFilesOptions): RegExp | null {
-  try {
-    let src = opts.pattern
-    if (!opts.isRegex) {
-      // Escape special regex chars for literal search
-      src = src.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    }
-    if (opts.isWholeWord) {
-      src = `\\b${src}\\b`
-    }
-    const flags = 'g' + (opts.isCaseSensitive ? '' : 'i')
-    return new RegExp(src, flags)
-  } catch {
-    return null
-  }
-}
-
-export function registerSearchHandlers(): void {
-  // Find in Files
-  ipcMain.handle('search:find-in-files', async (_event, opts: FindInFilesOptions) => {
+export function registerSearchHandlers(win: BrowserWindow): void {
+  ipcMain.handle('search:find-in-files-start', (_event, opts: StartOpts) => {
     if (!opts.pattern || !opts.directory) {
-      return { totalHits: 0, files: [] }
+      return { error: 'Pattern and directory are required' }
     }
 
-    const re = buildRegExp(opts)
-    if (!re) return { totalHits: 0, files: [], error: 'Invalid pattern' }
+    const { searchId } = opts
 
-    const filterRe = parseFilter(opts.fileFilter)
-    const filePaths = collectFiles(opts.directory, filterRe, opts.isRecursive)
+    const workerPath = path.join(__dirname, '../workers/searchWorker.js')
+    let worker: Worker
+    try {
+      worker = new Worker(workerPath, {
+        workerData: { searchId, opts, progressEvery: 50 }
+      })
+    } catch (err) {
+      return { error: `Failed to start search worker: ${(err as Error).message}` }
+    }
 
-    const files: FindResultFile[] = []
-    let totalHits = 0
+    activeWorkers.set(searchId, worker)
 
-    // Limit total files searched
-    const MAX_FILES = 2000
-    const limited = filePaths.slice(0, MAX_FILES)
-
-    for (const fp of limited) {
-      // Reset regex state for each file
-      re.lastIndex = 0
-      const results = searchFile(fp, re)
-      if (results.length > 0) {
-        files.push({
-          filePath: fp,
-          title: path.basename(fp),
-          results
-        })
-        totalHits += results.length
+    worker.on('message', (msg: { type: string; searchId: string }) => {
+      if (win.isDestroyed()) {
+        worker.terminate()
+        activeWorkers.delete(searchId)
+        return
       }
-    }
+      switch (msg.type) {
+        case 'chunk':
+          win.webContents.send('search:chunk', msg)
+          break
+        case 'progress':
+          win.webContents.send('search:progress', msg)
+          break
+        case 'done':
+          win.webContents.send('search:done', msg)
+          activeWorkers.delete(searchId)
+          break
+        case 'error':
+          win.webContents.send('search:done', { type: 'done', searchId, error: (msg as any).message })
+          activeWorkers.delete(searchId)
+          break
+      }
+    })
 
-    return { totalHits, files }
+    worker.on('error', (err) => {
+      activeWorkers.delete(searchId)
+      if (!win.isDestroyed()) {
+        win.webContents.send('search:done', { searchId, error: err.message })
+      }
+    })
+
+    worker.on('exit', () => {
+      activeWorkers.delete(searchId)
+    })
+
+    return { searchId }
   })
 
-  // Open directory dialog (for Find in Files "Browse" button)
-  ipcMain.handle('file:open-dir-dialog', async () => {
-    const win = BrowserWindow.getFocusedWindow()
-    if (!win) return null
-    const result = await dialog.showOpenDialog(win, {
-      properties: ['openDirectory']
-    })
-    if (result.canceled || result.filePaths.length === 0) return null
-    return result.filePaths[0]
+  ipcMain.handle('search:cancel', (_event, searchId: string) => {
+    const worker = activeWorkers.get(searchId)
+    if (worker) {
+      worker.terminate()
+      activeWorkers.delete(searchId)
+    }
+  })
+
+  win.on('closed', () => {
+    for (const [, worker] of activeWorkers) {
+      worker.terminate()
+    }
+    activeWorkers.clear()
   })
 }

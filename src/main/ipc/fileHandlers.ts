@@ -149,4 +149,14 @@ export function registerFileHandlers(): void {
     const win = BrowserWindow.getFocusedWindow()
     if (win) updateRecentFiles(win, updated)
   })
+
+  ipcMain.handle('file:open-dir-dialog', async () => {
+    const win = BrowserWindow.getFocusedWindow()
+    if (!win) return null
+    const result = await dialog.showOpenDialog(win, {
+      properties: ['openDirectory']
+    })
+    if (result.canceled || result.filePaths.length === 0) return null
+    return result.filePaths[0]
+  })
 }

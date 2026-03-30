@@ -87,8 +87,7 @@ const NO_FIND_MATCH_LIMIT = Number.MAX_SAFE_INTEGER
 
 // ─── Main hook ────────────────────────────────────────────────────────────────
 export function useSearchEngine() {
-  const { options, pushPatternHistory, pushReplaceHistory, setFindResults, setIsSearching } =
-    useSearchStore()
+  const { options, pushPatternHistory, pushReplaceHistory, setFindResults, setIsSearching } = useSearchStore()
   const { buffers } = useEditorStore()
   const { addToast } = useUIStore()
 
@@ -555,48 +554,128 @@ export function useSearchEngine() {
     [getModel, findAllInModel, addToast]
   )
 
-  // ── Find in Files (main process IPC) ─────────────────────────────────────
-  const findInFiles = useCallback(
-    async (directory: string, fileFilter: string, isRecursive: boolean, overrideOpts?: Partial<SearchOptions>) => {
+  // ── Find in Files — streaming via Worker Thread ──────────────────────────
+  const findInFilesStreaming = useCallback(
+    (directory: string, fileFilter: string, isRecursive: boolean, overrideOpts?: Partial<SearchOptions>) => {
       const opts = { ...useSearchStore.getState().options, ...overrideOpts }
       if (!opts.pattern || !directory) return
 
       const built = buildSearchPattern(opts)
       if (!built) return
 
-      setIsSearching(true)
+      const searchId = `s_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
+      const api = (window.api as any)
+
+      // Cleanup any previous search listeners + cancel in-flight worker
+      api.off('search:chunk')
+      api.off('search:progress')
+      api.off('search:done')
+      const prevId = useSearchStore.getState().currentSearchId
+      if (prevId) {
+        api.search.cancel(prevId)
+      }
+
+      // Init store immediately (sync) — UI reacts right away
       pushPatternHistory(opts.pattern)
+      useSearchStore.getState().initSearch(opts.pattern, `directory:${directory}`)
+      useSearchStore.getState().setCurrentSearchId(searchId)
 
-      try {
-        const result = await (window.api as any).search.findInFiles({
-          pattern: built.pattern,
-          isRegex: built.isRegex,
-          isCaseSensitive: opts.isCaseSensitive,
-          isWholeWord: opts.isWholeWord,
-          directory,
-          fileFilter,
-          isRecursive
-        })
+      // Open results panel immediately
+      useUIStore.getState().setShowBottomPanel(true)
+      useUIStore.getState().setActiveBottomPanel('findResults')
 
-        const resultSet: FindResultSet = {
-          query: opts.pattern,
-          scope: `directory:${directory}`,
-          totalHits: result.totalHits,
-          files: result.files
+      const t0 = performance.now()
+
+      // Register listeners BEFORE calling start — no race condition
+      api.on('search:chunk', (payload: { searchId: string; file: FindResultFile }) => {
+        if (payload.searchId !== searchId) return
+        useSearchStore.getState().appendFindResultFile(payload.file)
+      })
+
+      api.on('search:progress', (payload: { searchId: string; scanned: number }) => {
+        if (payload.searchId !== searchId) return
+        useSearchStore.getState().setSearchProgress({ scanned: payload.scanned })
+      })
+
+      api.on('search:done', (payload: { searchId: string; totalHits?: number; durationMs?: number; error?: string }) => {
+        if (payload.searchId !== searchId) return
+
+        api.off('search:chunk')
+        api.off('search:progress')
+        api.off('search:done')
+        useSearchStore.getState().setCurrentSearchId(null)
+        useSearchStore.getState().setSearchProgress(null)
+        setIsSearching(false)
+
+        if (payload.error) {
+                    console.log(`Find in Files error: ${payload.error}`, payload)
+          addToast(`Find in Files error: ${payload.error}`, 'error')
+          return
         }
 
-        setFindResults(resultSet)
-        useUIStore.getState().setShowBottomPanel(true)
-        useUIStore.getState().setActiveBottomPanel('findResults')
-        addToast(`Found ${result.totalHits} match${result.totalHits !== 1 ? 'es' : ''} in ${result.files.length} file${result.files.length !== 1 ? 's' : ''}.`, 'info')
-      } catch (err) {
-        addToast('Find in Files failed.', 'error')
-      } finally {
+        const durationMs = Math.round(performance.now() - t0)
+        useSearchStore.setState((s) => ({
+          findResults: s.findResults
+            ? { ...s.findResults, searchDurationMs: durationMs, searchEngineLabel: 'Streaming' }
+            : null
+        }))
+
+        const rs = useSearchStore.getState().findResults
+        const hits = rs?.totalHits ?? 0
+        const files = rs?.files.length ?? 0
+        addToast(
+          `Found ${hits} match${hits !== 1 ? 'es' : ''} in ${files} file${files !== 1 ? 's' : ''}.`,
+          hits > 0 ? 'info' : 'warn'
+        )
+      })
+
+      // Fire search — returns immediately with { searchId } or { error }
+      api.search.start({
+        searchId,
+        pattern: built.pattern,
+        isRegex: built.isRegex,
+        isCaseSensitive: opts.isCaseSensitive,
+        isWholeWord: opts.isWholeWord,
+        directory,
+        fileFilter,
+        isRecursive
+      }).then((result: { error?: string }) => {
+        if (result?.error) {
+          api.off('search:chunk')
+          api.off('search:progress')
+          api.off('search:done')
+          useSearchStore.getState().setCurrentSearchId(null)
+          useSearchStore.getState().setSearchProgress(null)
+          setIsSearching(false)
+          addToast(`Find in Files: ${result.error}`, 'error')
+        }
+      }).catch((err: Error) => {
+        api.off('search:chunk')
+        api.off('search:progress')
+        api.off('search:done')
+        useSearchStore.getState().setCurrentSearchId(null)
+        useSearchStore.getState().setSearchProgress(null)
         setIsSearching(false)
-      }
+        addToast(`Find in Files failed: ${err.message}`, 'error')
+      })
     },
-    [pushPatternHistory, setFindResults, setIsSearching, addToast]
+    [pushPatternHistory, setIsSearching, addToast]
   )
+
+  const cancelFindInFiles = useCallback(() => {
+    const { currentSearchId } = useSearchStore.getState()
+    if (!currentSearchId) return
+
+    const api = (window.api as any)
+    api.search.cancel(currentSearchId)
+    api.off('search:chunk')
+    api.off('search:progress')
+    api.off('search:done')
+    useSearchStore.getState().setCurrentSearchId(null)
+    useSearchStore.getState().setSearchProgress(null)
+    setIsSearching(false)
+    addToast('Search cancelled.', 'info')
+  }, [setIsSearching, addToast])
 
   return {
     findNext,
@@ -609,6 +688,7 @@ export function useSearchEngine() {
     markAll,
     clearMarks,
     bookmarkLines,
-    findInFiles
+    findInFilesStreaming,
+    cancelFindInFiles
   }
 }

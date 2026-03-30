@@ -34,6 +34,13 @@ export interface FindResultSet {
   scope: string        // 'currentDoc' | 'allOpenDocs' | 'directory:...'
   totalHits: number
   files: FindResultFile[]
+  /** End-to-end time for directory search (Find in Files), ms */
+  searchDurationMs?: number
+  searchEngineLabel?: string
+}
+
+export interface SearchProgress {
+  scanned: number
 }
 
 const MAX_HISTORY = 20
@@ -43,8 +50,10 @@ interface SearchState {
   patternHistory: string[]
   replaceHistory: string[]
   findResults: FindResultSet | null
-  markStyleIndex: number           // 0-4, active mark style for Mark tab
-  isSearching: boolean             // for Find in Files loading state
+  markStyleIndex: number
+  isSearching: boolean
+  searchProgress: SearchProgress | null
+  currentSearchId: string | null
 
   setOptions: (patch: Partial<SearchOptions>) => void
   pushPatternHistory: (p: string) => void
@@ -52,6 +61,12 @@ interface SearchState {
   setFindResults: (r: FindResultSet | null) => void
   setMarkStyleIndex: (i: number) => void
   setIsSearching: (v: boolean) => void
+  setSearchProgress: (p: SearchProgress | null) => void
+  setCurrentSearchId: (id: string | null) => void
+  /** Reset results to empty state and set isSearching=true before a streaming search */
+  initSearch: (query: string, scope: string) => void
+  /** Append a single file result (used during streaming) */
+  appendFindResultFile: (file: FindResultFile) => void
 }
 
 export const useSearchStore = create<SearchState>((set) => ({
@@ -71,6 +86,8 @@ export const useSearchStore = create<SearchState>((set) => ({
   findResults: null,
   markStyleIndex: 0,
   isSearching: false,
+  searchProgress: null,
+  currentSearchId: null,
 
   setOptions: (patch) =>
     set((s) => ({ options: { ...s.options, ...patch } })),
@@ -87,5 +104,26 @@ export const useSearchStore = create<SearchState>((set) => ({
 
   setFindResults: (r) => set({ findResults: r }),
   setMarkStyleIndex: (i) => set({ markStyleIndex: i }),
-  setIsSearching: (v) => set({ isSearching: v })
+  setIsSearching: (v) => set({ isSearching: v }),
+  setSearchProgress: (p) => set({ searchProgress: p }),
+  setCurrentSearchId: (id) => set({ currentSearchId: id }),
+
+  initSearch: (query, scope) =>
+    set({
+      findResults: { query, scope, totalHits: 0, files: [] },
+      isSearching: true,
+      searchProgress: { scanned: 0 }
+    }),
+
+  appendFindResultFile: (file) =>
+    set((s) => {
+      if (!s.findResults) return s
+      return {
+        findResults: {
+          ...s.findResults,
+          totalHits: s.findResults.totalHits + file.results.length,
+          files: [...s.findResults.files, file]
+        }
+      }
+    })
 }))
