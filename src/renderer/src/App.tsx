@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react'
 import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels'
 import { EditorPane } from './components/EditorPane/EditorPane'
+import { WelcomeScreen } from './components/WelcomeScreen/WelcomeScreen'
 import { TabBar } from './components/TabBar/TabBar'
 import { TopAppBar } from './components/TopAppBar/TopAppBar'
 import { SideNav } from './components/SideNav/SideNav'
@@ -19,10 +20,11 @@ import { useUIStore } from './store/uiStore'
 import { usePluginStore } from './store/pluginStore'
 import { useConfigStore } from './store/configStore'
 import { useFileOps } from './hooks/useFileOps'
+import { editorRegistry } from './utils/editorRegistry'
 import styles from './App.module.css'
 
 export default function App() {
-  const { activeId } = useEditorStore()
+  const { activeId, buffers } = useEditorStore()
   const { theme, showToolbar, showStatusBar, showBottomPanel, showSidebar, openFind } = useUIStore()
   const { openFiles, newFile, saveBuffer, saveActiveAs, closeBuffer, reloadBuffer } = useFileOps()
   const editorRef = useRef<{ focus: () => void } | null>(null)
@@ -67,8 +69,16 @@ export default function App() {
       const id = useEditorStore.getState().activeId
       if (id) reloadBuffer(id)
     })
-    window.api.on('menu:find', () => useUIStore.getState().openFind('find'))
-    window.api.on('menu:replace', () => useUIStore.getState().openFind('replace'))
+    const getEditorSelection = () => {
+      const editor = editorRegistry.get()
+      if (!editor) return ''
+      const sel = editor.getSelection()
+      if (!sel) return ''
+      const text = editor.getModel()?.getValueInRange(sel) ?? ''
+      return text.includes('\n') ? '' : text.trim()
+    }
+    window.api.on('menu:find', () => useUIStore.getState().openFind('find', getEditorSelection()))
+    window.api.on('menu:replace', () => useUIStore.getState().openFind('replace', getEditorSelection()))
     window.api.on('menu:find-in-files', () => useUIStore.getState().openFind('findInFiles'))
     window.api.on('menu:folder-open', (...args) => {
       const folder = args[0] as string
@@ -195,15 +205,9 @@ export default function App() {
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // On startup: open with new untitled file if nothing loaded; fetch plugin list
+  // On startup: fetch plugin list (welcome screen shown when no buffers)
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (useEditorStore.getState().buffers.length === 0) {
-        newFile()
-      }
-    }, 800)
     usePluginStore.getState().fetchPlugins()
-    return () => clearTimeout(timer)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // AutoSave: save dirty buffers on interval when enabled
@@ -262,7 +266,15 @@ export default function App() {
                 <div className={styles.editorColumn}>
                   <TabBar onClose={closeBuffer} onNewFile={newFile} />
                   <div className={styles.editorArea}>
-                    <EditorPane activeId={activeId} />
+                    {buffers.length === 0 ? (
+                      <WelcomeScreen
+                        onNewFile={newFile}
+                        onOpenFile={() => openFileInput.current?.click()}
+                        onOpenRecent={openFiles}
+                      />
+                    ) : (
+                      <EditorPane activeId={activeId} />
+                    )}
                   </div>
                 </div>
               </Panel>
@@ -281,7 +293,7 @@ export default function App() {
         </PanelGroup>
       </div>
 
-      {showStatusBar && <StatusBar />}
+      {showStatusBar && buffers.length > 0 && <StatusBar />}
 
       <FindReplaceDialog />
       <PluginManagerDialog />

@@ -1,8 +1,5 @@
 import React, { useRef } from 'react'
-import {
-  FilePlus, FolderOpen, Save, Files,
-  Printer, X, Search
-} from 'lucide-react'
+import { Undo2, Redo2, Search } from 'lucide-react'
 import { Tooltip } from '../Tooltip/Tooltip'
 import styles from './TopAppBar.module.css'
 
@@ -17,17 +14,7 @@ interface TopAppBarProps {
 
 const isMac = window.api.platform === 'darwin'
 
-const Btn: React.FC<{ tip: string; onClick: () => void; children: React.ReactNode }> = ({ tip, onClick, children }) => (
-  <Tooltip text={tip}>
-    <button className={styles.btn} onClick={onClick}>
-      {children}
-    </button>
-  </Tooltip>
-)
-
-export const TopAppBar: React.FC<TopAppBarProps> = ({
-  onNew, onOpen, onSave, onSaveAll, onFind, onClose
-}) => {
+export const TopAppBar: React.FC<TopAppBarProps> = ({ onFind }) => {
   const searchRef = useRef<HTMLInputElement>(null)
 
   const handleSearchKey = (e: React.KeyboardEvent) => {
@@ -44,33 +31,36 @@ export const TopAppBar: React.FC<TopAppBarProps> = ({
     <header className={styles.topbar} data-testid="topbar">
       {isMac && <div className={styles.trafficSpacer} />}
 
-      <div className={styles.brand}>
-        <span className={styles.brandName}>Digital Artisan Editor</span>
-      </div>
-
+      {/* Undo / Redo */}
       <div className={styles.actions}>
-        <Btn tip="New (Ctrl+N)" onClick={onNew}><FilePlus size={18} /></Btn>
-        <Btn tip="Open (Ctrl+O)" onClick={onOpen}><FolderOpen size={18} /></Btn>
-        <Btn tip="Save (Ctrl+S)" onClick={onSave}><Save size={18} /></Btn>
-        <Btn tip="Save All (Ctrl+Alt+S)" onClick={onSaveAll}><Files size={18} /></Btn>
-        <div className={styles.divider} />
-        <Btn tip="Print" onClick={() => {}}><Printer size={18} /></Btn>
-        <Btn tip="Close tab (Ctrl+W)" onClick={onClose}><X size={18} /></Btn>
+        <Tooltip text="Undo (Ctrl+Z)">
+          <button className={styles.btn} onClick={() => window.dispatchEvent(new CustomEvent('editor:undo'))}>
+            <Undo2 size={15} />
+          </button>
+        </Tooltip>
+        <Tooltip text="Redo (Ctrl+Y)">
+          <button className={styles.btn} onClick={() => window.dispatchEvent(new CustomEvent('editor:redo'))}>
+            <Redo2 size={15} />
+          </button>
+        </Tooltip>
       </div>
 
       <div className={styles.spacer} />
 
+      {/* Centered search */}
       <div className={styles.searchWrap}>
         <div className={styles.searchInput} onClick={() => searchRef.current?.focus()}>
-          <Search size={14} className={styles.searchIcon} />
+          <Search size={13} className={styles.searchIcon} />
           <input
             ref={searchRef}
             type="text"
-            placeholder="Quick search..."
+            placeholder="Search"
             onKeyDown={handleSearchKey}
           />
         </div>
       </div>
+
+      <div className={styles.spacer} />
     </header>
   )
 }

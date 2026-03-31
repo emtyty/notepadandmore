@@ -1,7 +1,7 @@
 .topbar {
   display: flex;
   align-items: center;
-  height: 64px;
+  height: 40px;
   background: rgba(15, 15, 15, 0.92);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -50,7 +50,7 @@
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 0 8px;
+  padding: 0 6px;
   -webkit-app-region: no-drag;
   flex-shrink: 0;
 }
@@ -59,11 +59,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   background: none;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
   color: var(--toolbar-icon);
   transition: background 0.2s, color 0.2s, transform 0.1s;
@@ -85,28 +85,35 @@
   -webkit-app-region: drag;
 }
 
+/* Centered search — absolutely positioned so it stays in the middle
+   regardless of what's on left/right */
 .searchWrap {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
-  padding: 0 16px;
   -webkit-app-region: no-drag;
+  pointer-events: all;
 }
 
 .searchInput {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: var(--surface-highest);
-  border: 1px solid transparent;
-  border-radius: 999px;
-  padding: 6px 14px 6px 10px;
-  min-width: 180px;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 8px;
+  padding: 4px 16px;
+  width: 300px;
   cursor: text;
-  transition: border-color 0.2s;
+  transition: border-color 0.15s, background 0.15s;
 }
 
 .searchInput:focus-within {
-  border-color: var(--accent);
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.10);
 }
 
 .searchIcon {
@@ -119,11 +126,17 @@
   border: none;
   outline: none;
   color: var(--text);
-  font-size: 12px;
+  font-size: 13px;
   font-family: 'Inter', sans-serif;
   width: 100%;
+  text-align: center;
 }
 
 .searchInput input::placeholder {
   color: var(--text-muted);
+  text-align: center;
+}
+
+.searchInput input:focus::placeholder {
+  color: transparent;
 }

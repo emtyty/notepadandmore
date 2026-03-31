@@ -169,11 +169,18 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
     editorRegistry.set(editor)
 
     // Override Monaco's built-in Cmd+F / Ctrl+H to use our custom dialog
+    // Pre-fill with current selection if it's a single-line non-empty string
+    const getSelectionText = () => {
+      const sel = editor.getSelection()
+      if (!sel) return ''
+      const text = editor.getModel()?.getValueInRange(sel) ?? ''
+      return text.includes('\n') ? '' : text.trim()
+    }
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyF, () => {
-      useUIStore.getState().openFind('find')
+      useUIStore.getState().openFind('find', getSelectionText())
     })
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyH, () => {
-      useUIStore.getState().openFind('replace')
+      useUIStore.getState().openFind('replace', getSelectionText())
     })
 
     // Track content changes -> mark dirty

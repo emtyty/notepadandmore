@@ -153,7 +153,7 @@ function SearchOptionsPanel({ showInSelection }: SearchOptionsProps) {
 
 // ─── Main dialog ──────────────────────────────────────────────────────────────
 export function FindReplaceDialog() {
-  const { showFindReplace, findReplaceMode, closeFind } = useUIStore()
+  const { showFindReplace, findReplaceMode, closeFind, findInitialTerm } = useUIStore()
   const { options, setOptions, patternHistory, replaceHistory, markStyleIndex, setMarkStyleIndex, isSearching, searchProgress, currentSearchId } =
     useSearchStore()
   const engine = useSearchEngine()
@@ -223,12 +223,18 @@ export function FindReplaceDialog() {
 
   const findInputRef = useRef<HTMLInputElement>(null)
 
-  // Auto-focus pattern input on open
+  // Auto-focus pattern input on open; pre-fill with selection if provided
   useEffect(() => {
     if (showFindReplace) {
-      setTimeout(() => findInputRef.current?.focus(), 50)
+      if (findInitialTerm) {
+        setOptions({ pattern: findInitialTerm })
+      }
+      setTimeout(() => {
+        findInputRef.current?.focus()
+        findInputRef.current?.select()
+      }, 50)
     }
-  }, [showFindReplace])
+  }, [showFindReplace]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!showFindReplace) return null
 

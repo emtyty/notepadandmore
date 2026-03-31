@@ -11,10 +11,11 @@ interface UIState {
   showToolbar: boolean
   showStatusBar: boolean
   showSidebar: boolean
-  sidebarPanel: 'files' | 'project' | 'docmap' | 'functions'
+  sidebarPanel: 'files' | 'search' | 'plugins'
   workspaceFolder: string | null
   showFindReplace: boolean
   findReplaceMode: 'find' | 'replace' | 'findInFiles'
+  findInitialTerm: string
   showPreferences: boolean
   showPluginManager: boolean
   showUDLEditor: boolean
@@ -35,7 +36,7 @@ interface UIState {
   setShowSidebar: (v: boolean) => void
   setSidebarPanel: (p: UIState['sidebarPanel']) => void
   setWorkspaceFolder: (path: string | null) => void
-  openFind: (mode?: 'find' | 'replace' | 'findInFiles') => void
+  openFind: (mode?: 'find' | 'replace' | 'findInFiles', initialTerm?: string) => void
   closeFind: () => void
   setShowPreferences: (v: boolean) => void
   setShowPluginManager: (v: boolean) => void
@@ -60,6 +61,7 @@ export const useUIStore = create<UIState>((set) => ({
   workspaceFolder: null,
   showFindReplace: false,
   findReplaceMode: 'find',
+  findInitialTerm: '',
   showPreferences: false,
   showPluginManager: false,
   showUDLEditor: false,
@@ -80,7 +82,7 @@ export const useUIStore = create<UIState>((set) => ({
   setShowSidebar: (v) => set({ showSidebar: v }),
   setSidebarPanel: (p) => set({ sidebarPanel: p }),
   setWorkspaceFolder: (path) => set({ workspaceFolder: path }),
-  openFind: (mode = 'find') => set({ showFindReplace: true, findReplaceMode: mode }),
+  openFind: (mode = 'find', initialTerm = '') => set({ showFindReplace: true, findReplaceMode: mode, findInitialTerm: initialTerm }),
   closeFind: () => set({ showFindReplace: false }),
   setShowPreferences: (v) => set({ showPreferences: v }),
   setShowPluginManager: (v) => set({ showPluginManager: v }),

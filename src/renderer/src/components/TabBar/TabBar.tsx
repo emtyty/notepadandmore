@@ -66,6 +66,8 @@ export const TabBar: React.FC<TabBarProps> = ({ onClose, onNewFile }) => {
     closeContextMenu()
   }
 
+  if (buffers.length === 0) return null
+
   return (
     <>
       <div className={styles.tabBar} data-testid="tabbar" onClick={closeContextMenu}>
@@ -96,26 +98,14 @@ export const TabBar: React.FC<TabBarProps> = ({ onClose, onNewFile }) => {
           </div>
         ))}
 
-        {buffers.length === 0 ? (
-          <div
-            className={`${styles.empty} ${styles.tabFiller}`}
-            data-testid="tabbar-filler"
-            onClick={() => onNewFile?.()}
-            title="New file"
-            role="button"
-          >
-            No files open
-          </div>
-        ) : (
-          <div
-            className={styles.tabFiller}
-            data-testid="tabbar-filler"
-            onClick={() => onNewFile?.()}
-            title="New file"
-            role="button"
-            aria-label="New file"
-          />
-        )}
+        <div
+          className={styles.tabFiller}
+          data-testid="tabbar-filler"
+          onClick={() => onNewFile?.()}
+          title="New file"
+          role="button"
+          aria-label="New file"
+        />
       </div>
 
       {contextMenu && (

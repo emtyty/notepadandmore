@@ -1,7 +1,7 @@
 .sidenav {
   display: flex;
   flex-direction: column;
-  width: 80px;
+  width: 48px;
   height: 100%;
   background: var(--sidenav-bg);
   border-right: 1px solid rgba(255, 255, 255, 0.05);
@@ -36,6 +36,16 @@
   flex: 1;
   gap: 2px;
   padding: 4px 0;
+  min-height: 0;
+}
+
+.navFooter {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  margin-top: auto;
+  padding-bottom: 8px;
+  gap: 2px;
 }
 
 .navBtn {
@@ -44,21 +54,20 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  padding: 10px 0;
+  padding: 8px 0;
   background: none;
   border: none;
   border-left: 2px solid transparent;
   cursor: pointer;
   color: var(--outline);
   transition: color 0.2s, background 0.2s, transform 0.2s, border-color 0.2s;
-  gap: 4px;
-  min-height: 60px;
+  min-height: 44px;
 }
 
 .navBtn:hover {
   color: var(--text);
   background: var(--surface);
-  transform: translateX(2px);
+  transform: translateX(1px);
 }
 
 .navBtn.active {
@@ -75,35 +84,3 @@
   letter-spacing: 0.08em;
 }
 
-.bottomActions {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 10px 0 14px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  flex-shrink: 0;
-}
-
-.iconBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  background: none;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  color: var(--outline);
-  transition: color 0.2s, background 0.2s;
-}
-
-.iconBtn:hover {
-  color: var(--text);
-  background: var(--surface);
-}
-
-.iconBtn:active {
-  background: var(--surface-high);
-}
