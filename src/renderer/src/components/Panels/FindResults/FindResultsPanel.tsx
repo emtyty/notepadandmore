@@ -1,10 +1,19 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useMemo, useRef } from 'react'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { useSearchStore, FindResultLine, FindResultFile } from '../../../store/searchStore'
 import { useEditorStore } from '../../../store/editorStore'
 import { useFileOps } from '../../../hooks/useFileOps'
 import { editorRegistry } from '../../../utils/editorRegistry'
 import * as monaco from 'monaco-editor'
 import styles from './FindResultsPanel.module.css'
+
+// ─── Row types for flat virtual list ─────────────────────────────────────────
+type Row =
+  | { kind: 'file-header'; file: FindResultFile; hitCount: number; fileIndex: number }
+  | { kind: 'result-line'; file: FindResultFile; result: FindResultLine }
+
+const ROW_HEIGHT_HEADER = 28
+const ROW_HEIGHT_LINE = 22
 
 // ─── Highlight match text within a line ──────────────────────────────────────
 function HighlightedLine({
@@ -20,7 +29,6 @@ function HighlightedLine({
   const match = lineText.slice(column - 1, endColumn - 1)
   const after = lineText.slice(endColumn - 1)
 
-  // Trim very long lines
   const MAX = 200
   const trimmed = lineText.length > MAX
   const displayBefore = trimmed ? before.slice(-60) : before
@@ -37,73 +45,55 @@ function HighlightedLine({
   )
 }
 
-// ─── Single result line ───────────────────────────────────────────────────────
-function ResultLineItem({
-  result,
-  file,
-  onNavigate
-}: {
-  result: FindResultLine
-  file: FindResultFile
-  onNavigate: (file: FindResultFile, line: number, col: number) => void
-}) {
-  return (
-    <div
-      className={styles.resultLine}
-      onClick={() => onNavigate(file, result.lineNumber, result.column)}
-      title={`${file.filePath ?? file.title}:${result.lineNumber}:${result.column}`}
-    >
-      <span className={styles.lineNum}>{result.lineNumber}</span>
-      <HighlightedLine
-        lineText={result.lineText}
-        column={result.column}
-        endColumn={result.endColumn}
-      />
-    </div>
-  )
-}
-
-// ─── File group ───────────────────────────────────────────────────────────────
-function FileGroup({
-  file,
-  onNavigate
-}: {
-  file: FindResultFile
-  onNavigate: (file: FindResultFile, line: number, col: number) => void
-}) {
-  const [collapsed, setCollapsed] = useState(false)
-
-  return (
-    <div className={styles.fileGroup}>
-      <div className={styles.fileHeader} onClick={() => setCollapsed((v) => !v)}>
-        <span className={styles.toggle}>{collapsed ? '▶' : '▼'}</span>
-        <span className={styles.filePath} title={file.filePath ?? file.title}>
-          {file.filePath ?? file.title}
-        </span>
-        <span className={styles.fileCount}>
-          ({file.results.length} hit{file.results.length !== 1 ? 's' : ''})
-        </span>
-      </div>
-      {!collapsed && file.results.map((r, i) => (
-        <ResultLineItem key={i} result={r} file={file} onNavigate={onNavigate} />
-      ))}
-    </div>
-  )
-}
-
 // ─── Main panel ───────────────────────────────────────────────────────────────
 export function FindResultsPanel() {
   const { findResults, isSearching, searchProgress } = useSearchStore()
   const { buffers, setActive } = useEditorStore()
   const { openFiles } = useFileOps()
 
+  // Track collapsed file groups by filePath (or title as fallback)
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+
+  const toggleCollapse = useCallback((key: string) => {
+    setCollapsed((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }, [])
+
+  // Flatten files + result lines into a single Row array for the virtualizer
+  const rows = useMemo<Row[]>(() => {
+    if (!findResults) return []
+    const out: Row[] = []
+    for (let i = 0; i < findResults.files.length; i++) {
+      const file = findResults.files[i]
+      const key = file.filePath ?? file.title
+      out.push({ kind: 'file-header', file, hitCount: file.results.length, fileIndex: i })
+      if (!collapsed.has(key)) {
+        for (const result of file.results) {
+          out.push({ kind: 'result-line', file, result })
+        }
+      }
+    }
+    return out
+  }, [findResults, collapsed])
+
+  const parentRef = useRef<HTMLDivElement>(null)
+
+  const virtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: (i) => rows[i].kind === 'file-header' ? ROW_HEIGHT_HEADER : ROW_HEIGHT_LINE,
+    overscan: 10,
+  })
+
   const handleNavigate = useCallback(
     async (file: FindResultFile, lineNumber: number, column: number) => {
-      // If there's a bufferId, switch to that buffer
       if (file.bufferId) {
         setActive(file.bufferId)
       } else if (file.filePath) {
-        // Open the file
         const existing = buffers.find((b) => b.filePath === file.filePath)
         if (existing) {
           setActive(existing.id)
@@ -112,8 +102,6 @@ export function FindResultsPanel() {
         }
       }
 
-      // Navigate to the line/column in the editor
-      // Use a small delay to let the model swap complete
       setTimeout(() => {
         const editor = editorRegistry.get()
         if (!editor) return
@@ -158,13 +146,53 @@ export function FindResultsPanel() {
         </div>
       </div>
 
-      <div className={styles.body}>
+      <div className={styles.body} ref={parentRef}>
         {!findResults || findResults.files.length === 0 ? (
           <div className={styles.empty}>{isSearching ? 'Searching…' : 'No results.'}</div>
         ) : (
-          findResults.files.map((file, i) => (
-            <FileGroup key={i} file={file} onNavigate={handleNavigate} />
-          ))
+          <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+            {virtualizer.getVirtualItems().map((vItem) => {
+              const row = rows[vItem.index]
+
+              if (row.kind === 'file-header') {
+                const key = row.file.filePath ?? row.file.title
+                const isCollapsed = collapsed.has(key)
+                return (
+                  <div
+                    key={vItem.key}
+                    style={{ position: 'absolute', top: vItem.start, left: 0, right: 0, height: ROW_HEIGHT_HEADER }}
+                    className={styles.fileHeader}
+                    onClick={() => toggleCollapse(key)}
+                    title={row.file.filePath ?? row.file.title}
+                  >
+                    <span className={styles.toggle}>{isCollapsed ? '▶' : '▼'}</span>
+                    <span className={styles.filePath}>{row.file.filePath ?? row.file.title}</span>
+                    <span className={styles.fileCount}>
+                      ({row.hitCount} hit{row.hitCount !== 1 ? 's' : ''})
+                    </span>
+                  </div>
+                )
+              }
+
+              // result-line
+              return (
+                <div
+                  key={vItem.key}
+                  style={{ position: 'absolute', top: vItem.start, left: 0, right: 0, height: ROW_HEIGHT_LINE }}
+                  className={styles.resultLine}
+                  onClick={() => handleNavigate(row.file, row.result.lineNumber, row.result.column)}
+                  title={`${row.file.filePath ?? row.file.title}:${row.result.lineNumber}:${row.result.column}`}
+                >
+                  <span className={styles.lineNum}>{row.result.lineNumber}</span>
+                  <HighlightedLine
+                    lineText={row.result.lineText}
+                    column={row.result.column}
+                    endColumn={row.result.endColumn}
+                  />
+                </div>
+              )
+            })}
+          </div>
         )}
       </div>
     </div>

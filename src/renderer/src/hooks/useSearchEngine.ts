@@ -555,6 +555,9 @@ export function useSearchEngine() {
   )
 
   // ── Find in Files — streaming via Worker Thread ──────────────────────────
+  const chunkBufferRef = useRef<FindResultFile[]>([])
+  const flushTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
   const findInFilesStreaming = useCallback(
     (directory: string, fileFilter: string, isRecursive: boolean, overrideOpts?: Partial<SearchOptions>) => {
       const opts = { ...useSearchStore.getState().options, ...overrideOpts }
@@ -575,6 +578,13 @@ export function useSearchEngine() {
         api.search.cancel(prevId)
       }
 
+      // Clear any pending batch flush
+      if (flushTimerRef.current) {
+        clearInterval(flushTimerRef.current)
+        flushTimerRef.current = null
+      }
+      chunkBufferRef.current = []
+
       // Init store immediately (sync) — UI reacts right away
       pushPatternHistory(opts.pattern)
       useSearchStore.getState().initSearch(opts.pattern, `directory:${directory}`)
@@ -585,15 +595,36 @@ export function useSearchEngine() {
       useUIStore.getState().setActiveBottomPanel('findResults')
 
       const t0 = performance.now()
+      let chunkCount = 0
+      let flushCount = 0
+
+      console.log(`[Renderer][${searchId}] START pattern="${opts.pattern}" dir="${directory}"`)
+
+      // Flush buffered chunks to the store in one batch update
+      const flushBuffer = () => {
+        const batch = chunkBufferRef.current.splice(0)
+        if (batch.length > 0) {
+          flushCount++
+          const tFlush = performance.now()
+          useSearchStore.getState().appendFindResultFiles(batch)
+          const flushMs = Math.round(performance.now() - tFlush)
+          console.log(`[Renderer][${searchId}] flush #${flushCount}: ${batch.length} files, storeUpdate=${flushMs}ms, totalChunks=${chunkCount}`)
+        }
+      }
+
+      // Batch flush every 200ms → reduces re-renders from N files → ~N/rate
+      flushTimerRef.current = setInterval(flushBuffer, 200)
 
       // Register listeners BEFORE calling start — no race condition
       api.on('search:chunk', (payload: { searchId: string; file: FindResultFile }) => {
         if (payload.searchId !== searchId) return
-        useSearchStore.getState().appendFindResultFile(payload.file)
+        chunkCount++
+        chunkBufferRef.current.push(payload.file)
       })
 
       api.on('search:progress', (payload: { searchId: string; scanned: number }) => {
         if (payload.searchId !== searchId) return
+        console.log(`[Renderer][${searchId}] progress: scanned=${payload.scanned} elapsed=${Math.round(performance.now()-t0)}ms`)
         useSearchStore.getState().setSearchProgress({ scanned: payload.scanned })
       })
 
@@ -603,6 +634,14 @@ export function useSearchEngine() {
         api.off('search:chunk')
         api.off('search:progress')
         api.off('search:done')
+
+        // Stop batch timer and flush any remaining buffered chunks
+        if (flushTimerRef.current) {
+          clearInterval(flushTimerRef.current)
+          flushTimerRef.current = null
+        }
+        flushBuffer()
+
         useSearchStore.getState().setCurrentSearchId(null)
         useSearchStore.getState().setSearchProgress(null)
         setIsSearching(false)
@@ -614,6 +653,7 @@ export function useSearchEngine() {
         }
 
         const durationMs = Math.round(performance.now() - t0)
+        console.log(`[Renderer][${searchId}] DONE totalChunks=${chunkCount} flushes=${flushCount} totalMs=${durationMs}ms workerMs=${payload.durationMs}ms`)
         useSearchStore.setState((s) => ({
           findResults: s.findResults
             ? { ...s.findResults, searchDurationMs: durationMs, searchEngineLabel: 'Streaming' }
@@ -671,6 +711,13 @@ export function useSearchEngine() {
     api.off('search:chunk')
     api.off('search:progress')
     api.off('search:done')
+
+    if (flushTimerRef.current) {
+      clearInterval(flushTimerRef.current)
+      flushTimerRef.current = null
+    }
+    chunkBufferRef.current = []
+
     useSearchStore.getState().setCurrentSearchId(null)
     useSearchStore.getState().setSearchProgress(null)
     setIsSearching(false)

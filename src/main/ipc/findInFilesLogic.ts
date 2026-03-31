@@ -32,7 +32,7 @@ export const FIND_IN_FILES_MAX_PER_FILE = 500
 /** Yield to the event loop every N directory visits while walking. */
 const ASYNC_YIELD_EVERY_DIRS = 64
 /** Concurrent file reads in streaming search. */
-export const FIND_IN_FILES_V2_CONCURRENCY = 6
+export const FIND_IN_FILES_V2_CONCURRENCY = 16
 
 export function parseFilter(filter: string): RegExp {
   if (!filter || filter === '*' || filter === '*.*') return /.*/
@@ -86,24 +86,51 @@ export async function* collectFilesAsync(
   yield* walk(dir)
 }
 
-function searchContent(content: string, re: RegExp): FindResultLine[] {
-  if (content.slice(0, 8192).includes('\0')) return []
+/**
+ * Fast encoding detection with binary-file guard.
+ * Returns null if the file looks binary (should be skipped).
+ * Avoids running chardet on the full buffer — uses a 4KB sample instead.
+ */
+function detectEncodingFast(raw: Buffer): string | null {
+  const checkLen = Math.min(raw.length, 4096)
+  // Binary check: null byte in first 4KB → skip
+  for (let i = 0; i < checkLen; i++) {
+    if (raw[i] === 0) return null
+  }
+  // ASCII fast-path: no byte > 127 in first 1KB → definitely UTF-8
+  const asciiLen = Math.min(raw.length, 1024)
+  for (let i = 0; i < asciiLen; i++) {
+    if (raw[i] > 127) {
+      // Has multi-byte chars → run chardet on 4KB sample only
+      return chardet.detect(raw.slice(0, 4096)) || 'UTF-8'
+    }
+  }
+  return 'UTF-8'
+}
 
-  const lines = content.split(/\r?\n/)
+function searchContent(content: string, re: RegExp): FindResultLine[] {
   const results: FindResultLine[] = []
   const maxPer = FIND_IN_FILES_MAX_PER_FILE
+  const len = content.length
+  let lineStart = 0
+  let lineNumber = 1
 
-  for (let i = 0; i < lines.length && results.length < maxPer; i++) {
-    const line = lines[i]
+  while (lineStart <= len && results.length < maxPer) {
+    let lineEnd = content.indexOf('\n', lineStart)
+    if (lineEnd === -1) lineEnd = len
+
+    // Strip trailing \r for \r\n line endings
+    const crAdjust = lineEnd > lineStart && content[lineEnd - 1] === '\r' ? 1 : 0
+    const lineText = content.slice(lineStart, lineEnd - crAdjust)
+
     re.lastIndex = 0
-
     let match: RegExpExecArray | null
-    while ((match = re.exec(line)) !== null) {
+    while ((match = re.exec(lineText)) !== null) {
       results.push({
-        lineNumber: i + 1,
+        lineNumber,
         column: match.index + 1,
         endColumn: match.index + match[0].length + 1,
-        lineText: line.length > 500 ? line.slice(0, 500) + '…' : line,
+        lineText: lineText.length > 500 ? lineText.slice(0, 500) + '…' : lineText,
         matchText: match[0]
       })
 
@@ -113,15 +140,20 @@ function searchContent(content: string, re: RegExp): FindResultLine[] {
 
       if (!re.global) break
     }
+
+    lineStart = lineEnd + 1
+    lineNumber++
   }
 
   return results
 }
 
 export function searchBuffer(raw: Buffer, re: RegExp): FindResultLine[] {
+  const encoding = detectEncodingFast(raw)
+  if (encoding === null) return []  // binary file
+
   let content: string
   try {
-    const encoding = chardet.detect(raw) || 'UTF-8'
     content = iconv.decode(raw, encoding)
   } catch {
     return []

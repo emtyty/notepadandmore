@@ -24,6 +24,7 @@
     "@fontsource/inter": "^5.2.8",
     "@fontsource/space-grotesk": "^5.2.10",
     "@monaco-editor/react": "^4.6.0",
+    "@tanstack/react-virtual": "^3.13.23",
     "chardet": "^2.0.0",
     "chokidar": "^4.0.3",
     "fast-xml-parser": "^4.5.1",

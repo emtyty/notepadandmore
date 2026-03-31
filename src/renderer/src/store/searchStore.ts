@@ -67,6 +67,8 @@ interface SearchState {
   initSearch: (query: string, scope: string) => void
   /** Append a single file result (used during streaming) */
   appendFindResultFile: (file: FindResultFile) => void
+  /** Append multiple file results in one update (batch flush) */
+  appendFindResultFiles: (files: FindResultFile[]) => void
 }
 
 export const useSearchStore = create<SearchState>((set) => ({
@@ -125,5 +127,19 @@ export const useSearchStore = create<SearchState>((set) => ({
           files: [...s.findResults.files, file]
         }
       }
+    }),
+
+  appendFindResultFiles: (files) =>
+    set((s) => {
+      if (!s.findResults || files.length === 0) return s
+      const addedHits = files.reduce((sum, f) => sum + f.results.length, 0)
+      return {
+        findResults: {
+          ...s.findResults,
+          totalHits: s.findResults.totalHits + addedHits,
+          files: [...s.findResults.files, ...files]
+        }
+      }
     })
-}))
+})
+)

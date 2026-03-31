@@ -31,6 +31,8 @@ async function run(): Promise<void> {
   const { searchId, opts, progressEvery } = workerData as WorkerInput
   const t0 = Date.now()
 
+  console.log(`[Worker][${searchId}] START pattern="${opts.pattern}" dir="${opts.directory}"`)
+
   const re = buildRegExp(opts)
   if (!re) {
     send({ type: 'error', searchId, message: 'Invalid search pattern' })
@@ -43,29 +45,28 @@ async function run(): Promise<void> {
   let totalHits = 0
   let totalFiles = 0
 
-  // Feed files into a bounded queue so FIND_IN_FILES_V2_CONCURRENCY workers
-  // process them in parallel without loading all paths into memory at once.
   const queue: string[] = []
   let done = false
-  let resolveWaiter: (() => void) | null = null
+  const waiters: Array<() => void> = []
 
-  // Producer: iterate the async generator and push paths into the queue
+  // Producer: walk directory and push file paths into the queue
   const producer = (async () => {
     for await (const fp of collectFilesAsync(opts.directory, filterRe, opts.isRecursive)) {
       queue.push(fp)
-      resolveWaiter?.()
-      resolveWaiter = null
+      // Wake one waiting consumer if any
+      if (waiters.length > 0) waiters.shift()!()
     }
     done = true
-    resolveWaiter?.()
-    resolveWaiter = null
+    // Wake all remaining consumers so they can exit
+    while (waiters.length > 0) waiters.shift()!()
+    console.log(`[Worker][${searchId}] COLLECT done: ${queue.length + scanned} files in ${Date.now() - t0}ms`)
   })()
 
   // Consumer: pull from queue, read + search each file
   async function consumer(): Promise<void> {
     for (;;) {
       while (queue.length === 0 && !done) {
-        await new Promise<void>((resolve) => { resolveWaiter = resolve })
+        await new Promise<void>((resolve) => waiters.push(resolve))
       }
       if (queue.length === 0 && done) return
 
@@ -100,7 +101,10 @@ async function run(): Promise<void> {
   const consumers = Array.from({ length: FIND_IN_FILES_V2_CONCURRENCY }, () => consumer())
   await Promise.all([producer, ...consumers])
 
-  send({ type: 'done', searchId, totalHits, totalFiles, durationMs: Date.now() - t0 })
+  const totalMs = Date.now() - t0
+  console.log(`[Worker][${searchId}] DONE scanned=${scanned} hits=${totalHits} files=${totalFiles} totalMs=${totalMs}ms`)
+
+  send({ type: 'done', searchId, totalHits, totalFiles, durationMs: totalMs })
 }
 
 run().catch((err: Error) => {
