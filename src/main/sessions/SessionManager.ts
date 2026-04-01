@@ -4,13 +4,14 @@ import * as path from 'path'
 
 interface SessionFile {
   filePath: string
-  cursorLine: number
-  cursorColumn: number
-  scrollTop: number
   language: string
+  encoding: string
+  eol: string
+  viewState: object | null
 }
 
 interface Session {
+  version: number
   files: SessionFile[]
   activeIndex: number
   workspaceFolder?: string
@@ -41,6 +42,10 @@ export class SessionManager {
       const sp = this.getSessionPath()
       const dir = path.dirname(sp)
       if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
+      // Backup existing session before overwriting
+      if (fs.existsSync(sp)) {
+        try { fs.copyFileSync(sp, sp + '.bak') } catch { /* ignore backup failure */ }
+      }
       fs.writeFileSync(sp, JSON.stringify(session, null, 2), 'utf8')
     } catch (err) {
       console.error('[SessionManager] Failed to save session:', err)
@@ -48,23 +53,51 @@ export class SessionManager {
   }
 
   load(): Session | null {
-    try {
-      const sp = this.getSessionPath()
-      if (!fs.existsSync(sp)) return null
-      return JSON.parse(fs.readFileSync(sp, 'utf8'))
-    } catch {
-      return null
+    const sp = this.getSessionPath()
+    // Try main file first, then backup
+    for (const file of [sp, sp + '.bak']) {
+      try {
+        if (!fs.existsSync(file)) continue
+        const raw = JSON.parse(fs.readFileSync(file, 'utf8'))
+        const session = this.normalize(raw)
+        if (session) return session
+      } catch { /* try next */ }
+    }
+    return null
+  }
+
+  /** Convert v1 (or any legacy) format to v2 */
+  private normalize(raw: unknown): Session | null {
+    if (!raw || typeof raw !== 'object') return null
+    const obj = raw as Record<string, unknown>
+    const files = obj.files as unknown[]
+    if (!Array.isArray(files)) return null
+
+    // v2 format — pass through
+    if (obj.version === 2) return obj as unknown as Session
+
+    // v1 format — migrate
+    return {
+      version: 2,
+      files: files
+        .filter((f): f is Record<string, unknown> => !!f && typeof f === 'object' && typeof (f as Record<string, unknown>).filePath === 'string')
+        .map((f) => ({
+          filePath: f.filePath as string,
+          language: (f.language as string) || '',
+          encoding: (f.encoding as string) || 'UTF-8',
+          eol: (f.eol as string) || 'LF',
+          viewState: null
+        })),
+      activeIndex: typeof obj.activeIndex === 'number' ? obj.activeIndex : 0,
+      workspaceFolder: typeof obj.workspaceFolder === 'string' ? obj.workspaceFolder : undefined
     }
   }
 
   restore(win: BrowserWindow): void {
     const session = this.load()
     if (session) {
-      // Send to renderer after it's ready
       win.webContents.once('did-finish-load', () => {
-        setTimeout(() => {
-          win.webContents.send('session:restore', session)
-        }, 500)
+        win.webContents.send('session:restore', session)
       })
     }
   }

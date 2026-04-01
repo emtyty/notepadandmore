@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback } from 'react'
+import React, { useRef, useEffect, useCallback, useState } from 'react'
 import * as monaco from 'monaco-editor'
 import { useEditorStore, EOLType } from '../../store/editorStore'
 import { useUIStore } from '../../store/uiStore'
@@ -6,6 +6,7 @@ import { useConfigStore } from '../../store/configStore'
 import { editorRegistry } from '../../utils/editorRegistry'
 import { useBookmarks } from '../../hooks/useBookmarks'
 import { useMacroRecorder } from '../../hooks/useMacroRecorder'
+import { useFileOps } from '../../hooks/useFileOps'
 import styles from './EditorPane.module.css'
 
 interface EditorPaneProps {
@@ -15,9 +16,13 @@ interface EditorPaneProps {
 export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null)
-  const { buffers, updateBuffer, getBuffer } = useEditorStore()
+  const { updateBuffer, getBuffer } = useEditorStore()
+  const activeBufLoaded = useEditorStore((s) => s.buffers.find((b) => b.id === activeId)?.loaded)
   const { theme } = useUIStore()
+  const { loadBuffer } = useFileOps()
   const currentIdRef = useRef<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [missingFile, setMissingFile] = useState<string | null>(null)
 
   const { toggleBookmark, nextBookmark, prevBookmark, clearBookmarks, restoreDecorations } = useBookmarks()
   const { start: macroStart, stop: macroStop, playback: macroPlayback, recordStep } = useMacroRecorder()
@@ -248,7 +253,8 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
     return unsub
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Swap model when active buffer changes
+  // Swap model when active buffer changes (supports ghost/lazy buffers)
+  // Also re-runs when activeBufLoaded flips from false→true after hydration
   useEffect(() => {
     const editor = editorRef.current
     if (!editor || !activeId) return
@@ -263,15 +269,39 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
     }
 
     currentIdRef.current = activeId
+    setMissingFile(null)
 
+    // Missing file — show placeholder
+    if (buf.missing) {
+      editor.setModel(null)
+      setLoading(false)
+      setMissingFile(buf.filePath)
+      return
+    }
+
+    // Ghost buffer — trigger lazy load; effect will re-run when loaded becomes true
+    if (!buf.loaded) {
+      editor.setModel(null)
+      setLoading(true)
+      loadBuffer(activeId)
+      return
+    }
+
+    // Loaded buffer — set model (handles both normal open and post-hydration)
+    setLoading(false)
     if (buf.model) {
       editor.setModel(buf.model)
-      if (buf.viewState) editor.restoreViewState(buf.viewState)
+      // Prefer live viewState, fall back to savedViewState from session
+      if (buf.viewState) {
+        editor.restoreViewState(buf.viewState)
+      } else if (buf.savedViewState) {
+        try { editor.restoreViewState(buf.savedViewState as monaco.editor.ICodeEditorViewState) } catch { /* ignore */ }
+      }
       restoreDecorations(activeId)
     }
 
     editor.focus()
-  }, [activeId, getBuffer, updateBuffer, restoreDecorations])
+  }, [activeId, activeBufLoaded, getBuffer, updateBuffer, restoreDecorations, loadBuffer])
 
   // Handle editor commands from menu
   useEffect(() => {
@@ -389,6 +419,8 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
   return (
     <div className={styles.container} data-testid="editor-pane">
       <div ref={containerRef} className={styles.editor} />
+      {loading && <div className={styles.overlay}>Loading...</div>}
+      {missingFile && <div className={styles.overlay}>File not found: {missingFile}</div>}
     </div>
   )
 }

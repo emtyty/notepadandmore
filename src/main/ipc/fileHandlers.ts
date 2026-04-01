@@ -62,6 +62,18 @@ export function registerFileHandlers(): void {
     }
   })
 
+  // Batch stat check (used for session restore — check all files in one IPC call)
+  ipcMain.handle('file:stat-batch', async (_event, filePaths: string[]) => {
+    return filePaths.map((fp) => {
+      try {
+        const stats = fs.statSync(fp)
+        return { filePath: fp, exists: true, mtime: stats.mtimeMs }
+      } catch {
+        return { filePath: fp, exists: false, mtime: 0 }
+      }
+    })
+  })
+
   // Get file stats
   ipcMain.handle('file:stat', async (_event, filePath: string) => {
     try {

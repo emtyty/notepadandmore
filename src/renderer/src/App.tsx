@@ -19,14 +19,14 @@ import { useEditorStore } from './store/editorStore'
 import { useUIStore } from './store/uiStore'
 import { usePluginStore } from './store/pluginStore'
 import { useConfigStore } from './store/configStore'
-import { useFileOps } from './hooks/useFileOps'
+import { useFileOps, SessionData } from './hooks/useFileOps'
 import { editorRegistry } from './utils/editorRegistry'
 import styles from './App.module.css'
 
 export default function App() {
   const { activeId, buffers } = useEditorStore()
   const { theme, showToolbar, showStatusBar, showBottomPanel, showSidebar, openFind } = useUIStore()
-  const { openFiles, newFile, saveBuffer, saveActiveAs, closeBuffer, reloadBuffer } = useFileOps()
+  const { openFiles, newFile, saveBuffer, saveActiveAs, closeBuffer, reloadBuffer, loadBuffer, restoreSession } = useFileOps()
   const editorRef = useRef<{ focus: () => void } | null>(null)
   const openFileInput = useRef<HTMLInputElement | null>(null)
 
@@ -137,11 +137,11 @@ export default function App() {
       if (buf) useUIStore.getState().addToast(`"${buf.title}" was deleted from disk.`, 'warn')
     })
 
-    // Restore session
+    // Restore session (lazy 2-phase: ghost buffers first, then load active tab)
     window.api.on('session:restore', (...args) => {
-      const session = args[0] as { files: Array<{ filePath: string }>; activeIndex: number; workspaceFolder?: string }
+      const session = args[0] as SessionData
       if (session?.files?.length) {
-        openFiles(session.files.map((f) => f.filePath).filter(Boolean))
+        restoreSession(session)
       }
       if (session?.workspaceFolder) {
         useUIStore.getState().setWorkspaceFolder(session.workspaceFolder)
@@ -159,13 +159,30 @@ export default function App() {
         }
       }
       await useConfigStore.getState().save()
+
+      // Capture current editor's viewState before building session payload
+      const editor = editorRegistry.get()
       const state = useEditorStore.getState()
+      if (editor && state.activeId) {
+        const vs = editor.saveViewState()
+        if (vs) state.updateBuffer(state.activeId, { viewState: vs })
+      }
+
+      const freshState = useEditorStore.getState()
       const uiState = useUIStore.getState()
       window.api.send('session:save', {
-        files: state.buffers
+        version: 2,
+        files: freshState.buffers
           .filter((b) => b.filePath)
-          .map((b) => ({ filePath: b.filePath, cursorLine: 1, cursorColumn: 1, scrollTop: 0, language: b.language })),
-        activeIndex: Math.max(0, state.buffers.findIndex((b) => b.id === state.activeId)),
+          .map((b) => ({
+            filePath: b.filePath,
+            language: b.language,
+            encoding: b.encoding,
+            eol: b.eol,
+            // Use live viewState if available, fall back to savedViewState for ghost tabs
+            viewState: b.viewState ? JSON.parse(JSON.stringify(b.viewState)) : b.savedViewState
+          })),
+        activeIndex: Math.max(0, freshState.buffers.findIndex((b) => b.id === freshState.activeId)),
         workspaceFolder: uiState.workspaceFolder
       })
       window.api.send('app:close-confirmed')

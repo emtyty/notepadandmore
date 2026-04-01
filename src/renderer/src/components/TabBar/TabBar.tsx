@@ -74,7 +74,7 @@ export const TabBar: React.FC<TabBarProps> = ({ onClose, onNewFile }) => {
         {buffers.map((buf) => (
           <div
             key={buf.id}
-            className={`${styles.tab} ${buf.id === activeId ? styles.active : ''} ${buf.isDirty ? styles.dirty : ''}`}
+            className={`${styles.tab} ${buf.id === activeId ? styles.active : ''} ${buf.isDirty ? styles.dirty : ''} ${!buf.loaded ? styles.ghost : ''} ${buf.missing ? styles.missing : ''}`}
             onClick={() => setActive(buf.id)}
             onContextMenu={(e) => handleContextMenu(e, buf.id)}
             draggable

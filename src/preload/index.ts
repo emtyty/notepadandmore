@@ -15,6 +15,7 @@ const api = {
     openDirDialog: () => ipcRenderer.invoke('file:open-dir-dialog'),
     checkMtime: (filePath: string, mtime: number) => ipcRenderer.invoke('file:check-mtime', filePath, mtime),
     stat: (filePath: string) => ipcRenderer.invoke('file:stat', filePath),
+    statBatch: (filePaths: string[]) => ipcRenderer.invoke('file:stat-batch', filePaths),
     listDir: (dirPath: string) => ipcRenderer.invoke('file:list-dir', dirPath),
     create: (filePath: string) => ipcRenderer.invoke('file:create', filePath),
     delete: (filePath: string) => ipcRenderer.invoke('file:delete', filePath),

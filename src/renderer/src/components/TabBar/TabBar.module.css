@@ -61,6 +61,15 @@
   content: '';
 }
 
+.ghost {
+  opacity: 0.55;
+}
+
+.missing .title {
+  text-decoration: line-through;
+  opacity: 0.5;
+}
+
 .closeBtn {
   background: none;
   border: none;
