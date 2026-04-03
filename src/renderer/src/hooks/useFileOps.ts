@@ -67,8 +67,8 @@ export function useFileOps() {
 
   const openFiles = useCallback(async (filePaths: string[]) => {
     for (const fp of filePaths) {
-      // Don't open same file twice
-      const existing = buffers.find((b) => b.filePath === fp)
+      // Don't open same file twice — read fresh state to avoid stale closure
+      const existing = useEditorStore.getState().buffers.find((b) => b.filePath === fp)
       if (existing) {
         useEditorStore.getState().setActive(existing.id)
         continue
