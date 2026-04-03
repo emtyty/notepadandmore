@@ -7,6 +7,9 @@ function basename(p: string): string {
   return p.replace(/\\/g, '/').split('/').pop() ?? p
 }
 
+/** Files above this threshold get large-file optimizations (no syntax highlighting, etc.) */
+const LARGE_FILE_THRESHOLD = 10 * 1024 * 1024 // 10 MB
+
 export interface SessionData {
   version: number
   files: Array<{
@@ -71,6 +74,10 @@ export function useFileOps() {
         continue
       }
 
+      // Check file size to determine large file mode
+      const stat = await window.api.file.stat(fp)
+      const isLargeFile = stat.exists && stat.size >= LARGE_FILE_THRESHOLD
+
       const result = await window.api.file.read(fp)
       if (result.error) {
         addToast(`Failed to open: ${result.error}`, 'error')
@@ -91,7 +98,8 @@ export function useFileOps() {
         savedViewState: null,
         bookmarks: [],
         loaded: true,
-        missing: false
+        missing: false,
+        isLargeFile
       })
       useEditorStore.getState().setActive(id)
       window.api.file.addRecent(fp)
@@ -107,6 +115,13 @@ export function useFileOps() {
     loadingSet.add(id)
 
     try {
+      // Check file size for large file mode
+      const stat = await window.api.file.stat(buf.filePath)
+      const isLargeFile = stat.exists && stat.size >= LARGE_FILE_THRESHOLD
+      if (isLargeFile) {
+        useEditorStore.getState().updateBuffer(id, { isLargeFile: true })
+      }
+
       const result = await window.api.file.read(buf.filePath)
       if (result.error) {
         useEditorStore.getState().updateBuffer(id, { missing: true, loaded: true })
@@ -156,7 +171,8 @@ export function useFileOps() {
         savedViewState: file.viewState ?? null,
         bookmarks: [],
         loaded: false,
-        missing: !exists
+        missing: !exists,
+        isLargeFile: false
       })
       ids.push(id)
     }
@@ -200,7 +216,8 @@ export function useFileOps() {
       savedViewState: null,
       bookmarks: [],
       loaded: true,
-      missing: false
+      missing: false,
+      isLargeFile: false
     })
     useEditorStore.getState().setActive(id)
   }, [addBuffer])

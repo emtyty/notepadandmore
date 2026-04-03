@@ -10,10 +10,12 @@ export function registerFileHandlers(): void {
   // Read file with encoding detection
   ipcMain.handle('file:read', async (_event, filePath: string) => {
     try {
-      const raw = fs.readFileSync(filePath)
-      const encoding = chardet.detect(raw) || 'UTF-8'
+      const raw = await fs.promises.readFile(filePath)
+      // Sample-based encoding detection: only scan first 64KB (sufficient for accuracy)
+      const sample = raw.subarray(0, Math.min(raw.length, 65536))
+      const encoding = chardet.detect(sample) || 'UTF-8'
       const content = iconv.decode(raw, encoding)
-      const stats = fs.statSync(filePath)
+      const stats = await fs.promises.stat(filePath)
       const eol = content.includes('\r\n') ? 'CRLF' : content.includes('\r') ? 'CR' : 'LF'
       return { content, encoding, eol, mtime: stats.mtimeMs, error: null }
     } catch (err: any) {

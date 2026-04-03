@@ -19,6 +19,7 @@ export interface Buffer {
   bookmarks: number[]          // sorted list of 1-based bookmarked line numbers
   loaded: boolean              // false = ghost buffer (metadata only, no content/model)
   missing: boolean             // true = file no longer exists on disk
+  isLargeFile: boolean         // true = file exceeds large file threshold (disables expensive features)
 }
 
 interface EditorState {
@@ -53,7 +54,9 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   addBuffer: (buf) => {
     const id = newId()
-    const model = monaco.editor.createModel(buf.content, buf.language || 'plaintext')
+    // Force plaintext for large files to skip expensive tokenization
+    const lang = buf.isLargeFile ? 'plaintext' : (buf.language || 'plaintext')
+    const model = monaco.editor.createModel(buf.content, lang)
     set((s) => ({
       buffers: [...s.buffers, { ...buf, id, model, loaded: true, missing: false, savedViewState: buf.savedViewState ?? null }],
       activeId: s.activeId ?? id
@@ -73,7 +76,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   hydrateBuffer: (id, patch) => {
     const buf = get().buffers.find((b) => b.id === id)
     if (!buf || buf.loaded) return
-    const model = monaco.editor.createModel(patch.content, buf.language || 'plaintext')
+    const lang = buf.isLargeFile ? 'plaintext' : (buf.language || 'plaintext')
+    const model = monaco.editor.createModel(patch.content, lang)
     set((s) => ({
       buffers: s.buffers.map((b) =>
         b.id === id

@@ -18,10 +18,12 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null)
   const { updateBuffer, getBuffer } = useEditorStore()
   const activeBufLoaded = useEditorStore((s) => s.buffers.find((b) => b.id === activeId)?.loaded)
+  const activeBufIsLarge = useEditorStore((s) => s.buffers.find((b) => b.id === activeId)?.isLargeFile)
   const { theme } = useUIStore()
   const { loadBuffer } = useFileOps()
   const currentIdRef = useRef<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [loadingSize, setLoadingSize] = useState<number | null>(null)
   const [missingFile, setMissingFile] = useState<string | null>(null)
 
   const { toggleBookmark, nextBookmark, prevBookmark, clearBookmarks, restoreDecorations } = useBookmarks()
@@ -283,12 +285,19 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
     if (!buf.loaded) {
       editor.setModel(null)
       setLoading(true)
+      // Fetch file size to display in loading overlay
+      if (buf.filePath) {
+        window.api.file.stat(buf.filePath).then((s) => {
+          if (s.exists && s.size > 0) setLoadingSize(s.size)
+        })
+      }
       loadBuffer(activeId)
       return
     }
 
     // Loaded buffer — set model (handles both normal open and post-hydration)
     setLoading(false)
+    setLoadingSize(null)
     if (buf.model) {
       editor.setModel(buf.model)
       // Prefer live viewState, fall back to savedViewState from session
@@ -298,6 +307,39 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
         try { editor.restoreViewState(buf.savedViewState as monaco.editor.ICodeEditorViewState) } catch { /* ignore */ }
       }
       restoreDecorations(activeId)
+
+      // Large file mode: disable expensive editor features
+      if (buf.isLargeFile) {
+        editor.updateOptions({
+          minimap: { enabled: false },
+          folding: false,
+          foldingHighlight: false,
+          bracketPairColorization: { enabled: false },
+          guides: { indentation: false, bracketPairs: false },
+          quickSuggestions: false,
+          suggestOnTriggerCharacters: false,
+          wordBasedSuggestions: 'off',
+          renderLineHighlight: 'none',
+          colorDecorators: false,
+          links: false
+        })
+      } else {
+        // Restore config-based options when switching from large to normal file
+        const cfg = useConfigStore.getState()
+        editor.updateOptions({
+          minimap: { enabled: cfg.showMinimap },
+          folding: true,
+          foldingHighlight: true,
+          bracketPairColorization: { enabled: cfg.bracketPairColorization },
+          guides: { indentation: cfg.renderIndentGuides, bracketPairs: true },
+          quickSuggestions: cfg.autoCompleteEnabled,
+          suggestOnTriggerCharacters: cfg.autoCompleteEnabled,
+          wordBasedSuggestions: 'currentDocument',
+          renderLineHighlight: cfg.highlightCurrentLine ? 'line' : 'none',
+          colorDecorators: true,
+          links: true
+        })
+      }
     }
 
     editor.focus()
@@ -419,7 +461,7 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
   return (
     <div className={styles.container} data-testid="editor-pane">
       <div ref={containerRef} className={styles.editor} />
-      {loading && <div className={styles.overlay}>Loading...</div>}
+      {loading && <div className={styles.overlay}>Loading...{loadingSize ? ` (${(loadingSize / 1024 / 1024).toFixed(1)} MB)` : ''}</div>}
       {missingFile && <div className={styles.overlay}>File not found: {missingFile}</div>}
     </div>
   )
