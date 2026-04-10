@@ -2,7 +2,6 @@ import React, { useRef, useEffect } from 'react'
 import * as monaco from 'monaco-editor'
 import { useEditorStore } from '../../store/editorStore'
 import { editorRegistry } from '../../utils/editorRegistry'
-import styles from './DocumentMapPanel.module.css'
 
 export function DocumentMapPanel() {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -84,12 +83,12 @@ export function DocumentMapPanel() {
       const startLine = visibleRanges[0].startLineNumber
       const endLine = visibleRanges[visibleRanges.length - 1].endLineNumber
 
-      // Highlight viewport in map
+      // Highlight viewport in map — uses global CSS class from tailwind.css
       decorationsRef.current = mapEditor.deltaDecorations(decorationsRef.current, [{
         range: new monaco.Range(startLine, 1, endLine, 1),
         options: {
           isWholeLine: true,
-          className: styles.viewportHighlight
+          className: 'viewport-highlight'
         }
       }])
 
@@ -102,9 +101,11 @@ export function DocumentMapPanel() {
   }, [])
 
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>Document Map</div>
-      <div ref={containerRef} className={styles.mapEditor} />
+    <div className="flex flex-col h-full overflow-hidden">
+      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-3 py-1.5 shrink-0 bg-explorer border-b border-border">
+        Document Map
+      </div>
+      <div ref={containerRef} className="flex-1 overflow-hidden" />
     </div>
   )
 }

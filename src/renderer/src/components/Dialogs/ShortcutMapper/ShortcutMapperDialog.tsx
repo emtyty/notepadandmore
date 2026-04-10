@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useUIStore } from '../../../store/uiStore'
-import styles from './ShortcutMapperDialog.module.css'
+import { cn } from '../../../lib/utils'
 
 interface CommandDef {
   id: string
@@ -193,31 +193,39 @@ export function ShortcutMapperDialog() {
     : {}
 
   return (
-    <div className={styles.overlay}>
-      <div ref={dialogRef} className={styles.dialog} style={dialogStyle}>
-        <div className={styles.titleBar} onMouseDown={onTitleMouseDown}>
-          <span className={styles.titleText}>Shortcut Mapper</span>
-          <button className={styles.closeBtn} onClick={() => setShowShortcutMapper(false)} title="Close">✕</button>
+    <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/50">
+      <div
+        ref={dialogRef}
+        className="fixed z-[9001] bg-popover border border-border rounded-lg shadow-2xl min-w-[680px] max-w-[800px] max-h-[85vh] flex flex-col"
+        style={dialogStyle}
+      >
+        <div className="flex items-center justify-between px-3 py-2 border-b border-border cursor-move select-none" onMouseDown={onTitleMouseDown}>
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Shortcut Mapper</span>
+          <button
+            className="bg-transparent border-none cursor-pointer text-muted-foreground text-sm w-6 h-6 flex items-center justify-center rounded hover:bg-secondary hover:text-foreground"
+            onClick={() => setShowShortcutMapper(false)}
+            title="Close"
+          >✕</button>
         </div>
 
-        <div className={styles.toolbar}>
+        <div className="flex items-center gap-3 px-3 py-2 border-b border-border">
           <input
-            className={styles.filterInput}
+            className="flex-1 bg-input border border-border rounded px-2 py-1 text-xs text-foreground outline-none focus:border-ring"
             placeholder="Filter commands..."
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
           />
-          <span className={styles.hint}>Click a row to rebind • Esc to cancel</span>
+          <span className="text-[11px] text-muted-foreground whitespace-nowrap">Click a row to rebind • Esc to cancel</span>
         </div>
 
-        <div className={styles.tableWrap}>
-          <table className={styles.table}>
+        <div className="flex-1 overflow-y-auto max-h-[400px] editor-scrollbar">
+          <table className="w-full text-xs border-collapse">
             <thead>
               <tr>
-                <th className={styles.th}>Category</th>
-                <th className={styles.th}>Command</th>
-                <th className={styles.th}>Shortcut</th>
-                <th className={styles.th}></th>
+                <th className="text-left p-2 border-b border-border text-muted-foreground font-medium text-[11px] sticky top-0 bg-popover z-[1]">Category</th>
+                <th className="text-left p-2 border-b border-border text-muted-foreground font-medium text-[11px] sticky top-0 bg-popover z-[1]">Command</th>
+                <th className="text-left p-2 border-b border-border text-muted-foreground font-medium text-[11px] sticky top-0 bg-popover z-[1]">Shortcut</th>
+                <th className="text-left p-2 border-b border-border text-muted-foreground font-medium text-[11px] sticky top-0 bg-popover z-[1]"></th>
               </tr>
             </thead>
             <tbody>
@@ -227,39 +235,51 @@ export function ShortcutMapperDialog() {
                 return (
                   <tr
                     key={cmd.id}
-                    className={`${styles.row} ${isCapturing ? styles.rowCapturing : ''} ${modified ? styles.rowModified : ''}`}
+                    className={cn(
+                      'cursor-pointer hover:bg-secondary/50',
+                      isCapturing && 'bg-primary/10'
+                    )}
                     onClick={() => !isCapturing && handleRowClick(cmd.id)}
                   >
-                    <td className={styles.td}>{cmd.category}</td>
-                    <td className={styles.td}>{cmd.label}</td>
-                    <td className={styles.td}>
+                    <td className="p-2 border-b border-border">{cmd.category}</td>
+                    <td className="p-2 border-b border-border">{cmd.label}</td>
+                    <td className="p-2 border-b border-border">
                       {isCapturing ? (
-                        <div className={styles.captureCell}>
-                          <span className={styles.capturing}>
+                        <div className="flex items-center gap-2">
+                          <span className="text-primary text-[11px] font-medium animate-pulse">
                             {capturedKey || 'Press keys...'}
                           </span>
                           {capturedKey && (
                             <>
                               {conflict && (
-                                <span className={styles.conflict} title={`Conflicts with: ${BUILT_IN_COMMANDS.find((c) => c.id === conflict)?.label}`}>
+                                <span className="text-destructive text-[11px]" title={`Conflicts with: ${BUILT_IN_COMMANDS.find((c) => c.id === conflict)?.label}`}>
                                   ⚠ conflict
                                 </span>
                               )}
-                              <button className={styles.applyBtn} onClick={(e) => { e.stopPropagation(); applyCapture() }}>Apply</button>
-                              <button className={styles.cancelBtn} onClick={(e) => { e.stopPropagation(); setCapturingId(null) }}>Cancel</button>
+                              <button
+                                className="px-2 py-0.5 text-[11px] bg-primary text-primary-foreground rounded hover:bg-primary/90"
+                                onClick={(e) => { e.stopPropagation(); applyCapture() }}
+                              >Apply</button>
+                              <button
+                                className="px-2 py-0.5 text-[11px] bg-secondary text-foreground rounded hover:bg-muted"
+                                onClick={(e) => { e.stopPropagation(); setCapturingId(null) }}
+                              >Cancel</button>
                             </>
                           )}
                         </div>
                       ) : (
-                        <kbd className={`${styles.kbd} ${modified ? styles.kbdModified : ''}`}>
+                        <kbd className={cn(
+                          'bg-muted px-2 py-0.5 rounded text-[11px] font-mono',
+                          modified && 'text-primary font-semibold'
+                        )}>
                           {currentShortcut(cmd) || '—'}
                         </kbd>
                       )}
                     </td>
-                    <td className={styles.td}>
+                    <td className="p-2 border-b border-border">
                       {modified && (
                         <button
-                          className={styles.resetBtn}
+                          className="bg-transparent border-none cursor-pointer text-muted-foreground hover:text-foreground"
                           onClick={(e) => { e.stopPropagation(); resetCommand(cmd.id) }}
                           title="Reset to default"
                         >
@@ -274,10 +294,16 @@ export function ShortcutMapperDialog() {
           </table>
         </div>
 
-        <div className={styles.footer}>
-          {saved && <span className={styles.savedMsg}>Saved!</span>}
-          <button className={styles.saveBtn} onClick={handleSave}>Save</button>
-          <button className={styles.closeFooterBtn} onClick={() => setShowShortcutMapper(false)}>Close</button>
+        <div className="flex items-center justify-end gap-2 px-3 py-2 border-t border-border">
+          {saved && <span className="text-green-500 text-[11px] mr-2">Saved!</span>}
+          <button
+            className="px-3 py-1.5 text-xs border-none rounded bg-primary text-primary-foreground cursor-pointer hover:bg-primary/90 transition-colors"
+            onClick={handleSave}
+          >Save</button>
+          <button
+            className="px-3 py-1.5 text-xs border border-border rounded bg-secondary text-foreground cursor-pointer hover:bg-muted transition-colors"
+            onClick={() => setShowShortcutMapper(false)}
+          >Close</button>
         </div>
       </div>
     </div>

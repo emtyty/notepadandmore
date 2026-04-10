@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import * as monaco from 'monaco-editor'
 import { useUIStore } from '../../../store/uiStore'
-import styles from './StyleConfiguratorDialog.module.css'
+import { cn } from '../../../lib/utils'
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 export interface TokenStyle {
@@ -204,40 +204,54 @@ export function StyleConfiguratorDialog() {
     : {}
 
   return (
-    <div className={styles.overlay}>
-      <div ref={dialogRef} className={styles.dialog} style={dialogStyle}>
-        <div className={styles.titleBar} onMouseDown={onTitleMouseDown}>
-          <span className={styles.titleText}>Style Configurator</span>
-          <button className={styles.closeBtn} onClick={() => setShowStyleConfigurator(false)} title="Close">✕</button>
+    <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/50">
+      <div
+        ref={dialogRef}
+        className="fixed z-[9001] bg-popover border border-border rounded-lg shadow-2xl min-w-[720px] max-w-[850px] max-h-[85vh] flex flex-col"
+        style={dialogStyle}
+      >
+        <div className="flex items-center justify-between px-3 py-2 border-b border-border cursor-move select-none" onMouseDown={onTitleMouseDown}>
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Style Configurator</span>
+          <button
+            className="bg-transparent border-none cursor-pointer text-muted-foreground text-sm w-6 h-6 flex items-center justify-center rounded hover:bg-secondary hover:text-foreground"
+            onClick={() => setShowStyleConfigurator(false)}
+            title="Close"
+          >✕</button>
         </div>
 
-        <div className={styles.body}>
+        <div className="flex flex-1 overflow-hidden">
           {/* Left: language list */}
-          <div className={styles.langPanel}>
-            <div className={styles.panelLabel}>Language</div>
+          <div className="w-[160px] border-r border-border overflow-y-auto shrink-0 editor-scrollbar">
+            <div className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider px-2 py-1.5 border-b border-border">Language</div>
             {LANGUAGES.map((lang) => (
               <button
                 key={lang.id}
-                className={`${styles.langBtn} ${selectedLang === lang.id ? styles.langBtnActive : ''}`}
+                className={cn(
+                  'w-full text-left px-2 py-1 text-xs cursor-pointer hover:bg-secondary transition-colors bg-transparent border-none text-foreground',
+                  selectedLang === lang.id && 'bg-primary/15 text-primary font-medium'
+                )}
                 onClick={() => setSelectedLang(lang.id)}
               >
                 {lang.label}
-                {stylesMap[lang.id]?.length ? <span className={styles.customDot} title="Customized">●</span> : null}
+                {stylesMap[lang.id]?.length ? <span className="text-primary ml-auto text-[10px]" title="Customized">●</span> : null}
               </button>
             ))}
           </div>
 
           {/* Middle: token list */}
-          <div className={styles.tokenPanel}>
-            <div className={styles.panelLabel}>Token Type</div>
+          <div className="w-[140px] border-r border-border overflow-y-auto shrink-0 editor-scrollbar">
+            <div className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider px-2 py-1.5 border-b border-border">Token Type</div>
             {COMMON_TOKENS.map((tok) => (
               <button
                 key={tok}
-                className={`${styles.tokenBtn} ${selectedToken === tok ? styles.tokenBtnActive : ''}`}
+                className={cn(
+                  'w-full text-left px-2 py-1 text-xs cursor-pointer hover:bg-secondary transition-colors bg-transparent border-none text-foreground',
+                  selectedToken === tok && 'bg-primary/15 text-primary font-medium'
+                )}
                 onClick={() => setSelectedToken(tok)}
               >
                 <span
-                  className={styles.tokenSwatch}
+                  className="w-2.5 h-2.5 rounded-full inline-block mr-1.5 shrink-0"
                   style={{ background: getTokenStyle(selectedLang, tok).foreground || 'transparent' }}
                 />
                 {tok}
@@ -246,43 +260,43 @@ export function StyleConfiguratorDialog() {
           </div>
 
           {/* Right: editor */}
-          <div className={styles.editorPanel}>
-            <div className={styles.panelLabel}>Style for <strong>{selectedToken}</strong> in <strong>{LANGUAGES.find((l) => l.id === selectedLang)?.label}</strong></div>
+          <div className="flex-1 p-3 overflow-y-auto editor-scrollbar">
+            <div className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider px-2 py-1.5 border-b border-border">Style for <strong>{selectedToken}</strong> in <strong>{LANGUAGES.find((l) => l.id === selectedLang)?.label}</strong></div>
 
-            <div className={styles.styleRow}>
-              <label className={styles.styleLabel}>Foreground</label>
+            <div className="flex items-center gap-2 mb-2">
+              <label className="text-xs text-muted-foreground w-20 shrink-0">Foreground</label>
               <input
                 type="color"
-                className={styles.colorInput}
+                className="w-8 h-6 p-0 border border-border rounded cursor-pointer"
                 value={current.foreground || '#D4D4D4'}
                 onChange={(e) => updateTokenStyle(selectedLang, { tokenType: selectedToken, foreground: e.target.value })}
               />
-              <span className={styles.colorHex}>{current.foreground || 'default'}</span>
+              <span className="text-[11px] text-muted-foreground font-mono">{current.foreground || 'default'}</span>
               <button
-                className={styles.clearBtn}
+                className="bg-transparent border-none cursor-pointer text-muted-foreground hover:text-foreground text-xs"
                 onClick={() => updateTokenStyle(selectedLang, { tokenType: selectedToken, foreground: '' })}
                 title="Clear (use default)"
               >✕</button>
             </div>
 
-            <div className={styles.styleRow}>
-              <label className={styles.styleLabel}>Background</label>
+            <div className="flex items-center gap-2 mb-2">
+              <label className="text-xs text-muted-foreground w-20 shrink-0">Background</label>
               <input
                 type="color"
-                className={styles.colorInput}
+                className="w-8 h-6 p-0 border border-border rounded cursor-pointer"
                 value={current.background || '#1E1E1E'}
                 onChange={(e) => updateTokenStyle(selectedLang, { tokenType: selectedToken, background: e.target.value })}
               />
-              <span className={styles.colorHex}>{current.background || 'none'}</span>
+              <span className="text-[11px] text-muted-foreground font-mono">{current.background || 'none'}</span>
               <button
-                className={styles.clearBtn}
+                className="bg-transparent border-none cursor-pointer text-muted-foreground hover:text-foreground text-xs"
                 onClick={() => updateTokenStyle(selectedLang, { tokenType: selectedToken, background: '' })}
                 title="Clear (transparent)"
               >✕</button>
             </div>
 
-            <div className={styles.styleRow}>
-              <label className={styles.checkLabel}>
+            <div className="flex items-center gap-2 mb-2">
+              <label className="flex items-center gap-1.5 text-xs text-foreground cursor-pointer">
                 <input
                   type="checkbox"
                   checked={current.bold}
@@ -290,7 +304,7 @@ export function StyleConfiguratorDialog() {
                 />
                 Bold
               </label>
-              <label className={styles.checkLabel}>
+              <label className="flex items-center gap-1.5 text-xs text-foreground cursor-pointer">
                 <input
                   type="checkbox"
                   checked={current.italic}
@@ -301,7 +315,7 @@ export function StyleConfiguratorDialog() {
             </div>
 
             {/* Live preview swatch */}
-            <div className={styles.preview}>
+            <div className="mt-3 p-3 bg-muted rounded">
               <span
                 style={{
                   color: current.foreground || 'var(--text)',
@@ -318,9 +332,9 @@ export function StyleConfiguratorDialog() {
               </span>
             </div>
 
-            <div className={styles.resetSection}>
+            <div className="mt-3">
               <button
-                className={styles.resetLangBtn}
+                className="text-[11px] text-destructive hover:underline bg-transparent border-none cursor-pointer"
                 onClick={() => {
                   setStylesMap((prev) => {
                     const next = { ...prev }
@@ -335,11 +349,21 @@ export function StyleConfiguratorDialog() {
           </div>
         </div>
 
-        <div className={styles.footer}>
-          <button className={styles.importBtn} onClick={handleImport} title="Import Notepad++ theme (future feature)">Import Theme</button>
-          {saved && <span className={styles.savedMsg}>Saved & Applied!</span>}
-          <button className={styles.saveBtn} onClick={handleSave}>Save & Apply</button>
-          <button className={styles.closeFooterBtn} onClick={() => setShowStyleConfigurator(false)}>Close</button>
+        <div className="flex items-center justify-end gap-2 px-3 py-2 border-t border-border">
+          <button
+            className="px-3 py-1.5 text-xs border border-border rounded bg-secondary text-foreground cursor-pointer hover:bg-muted transition-colors"
+            onClick={handleImport}
+            title="Import Notepad++ theme (future feature)"
+          >Import Theme</button>
+          {saved && <span className="text-green-500 text-[11px] mr-2">Saved & Applied!</span>}
+          <button
+            className="px-3 py-1.5 text-xs border-none rounded bg-primary text-primary-foreground cursor-pointer hover:bg-primary/90 transition-colors"
+            onClick={handleSave}
+          >Save & Apply</button>
+          <button
+            className="px-3 py-1.5 text-xs border border-border rounded bg-secondary text-foreground cursor-pointer hover:bg-muted transition-colors"
+            onClick={() => setShowStyleConfigurator(false)}
+          >Close</button>
         </div>
       </div>
     </div>

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useEditorStore, EOLType } from '../../store/editorStore'
 import { useUIStore } from '../../store/uiStore'
-import styles from './StatusBar.module.css'
 
 const EOL_CYCLE: EOLType[] = ['LF', 'CRLF']
 const ENCODING_CYCLE = ['UTF-8', 'UTF-8 BOM', 'UTF-16 LE', 'UTF-16 BE']
@@ -38,36 +37,47 @@ export const StatusBar: React.FC = () => {
   }, [buf])
 
   return (
-    <div className={styles.statusBar} data-testid="statusbar">
-      <span className={styles.statusDot} />
-      <span className={styles.section} data-testid="cursor-position">
-        Ln {cursor.line}, Col {cursor.col}
-      </span>
-      <span className={styles.divider} />
-      <span
-        className={`${styles.section} ${styles.clickable}`}
-        onClick={cycleEOL}
-        title="Click to cycle EOL type"
-      >
-        {buf?.eol ?? 'LF'}
-      </span>
-      <span className={styles.divider} />
-      <span
-        className={`${styles.section} ${styles.clickable}`}
-        onClick={cycleEncoding}
-        title="Click to cycle encoding"
-      >
-        {buf?.encoding ?? 'UTF-8'}
-      </span>
-      <span className={styles.divider} />
-      <span className={styles.section}>{buf?.language ?? 'Plain Text'}</span>
-      <div className={styles.spacer} />
-      {isRecording && (
-        <span className={`${styles.section} ${styles.recording}`}>REC</span>
-      )}
-      <span className={styles.section}>
-        {buf?.isDirty ? 'Modified' : buf?.filePath ? 'Saved' : 'New File'}
-      </span>
+    <div className="h-6 bg-statusbar text-statusbar-foreground flex items-center px-2 text-[11px] select-none shrink-0" data-testid="statusbar">
+      {/* Left section */}
+      <div className="flex items-center gap-3">
+        <span data-testid="cursor-position" className="flex items-center gap-1">
+          Ln {cursor.line}, Col {cursor.col}
+        </span>
+      </div>
+
+      {/* Spacer */}
+      <div className="flex-1" />
+
+      {/* Right section */}
+      <div className="flex items-center gap-4">
+        {isRecording && (
+          <span className="text-destructive-foreground font-semibold tracking-wider animate-pulse">
+            REC
+          </span>
+        )}
+
+        <span
+          className="cursor-pointer hover:underline decoration-dotted"
+          onClick={cycleEOL}
+          title="Click to cycle EOL type"
+        >
+          {buf?.eol ?? 'LF'}
+        </span>
+
+        <span
+          className="cursor-pointer hover:underline decoration-dotted"
+          onClick={cycleEncoding}
+          title="Click to cycle encoding"
+        >
+          {buf?.encoding ?? 'UTF-8'}
+        </span>
+
+        <span>{buf?.language ?? 'Plain Text'}</span>
+
+        <span className="opacity-70">
+          {buf?.isDirty ? 'Modified' : buf?.filePath ? 'Saved' : 'New File'}
+        </span>
+      </div>
     </div>
   )
 }

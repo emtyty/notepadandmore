@@ -1,8 +1,8 @@
 import React from 'react'
 import { Files, Search, Settings, Puzzle } from 'lucide-react'
-import { Tooltip } from '../Tooltip/Tooltip'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip'
 import { useUIStore } from '../../store/uiStore'
-import styles from './SideNav.module.css'
+import { cn } from '../../lib/utils'
 
 type SidebarPanelId = 'files' | 'search' | 'plugins'
 
@@ -55,39 +55,48 @@ export function SideNav() {
   }
 
   return (
-    <nav className={styles.sidenav} data-testid="sidenav">
-      {/* <div className={styles.logo}>
-        <div className={styles.logoIcon}>
-          <Feather size={20} />
-        </div>
-      </div> */}
+    <nav className="flex flex-col w-12 h-full bg-sidebar border-r border-sidebar-border shrink-0 select-none overflow-hidden" data-testid="sidenav">
+      <div className="flex flex-col flex-1 gap-0.5 py-1 min-h-0">
+        <TooltipProvider delayDuration={300}>
+          {NAV_ITEMS.map((item) => (
+            <Tooltip key={item.id}>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className={cn(
+                    'flex flex-col items-center justify-center w-full min-h-[44px] py-2',
+                    'border-l-2 border-transparent',
+                    'text-muted-foreground transition-colors',
+                    'hover:text-foreground hover:bg-sidebar-accent',
+                    isActive(item.id) && 'text-primary bg-sidebar-accent border-l-primary'
+                  )}
+                  onClick={() => handleNav(item.id)}
+                >
+                  {item.icon}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right">{item.tip}</TooltipContent>
+            </Tooltip>
+          ))}
+        </TooltipProvider>
+      </div>
 
-      <div className={styles.navList}>
-        {NAV_ITEMS.map((item) => (
-          <Tooltip key={item.id} text={item.tip} side="right">
-            <button
-              type="button"
-              className={`${styles.navBtn} ${isActive(item.id) ? styles.active : ''}`}
-              onClick={() => handleNav(item.id)}
-            >
-              {item.icon}
-            </button>
+      <div className="shrink-0 flex flex-col mt-auto pb-2 gap-0.5">
+        <TooltipProvider delayDuration={300}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                className="flex flex-col items-center justify-center w-full min-h-[44px] py-2 text-muted-foreground hover:text-foreground hover:bg-sidebar-accent transition-colors"
+                onClick={() => handleNav('preferences')}
+              >
+                <Settings size={20} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Preferences</TooltipContent>
           </Tooltip>
-        ))}
+        </TooltipProvider>
       </div>
-
-      <div className={styles.navFooter}>
-        <Tooltip text="Preferences" side="right">
-          <button
-            type="button"
-            className={styles.navBtn}
-            onClick={() => handleNav('preferences')}
-          >
-            <Settings size={20} />
-          </button>
-        </Tooltip>
-      </div>
-
     </nav>
   )
 }

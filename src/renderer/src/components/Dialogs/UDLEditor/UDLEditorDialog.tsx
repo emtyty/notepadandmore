@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import * as monaco from 'monaco-editor'
 import { useUIStore } from '../../../store/uiStore'
 import { UDLDefinition, udlToMonarch } from '../../../utils/udlToMonarch'
-import styles from './UDLEditorDialog.module.css'
+import { cn } from '../../../lib/utils'
 
 type UDLTab = 'info' | 'keywords' | 'operators' | 'delimiters' | 'comments'
 
@@ -187,31 +187,46 @@ export function UDLEditorDialog() {
     : {}
 
   return (
-    <div className={styles.overlay}>
-      <div ref={dialogRef} className={styles.dialog} style={dialogStyle}>
-        <div className={styles.titleBar} onMouseDown={onTitleMouseDown}>
-          <span className={styles.titleText}>User Defined Languages</span>
-          <button className={styles.closeBtn} onClick={() => setShowUDLEditor(false)} title="Close">✕</button>
+    <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/50">
+      <div
+        ref={dialogRef}
+        className="fixed z-[9001] bg-popover border border-border rounded-lg shadow-2xl min-w-[720px] max-w-[850px] max-h-[85vh] flex flex-col"
+        style={dialogStyle}
+      >
+        <div className="flex items-center justify-between px-3 py-2 border-b border-border cursor-move select-none" onMouseDown={onTitleMouseDown}>
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">User Defined Languages</span>
+          <button
+            className="bg-transparent border-none cursor-pointer text-muted-foreground text-sm w-6 h-6 flex items-center justify-center rounded hover:bg-secondary hover:text-foreground"
+            onClick={() => setShowUDLEditor(false)}
+            title="Close"
+          >✕</button>
         </div>
 
-        <div className={styles.body}>
+        <div className="flex flex-1 overflow-hidden min-h-[400px]">
           {/* Left panel: language list */}
-          <div className={styles.listPanel}>
-            <div className={styles.listHeader}>
-              <span className={styles.panelLabel}>Languages</span>
-              <button className={styles.newBtn} onClick={newLanguage} title="New language">+</button>
+          <div className="w-[180px] border-r border-border flex flex-col shrink-0">
+            <div className="flex items-center justify-between px-2 py-1.5 border-b border-border">
+              <span className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">Languages</span>
+              <button
+                className="bg-transparent border border-border rounded text-foreground cursor-pointer w-6 h-6 flex items-center justify-center text-sm hover:bg-secondary"
+                onClick={newLanguage}
+                title="New language"
+              >+</button>
             </div>
             {udlList.length === 0 && (
-              <div className={styles.emptyList}>No custom languages yet. Click + to create one.</div>
+              <div className="p-3 text-xs text-muted-foreground text-center">No custom languages yet. Click + to create one.</div>
             )}
             {udlList.map((entry) => (
               <button
                 key={entry.filename}
-                className={`${styles.langItem} ${selected?.filename === entry.filename ? styles.langItemActive : ''}`}
+                className={cn(
+                  'w-full text-left px-2 py-1.5 text-xs cursor-pointer hover:bg-secondary transition-colors bg-transparent border-none text-foreground flex items-center justify-between',
+                  selected?.filename === entry.filename && 'bg-primary/15 text-primary font-medium'
+                )}
                 onClick={() => selectEntry(entry)}
               >
                 {entry.udl.name}
-                <span className={styles.langExt}>
+                <span className="text-[10px] text-muted-foreground">
                   {entry.udl.extensions.map((e) => `.${e}`).join(', ')}
                 </span>
               </button>
@@ -219,13 +234,16 @@ export function UDLEditorDialog() {
           </div>
 
           {/* Right panel: editor */}
-          <div className={styles.editorArea}>
+          <div className="flex-1 flex flex-col overflow-hidden">
             {/* Tabs */}
-            <div className={styles.tabList}>
+            <div className="flex border-b border-border shrink-0">
               {TABS.map((t) => (
                 <button
                   key={t.id}
-                  className={`${styles.tabBtn} ${activeTab === t.id ? styles.tabBtnActive : ''}`}
+                  className={cn(
+                    'px-3 py-1.5 text-[11px] font-medium cursor-pointer border-none bg-transparent text-muted-foreground border-b-2 border-transparent -mb-px hover:text-foreground hover:bg-secondary',
+                    activeTab === t.id && 'text-primary border-b-primary'
+                  )}
                   onClick={() => setActiveTab(t.id)}
                 >
                   {t.label}
@@ -233,13 +251,13 @@ export function UDLEditorDialog() {
               ))}
             </div>
 
-            <div className={styles.tabContent}>
+            <div className="flex-1 overflow-y-auto p-3 editor-scrollbar">
               {activeTab === 'info' && (
-                <div className={styles.section}>
+                <div className="flex flex-col gap-3">
                   <FormRow label="Language Name *">
                     <input
                       type="text"
-                      className={styles.textInput}
+                      className="bg-input border border-border rounded px-2 py-1 text-xs text-foreground outline-none focus:border-ring w-full"
                       value={draft.name}
                       onChange={(e) => setDraftProp('name', e.target.value)}
                       placeholder="e.g. MyConfig"
@@ -248,14 +266,14 @@ export function UDLEditorDialog() {
                   <FormRow label="File Extensions">
                     <input
                       type="text"
-                      className={styles.textInput}
+                      className="bg-input border border-border rounded px-2 py-1 text-xs text-foreground outline-none focus:border-ring w-full"
                       value={draft.extensions.join(', ')}
                       onChange={(e) => setDraftProp('extensions', e.target.value.split(',').map((s) => s.trim()).filter(Boolean))}
                       placeholder="e.g. cfg, conf"
                     />
-                    <span className={styles.hint}>Comma-separated, without dots</span>
+                    <span className="text-[10px] text-muted-foreground">Comma-separated, without dots</span>
                   </FormRow>
-                  <label className={styles.checkLabel}>
+                  <label className="flex items-center gap-1.5 text-xs text-foreground cursor-pointer">
                     <input
                       type="checkbox"
                       checked={draft.caseSensitive}
@@ -266,7 +284,7 @@ export function UDLEditorDialog() {
                   <FormRow label="Fold Open">
                     <input
                       type="text"
-                      className={styles.smallInput}
+                      className="bg-input border border-border rounded px-2 py-1 text-xs text-foreground outline-none focus:border-ring w-32"
                       value={draft.foldOpen}
                       onChange={(e) => setDraftProp('foldOpen', e.target.value)}
                       placeholder="e.g. {"
@@ -275,7 +293,7 @@ export function UDLEditorDialog() {
                   <FormRow label="Fold Close">
                     <input
                       type="text"
-                      className={styles.smallInput}
+                      className="bg-input border border-border rounded px-2 py-1 text-xs text-foreground outline-none focus:border-ring w-32"
                       value={draft.foldClose}
                       onChange={(e) => setDraftProp('foldClose', e.target.value)}
                       placeholder="e.g. }"
@@ -285,13 +303,13 @@ export function UDLEditorDialog() {
               )}
 
               {activeTab === 'keywords' && (
-                <div className={styles.section}>
-                  <p className={styles.helpText}>Enter space-separated keywords for each group. Each group can have its own highlight color (configure via Style Configurator → your language).</p>
+                <div className="flex flex-col gap-3">
+                  <p className="text-[11px] text-muted-foreground leading-relaxed mb-2">Enter space-separated keywords for each group. Each group can have its own highlight color (configure via Style Configurator → your language).</p>
                   {draft.keywordGroups.map((group, i) => (
-                    <div key={i} className={styles.kwGroup}>
-                      <label className={styles.kwLabel}>Group {i + 1}</label>
+                    <div key={i} className="flex flex-col gap-1">
+                      <label className="text-[11px] font-medium text-muted-foreground">Group {i + 1}</label>
                       <textarea
-                        className={styles.kwArea}
+                        className="bg-input border border-border rounded px-2 py-1.5 text-xs text-foreground font-mono resize-y outline-none focus:border-ring"
                         value={group.join(' ')}
                         onChange={(e) => setKeywordGroup(i, e.target.value)}
                         placeholder={`Keywords for group ${i + 1}…`}
@@ -303,30 +321,30 @@ export function UDLEditorDialog() {
               )}
 
               {activeTab === 'operators' && (
-                <div className={styles.section}>
+                <div className="flex flex-col gap-3">
                   <FormRow label="Operator characters">
                     <input
                       type="text"
-                      className={styles.textInput}
+                      className="bg-input border border-border rounded px-2 py-1 text-xs text-foreground outline-none focus:border-ring w-full"
                       value={draft.operators}
                       onChange={(e) => setDraftProp('operators', e.target.value)}
                       placeholder="e.g. +-*/=<>!&|^~%"
                     />
                   </FormRow>
-                  <p className={styles.helpText}>Each character is treated as a single operator token.</p>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed mb-2">Each character is treated as a single operator token.</p>
                 </div>
               )}
 
               {activeTab === 'delimiters' && (
-                <div className={styles.section}>
-                  <p className={styles.helpText}>Define string-like delimiter pairs (e.g. quote characters). Content between open/close is highlighted as a string.</p>
+                <div className="flex flex-col gap-3">
+                  <p className="text-[11px] text-muted-foreground leading-relaxed mb-2">Define string-like delimiter pairs (e.g. quote characters). Content between open/close is highlighted as a string.</p>
                   {draft.delimiters.map((delim, i) => (
-                    <div key={i} className={styles.delimRow}>
-                      <span className={styles.delimIdx}>#{i + 1}</span>
+                    <div key={i} className="flex items-center gap-3 mb-2">
+                      <span className="text-[11px] text-muted-foreground w-6 shrink-0">#{i + 1}</span>
                       <FormRow label="Open">
                         <input
                           type="text"
-                          className={styles.smallInput}
+                          className="bg-input border border-border rounded px-2 py-1 text-xs text-foreground outline-none focus:border-ring w-32"
                           value={delim.open}
                           onChange={(e) => setDelimiter(i, 'open', e.target.value)}
                           placeholder='"'
@@ -335,7 +353,7 @@ export function UDLEditorDialog() {
                       <FormRow label="Close">
                         <input
                           type="text"
-                          className={styles.smallInput}
+                          className="bg-input border border-border rounded px-2 py-1 text-xs text-foreground outline-none focus:border-ring w-32"
                           value={delim.close}
                           onChange={(e) => setDelimiter(i, 'close', e.target.value)}
                           placeholder='"'
@@ -344,7 +362,7 @@ export function UDLEditorDialog() {
                     </div>
                   ))}
                   <button
-                    className={styles.addDelimBtn}
+                    className="text-xs text-primary hover:underline bg-transparent border-none cursor-pointer"
                     onClick={() => setDraftProp('delimiters', [...draft.delimiters, { open: '', close: '' }])}
                   >
                     + Add delimiter pair
@@ -353,11 +371,11 @@ export function UDLEditorDialog() {
               )}
 
               {activeTab === 'comments' && (
-                <div className={styles.section}>
+                <div className="flex flex-col gap-3">
                   <FormRow label="Line comment prefix">
                     <input
                       type="text"
-                      className={styles.smallInput}
+                      className="bg-input border border-border rounded px-2 py-1 text-xs text-foreground outline-none focus:border-ring w-32"
                       value={draft.lineComment}
                       onChange={(e) => setDraftProp('lineComment', e.target.value)}
                       placeholder="//"
@@ -366,7 +384,7 @@ export function UDLEditorDialog() {
                   <FormRow label="Block comment open">
                     <input
                       type="text"
-                      className={styles.smallInput}
+                      className="bg-input border border-border rounded px-2 py-1 text-xs text-foreground outline-none focus:border-ring w-32"
                       value={draft.blockCommentOpen}
                       onChange={(e) => setDraftProp('blockCommentOpen', e.target.value)}
                       placeholder="/*"
@@ -375,7 +393,7 @@ export function UDLEditorDialog() {
                   <FormRow label="Block comment close">
                     <input
                       type="text"
-                      className={styles.smallInput}
+                      className="bg-input border border-border rounded px-2 py-1 text-xs text-foreground outline-none focus:border-ring w-32"
                       value={draft.blockCommentClose}
                       onChange={(e) => setDraftProp('blockCommentClose', e.target.value)}
                       placeholder="*/"
@@ -385,17 +403,26 @@ export function UDLEditorDialog() {
               )}
             </div>
 
-            {error && <div className={styles.errorMsg}>{error}</div>}
+            {error && <div className="text-destructive text-xs px-3 py-1">{error}</div>}
           </div>
         </div>
 
-        <div className={styles.footer}>
+        <div className="flex items-center justify-end gap-2 px-3 py-2 border-t border-border">
           {selected && (
-            <button className={styles.deleteBtn} onClick={handleDelete}>Delete</button>
+            <button
+              className="px-3 py-1.5 text-xs border-none rounded bg-destructive text-destructive-foreground cursor-pointer hover:bg-destructive/90"
+              onClick={handleDelete}
+            >Delete</button>
           )}
-          {saved && <span className={styles.savedMsg}>Saved!</span>}
-          <button className={styles.saveBtn} onClick={handleSave}>Save & Register</button>
-          <button className={styles.closeFooterBtn} onClick={() => setShowUDLEditor(false)}>Close</button>
+          {saved && <span className="text-green-500 text-[11px] mr-2">Saved!</span>}
+          <button
+            className="px-3 py-1.5 text-xs border-none rounded bg-primary text-primary-foreground cursor-pointer hover:bg-primary/90 transition-colors"
+            onClick={handleSave}
+          >Save & Register</button>
+          <button
+            className="px-3 py-1.5 text-xs border border-border rounded bg-secondary text-foreground cursor-pointer hover:bg-muted transition-colors"
+            onClick={() => setShowUDLEditor(false)}
+          >Close</button>
         </div>
       </div>
     </div>
@@ -405,9 +432,9 @@ export function UDLEditorDialog() {
 // ─── Helper sub-component ─────────────────────────────────────────────────────
 function FormRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className={styles.formRow}>
-      <label className={styles.formLabel}>{label}</label>
-      <div className={styles.formControl}>{children}</div>
+    <div className="flex items-start gap-2">
+      <label className="text-xs text-muted-foreground w-28 shrink-0 pt-1">{label}</label>
+      <div className="flex-1 flex flex-col gap-1">{children}</div>
     </div>
   )
 }

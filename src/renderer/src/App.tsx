@@ -3,7 +3,8 @@ import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels'
 import { EditorPane } from './components/EditorPane/EditorPane'
 import { WelcomeScreen } from './components/WelcomeScreen/WelcomeScreen'
 import { TabBar } from './components/TabBar/TabBar'
-import { TopAppBar } from './components/TopAppBar/TopAppBar'
+import { MenuBar } from './components/editor/MenuBar'
+import { Toolbar } from './components/editor/Toolbar'
 import { SideNav } from './components/SideNav/SideNav'
 import { StatusBar } from './components/StatusBar/StatusBar'
 import { BottomPanelContainer } from './components/Panels/BottomPanelContainer'
@@ -15,13 +16,13 @@ import { ShortcutMapperDialog } from './components/Dialogs/ShortcutMapper/Shortc
 import { StyleConfiguratorDialog } from './components/Dialogs/StyleConfigurator/StyleConfiguratorDialog'
 import { UDLEditorDialog } from './components/Dialogs/UDLEditor/UDLEditorDialog'
 import { Sidebar } from './components/Sidebar/Sidebar'
+import { Toaster, toast } from './components/ui/sonner'
 import { useEditorStore } from './store/editorStore'
 import { useUIStore } from './store/uiStore'
 import { usePluginStore } from './store/pluginStore'
 import { useConfigStore } from './store/configStore'
 import { useFileOps, SessionData } from './hooks/useFileOps'
 import { editorRegistry } from './utils/editorRegistry'
-import styles from './App.module.css'
 
 export default function App() {
   const { activeId, buffers } = useEditorStore()
@@ -30,9 +31,13 @@ export default function App() {
   const editorRef = useRef<{ focus: () => void } | null>(null)
   const openFileInput = useRef<HTMLInputElement | null>(null)
 
-  // Apply theme to root
+  // Apply theme to root — .dark class on <html> drives Tailwind theme
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme)
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
   }, [theme])
 
   // Load config on startup and apply persisted theme to UI
@@ -240,14 +245,31 @@ export default function App() {
   }, [autoSaveEnabled, autoSaveIntervalMs, saveBuffer])
 
   return (
-    <div className={styles.app} data-testid="app">
+    <div className="h-screen w-screen flex flex-col overflow-hidden bg-background text-foreground" data-testid="app">
+      {/* Menu Bar — always visible, handles its own drag region */}
+      <MenuBar
+        onNew={newFile}
+        onOpen={() => openFileInput.current?.click()}
+        onSave={() => { const id = useEditorStore.getState().activeId; if (id) saveBuffer(id) }}
+        onSaveAs={() => saveActiveAs()}
+        onSaveAll={() => useEditorStore.getState().buffers.forEach((b) => { if (b.isDirty) saveBuffer(b.id) })}
+        onClose={() => { const id = useEditorStore.getState().activeId; if (id) closeBuffer(id) }}
+        onCloseAll={() => useEditorStore.getState().buffers.forEach((b) => closeBuffer(b.id))}
+        onFind={() => openFind('find')}
+        onReplace={() => openFind('replace')}
+        onFindInFiles={() => openFind('findInFiles')}
+        onReload={() => { const id = useEditorStore.getState().activeId; if (id) reloadBuffer(id) }}
+      />
+
+      {/* Toolbar — conditional on showToolbar */}
       {showToolbar && (
-        <TopAppBar
+        <Toolbar
           onNew={newFile}
           onOpen={() => openFileInput.current?.click()}
           onSave={() => { const id = useEditorStore.getState().activeId; if (id) saveBuffer(id) }}
           onSaveAll={() => useEditorStore.getState().buffers.forEach((b) => { if (b.isDirty) saveBuffer(b.id) })}
           onFind={() => openFind('find')}
+          onReplace={() => openFind('replace')}
           onClose={() => { const id = useEditorStore.getState().activeId; if (id) closeBuffer(id) }}
         />
       )}
@@ -265,24 +287,24 @@ export default function App() {
         }}
       />
 
-      <div className={styles.bodyArea}>
+      <div className="flex flex-row flex-1 overflow-hidden">
         <SideNav />
-        <PanelGroup direction="vertical" className={styles.mainPanelGroup}>
+        <PanelGroup direction="vertical" className="flex-1 overflow-hidden">
           {/* Editor area */}
           <Panel minSize={15}>
             <PanelGroup direction="horizontal">
               {showSidebar && (
                 <>
-                  <Panel defaultSize={18} minSize={12} maxSize={40} className={styles.sidebarPanel}>
+                  <Panel defaultSize={18} minSize={12} maxSize={40} className="overflow-hidden">
                     <Sidebar />
                   </Panel>
-                  <PanelResizeHandle className={styles.hResizeHandle} />
+                  <PanelResizeHandle className="w-1 bg-border cursor-col-resize shrink-0 transition-colors hover:bg-primary data-[resize-handle-active]:bg-primary" />
                 </>
               )}
               <Panel defaultSize={showSidebar ? 82 : 100} minSize={20}>
-                <div className={styles.editorColumn}>
+                <div className="flex flex-col h-full overflow-hidden">
                   <TabBar onClose={closeBuffer} onNewFile={newFile} />
-                  <div className={styles.editorArea}>
+                  <div className="flex flex-1 overflow-hidden">
                     {buffers.length === 0 ? (
                       <WelcomeScreen
                         onNewFile={newFile}
@@ -301,7 +323,7 @@ export default function App() {
           {/* Bottom panel (resizable) */}
           {showBottomPanel && (
             <>
-              <PanelResizeHandle className={styles.vResizeHandle} />
+              <PanelResizeHandle className="h-1 bg-border cursor-row-resize shrink-0 transition-colors hover:bg-primary data-[resize-handle-active]:bg-primary" />
               <Panel defaultSize={25} minSize={8} maxSize={70}>
                 <BottomPanelContainer />
               </Panel>
@@ -319,33 +341,29 @@ export default function App() {
       <ShortcutMapperDialog />
       <StyleConfiguratorDialog />
       <UDLEditorDialog />
-      <ToastContainer />
+      <Toaster position="bottom-right" richColors closeButton />
+      <SonnerBridge />
     </div>
   )
 }
 
-function ToastContainer() {
-  const { toasts, removeToast } = useUIStore()
-  return (
-    <div style={{ position: 'fixed', bottom: 32, right: 16, zIndex: 99999, display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {toasts.map((t) => (
-        <div
-          key={t.id}
-          onClick={() => removeToast(t.id)}
-          style={{
-            background: t.level === 'error' ? '#c0392b' : t.level === 'warn' ? '#e67e22' : '#2c3e50',
-            color: '#fff',
-            padding: '8px 16px',
-            borderRadius: 6,
-            fontSize: 13,
-            cursor: 'pointer',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-            maxWidth: 360
-          }}
-        >
-          {t.message}
-        </div>
-      ))}
-    </div>
-  )
+/** Bridge uiStore.addToast() calls to Sonner */
+function SonnerBridge() {
+  const seenRef = useRef(new Set<string>())
+  useEffect(() => {
+    const unsub = useUIStore.subscribe((state) => {
+      for (const t of state.toasts) {
+        if (!seenRef.current.has(t.id)) {
+          seenRef.current.add(t.id)
+          if (t.level === 'error') toast.error(t.message)
+          else if (t.level === 'warn') toast.warning(t.message)
+          else toast.info(t.message)
+          // Auto-remove from uiStore since Sonner manages display lifecycle
+          setTimeout(() => useUIStore.getState().removeToast(t.id), 100)
+        }
+      }
+    })
+    return unsub
+  }, [])
+  return null
 }

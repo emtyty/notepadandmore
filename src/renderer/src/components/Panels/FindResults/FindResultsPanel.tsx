@@ -5,7 +5,6 @@ import { useEditorStore } from '../../../store/editorStore'
 import { useFileOps } from '../../../hooks/useFileOps'
 import { editorRegistry } from '../../../utils/editorRegistry'
 import * as monaco from 'monaco-editor'
-import styles from './FindResultsPanel.module.css'
 
 // ─── Row types for flat virtual list ─────────────────────────────────────────
 type Row =
@@ -35,12 +34,12 @@ function HighlightedLine({
   const displayAfter = trimmed ? after.slice(0, 60) : after
 
   return (
-    <span className={styles.lineText}>
-      {trimmed && before.length > 60 && <span style={{ color: 'var(--text-muted)' }}>…</span>}
+    <span className="text-foreground whitespace-pre truncate text-xs">
+      {trimmed && before.length > 60 && <span className="text-muted-foreground">…</span>}
       {displayBefore}
-      <span className={styles.matchHighlight}>{match}</span>
+      <span className="bg-yellow-500/30 rounded-sm text-foreground">{match}</span>
       {displayAfter}
-      {trimmed && after.length > 60 && <span style={{ color: 'var(--text-muted)' }}>…</span>}
+      {trimmed && after.length > 60 && <span className="text-muted-foreground">…</span>}
     </span>
   )
 }
@@ -51,7 +50,6 @@ export function FindResultsPanel() {
   const { buffers, setActive } = useEditorStore()
   const { openFiles } = useFileOps()
 
-  // Track collapsed file groups by filePath (or title as fallback)
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
 
   const toggleCollapse = useCallback((key: string) => {
@@ -63,7 +61,6 @@ export function FindResultsPanel() {
     })
   }, [])
 
-  // Flatten files + result lines into a single Row array for the virtualizer
   const rows = useMemo<Row[]>(() => {
     if (!findResults) return []
     const out: Row[] = []
@@ -116,17 +113,17 @@ export function FindResultsPanel() {
   )
 
   return (
-    <div className={styles.panel}>
-      <div className={styles.header}>
-        <div className={styles.headerLeft}>
+    <div className="flex flex-col bg-background h-full overflow-hidden">
+      <div className="flex items-center px-2.5 py-[3px] bg-background border-b border-border shrink-0 min-h-[24px]">
+        <div className="flex items-center gap-2 overflow-hidden">
           {findResults && (
-            <span className={styles.summary}>
-              "{findResults.query}" — {findResults.totalHits} hit{findResults.totalHits !== 1 ? 's' : ''} in{' '}
+            <span className="text-[11px] text-muted-foreground whitespace-nowrap truncate">
+              &ldquo;{findResults.query}&rdquo; — {findResults.totalHits} hit{findResults.totalHits !== 1 ? 's' : ''} in{' '}
               {findResults.files.length} file{findResults.files.length !== 1 ? 's' : ''} · {findResults.scope}
               {findResults.searchDurationMs != null && !isSearching && (
                 <>
                   {' '}
-                  <span className={styles.meta}>
+                  <span className="text-muted-foreground opacity-90">
                     · {findResults.searchEngineLabel ?? 'Search'}{' '}
                     {findResults.searchDurationMs >= 1000
                       ? `${(findResults.searchDurationMs / 1000).toFixed(2)}s`
@@ -137,7 +134,7 @@ export function FindResultsPanel() {
             </span>
           )}
           {isSearching && searchProgress && (
-            <span className={styles.progressBadge}>
+            <span className="text-[11px] text-primary whitespace-nowrap shrink-0">
               {searchProgress.scanned > 0
                 ? `Scanning ${searchProgress.scanned} files…`
                 : 'Collecting files…'}
@@ -146,9 +143,9 @@ export function FindResultsPanel() {
         </div>
       </div>
 
-      <div className={styles.body} ref={parentRef}>
+      <div className="flex-1 overflow-y-auto overflow-x-hidden text-xs font-mono editor-scrollbar" ref={parentRef}>
         {!findResults || findResults.files.length === 0 ? (
-          <div className={styles.empty}>{isSearching ? 'Searching…' : 'No results.'}</div>
+          <div className="p-4 text-muted-foreground font-sans text-xs">{isSearching ? 'Searching…' : 'No results.'}</div>
         ) : (
           <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
             {virtualizer.getVirtualItems().map((vItem) => {
@@ -161,13 +158,13 @@ export function FindResultsPanel() {
                   <div
                     key={vItem.key}
                     style={{ position: 'absolute', top: vItem.start, left: 0, right: 0, height: ROW_HEIGHT_HEADER }}
-                    className={styles.fileHeader}
+                    className="flex items-center gap-1.5 px-2.5 bg-explorer cursor-pointer sticky top-0 z-[1] hover:bg-explorer-hover"
                     onClick={() => toggleCollapse(key)}
                     title={row.file.filePath ?? row.file.title}
                   >
-                    <span className={styles.toggle}>{isCollapsed ? '▶' : '▼'}</span>
-                    <span className={styles.filePath}>{row.file.filePath ?? row.file.title}</span>
-                    <span className={styles.fileCount}>
+                    <span className="text-[10px] text-muted-foreground w-2.5 shrink-0">{isCollapsed ? '▶' : '▼'}</span>
+                    <span className="text-primary font-semibold text-xs truncate flex-1">{row.file.filePath ?? row.file.title}</span>
+                    <span className="text-muted-foreground text-[11px] shrink-0">
                       ({row.hitCount} hit{row.hitCount !== 1 ? 's' : ''})
                     </span>
                   </div>
@@ -179,11 +176,11 @@ export function FindResultsPanel() {
                 <div
                   key={vItem.key}
                   style={{ position: 'absolute', top: vItem.start, left: 0, right: 0, height: ROW_HEIGHT_LINE }}
-                  className={styles.resultLine}
+                  className="flex items-baseline px-2.5 pl-[26px] cursor-pointer border-b border-transparent hover:bg-explorer-hover"
                   onClick={() => handleNavigate(row.file, row.result.lineNumber, row.result.column)}
                   title={`${row.file.filePath ?? row.file.title}:${row.result.lineNumber}:${row.result.column}`}
                 >
-                  <span className={styles.lineNum}>{row.result.lineNumber}</span>
+                  <span className="text-muted-foreground min-w-[48px] text-right mr-2 shrink-0 text-[11px] pt-px">{row.result.lineNumber}</span>
                   <HighlightedLine
                     lineText={row.result.lineText}
                     column={row.result.column}
