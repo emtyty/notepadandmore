@@ -458,6 +458,20 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
     return () => window.removeEventListener('editor:set-language-local', handleLocalLang)
   }, [getBuffer, updateBuffer])
 
+  // Handle go-to-line from status bar Quick Pick
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { line, column } = (e as CustomEvent<{ line: number; column: number }>).detail
+      const editor = editorRef.current
+      if (!editor) return
+      editor.revealLineInCenter(line)
+      editor.setPosition({ lineNumber: line, column })
+      editor.focus()
+    }
+    window.addEventListener('editor:goto-line', handler)
+    return () => window.removeEventListener('editor:goto-line', handler)
+  }, [])
+
   // Handle plugin API requests that need editor access
   useEffect(() => {
     window.api.on('plugin:editor-get-text', () => {

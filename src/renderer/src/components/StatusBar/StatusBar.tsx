@@ -1,14 +1,24 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { useEditorStore, EOLType } from '../../store/editorStore'
+import { useEditorStore } from '../../store/editorStore'
 import { useUIStore } from '../../store/uiStore'
+import { QuickPick } from '../QuickPick/QuickPick'
+import { GoToLineInput } from '../QuickPick/GoToLineInput'
+import {
+  ENCODINGS,
+  LANGUAGES,
+  EOLS,
+  getEncodingLabel,
+  getLanguageLabel,
+  getEOLShort
+} from '../../constants/registries'
 
-const EOL_CYCLE: EOLType[] = ['LF', 'CRLF']
-const ENCODING_CYCLE = ['UTF-8', 'UTF-8 BOM', 'UTF-16 LE', 'UTF-16 BE']
+type ActivePicker = 'encoding' | 'language' | 'eol' | 'goto' | null
 
 export const StatusBar: React.FC = () => {
-  const { getActive } = useEditorStore()
+  const { getActive, activeId } = useEditorStore()
   const { isRecording } = useUIStore()
   const [cursor, setCursor] = useState({ line: 1, col: 1 })
+  const [activePicker, setActivePicker] = useState<ActivePicker>(null)
   const buf = getActive()
 
   useEffect(() => {
@@ -20,64 +30,151 @@ export const StatusBar: React.FC = () => {
     return () => window.removeEventListener('editor:cursor', handler)
   }, [])
 
-  const cycleEOL = useCallback(() => {
-    if (!buf) return
-    const current = buf.eol ?? 'LF'
-    const idx = EOL_CYCLE.indexOf(current)
-    const next = EOL_CYCLE[(idx + 1) % EOL_CYCLE.length]
-    window.dispatchEvent(new CustomEvent('editor:set-eol', { detail: next }))
-  }, [buf])
+  // Close picker on tab switch (BR-006)
+  useEffect(() => {
+    setActivePicker(null)
+  }, [activeId])
 
-  const cycleEncoding = useCallback(() => {
-    if (!buf) return
-    const current = buf.encoding ?? 'UTF-8'
-    const idx = ENCODING_CYCLE.indexOf(current)
-    const next = ENCODING_CYCLE[idx >= 0 ? (idx + 1) % ENCODING_CYCLE.length : 0]
-    window.dispatchEvent(new CustomEvent('editor:set-encoding', { detail: next }))
-  }, [buf])
+  const openPicker = useCallback(
+    (picker: ActivePicker) => {
+      if (buf) setActivePicker(picker)
+    },
+    [buf]
+  )
+
+  const handleEncodingSelect = useCallback(
+    (value: string) => {
+      window.dispatchEvent(new CustomEvent('editor:set-encoding', { detail: value }))
+      setActivePicker(null)
+    },
+    []
+  )
+
+  const handleLanguageSelect = useCallback(
+    (value: string) => {
+      window.dispatchEvent(new CustomEvent('editor:set-language-local', { detail: value }))
+      setActivePicker(null)
+    },
+    []
+  )
+
+  const handleEOLSelect = useCallback(
+    (value: string) => {
+      window.dispatchEvent(new CustomEvent('editor:set-eol', { detail: value }))
+      setActivePicker(null)
+    },
+    []
+  )
+
+  const handleGoToLine = useCallback(
+    (line: number, column: number) => {
+      window.dispatchEvent(new CustomEvent('editor:goto-line', { detail: { line, column } }))
+      setActivePicker(null)
+    },
+    []
+  )
+
+  const closePicker = useCallback(() => setActivePicker(null), [])
+
+  const itemClass =
+    'cursor-pointer hover:bg-[var(--color-statusbar-foreground)]/10 px-1.5 py-0.5 rounded transition-colors'
 
   return (
-    <div className="h-6 bg-statusbar text-statusbar-foreground flex items-center px-2 text-[11px] select-none shrink-0" data-testid="statusbar">
-      {/* Left section */}
-      <div className="flex items-center gap-3">
-        <span data-testid="cursor-position" className="flex items-center gap-1">
-          Ln {cursor.line}, Col {cursor.col}
-        </span>
-      </div>
-
+    <div
+      className="h-6 bg-statusbar text-statusbar-foreground flex items-center px-2 text-[11px] select-none shrink-0"
+      data-testid="statusbar"
+    >
       {/* Spacer */}
       <div className="flex-1" />
 
       {/* Right section */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-1">
         {isRecording && (
-          <span className="text-destructive-foreground font-semibold tracking-wider animate-pulse">
+          <span className="text-destructive-foreground font-semibold tracking-wider animate-pulse px-1.5">
             REC
           </span>
         )}
 
         <span
-          className="cursor-pointer hover:underline decoration-dotted"
-          onClick={cycleEOL}
-          title="Click to cycle EOL type"
+          data-testid="cursor-position"
+          className={itemClass}
+          onClick={() => openPicker('goto')}
+          title="Go to Line:Column"
         >
-          {buf?.eol ?? 'LF'}
+          Ln {cursor.line}, Col {cursor.col}
         </span>
 
         <span
-          className="cursor-pointer hover:underline decoration-dotted"
-          onClick={cycleEncoding}
-          title="Click to cycle encoding"
+          className={itemClass}
+          onClick={() => openPicker('eol')}
+          title="Select End of Line Sequence"
+          data-testid="statusbar-eol"
         >
-          {buf?.encoding ?? 'UTF-8'}
+          {getEOLShort(buf?.eol ?? 'LF')}
         </span>
 
-        <span>{buf?.language ?? 'Plain Text'}</span>
+        <span
+          className={itemClass}
+          onClick={() => openPicker('encoding')}
+          title="Select Encoding"
+          data-testid="statusbar-encoding"
+        >
+          {getEncodingLabel(buf?.encoding ?? 'UTF-8')}
+        </span>
 
-        <span className="opacity-70">
+        <span
+          className={itemClass}
+          onClick={() => openPicker('language')}
+          title="Select Language Mode"
+          data-testid="statusbar-language"
+        >
+          {getLanguageLabel(buf?.language ?? 'plaintext')}
+        </span>
+
+        <span className="opacity-70 px-1.5">
           {buf?.isDirty ? 'Modified' : buf?.filePath ? 'Saved' : 'New File'}
         </span>
       </div>
+
+      {/* Quick Pick overlays */}
+      {activePicker === 'encoding' && (
+        <QuickPick
+          items={ENCODINGS}
+          activeValue={buf?.encoding ?? null}
+          placeholder="Select Encoding"
+          onSelect={handleEncodingSelect}
+          onClose={closePicker}
+        />
+      )}
+
+      {activePicker === 'language' && (
+        <QuickPick
+          items={LANGUAGES}
+          activeValue={buf?.language ?? null}
+          placeholder="Select Language Mode"
+          onSelect={handleLanguageSelect}
+          onClose={closePicker}
+        />
+      )}
+
+      {activePicker === 'eol' && (
+        <QuickPick
+          items={EOLS}
+          activeValue={buf?.eol ?? null}
+          placeholder="Select End of Line Sequence"
+          onSelect={handleEOLSelect}
+          onClose={closePicker}
+        />
+      )}
+
+      {activePicker === 'goto' && (
+        <GoToLineInput
+          currentLine={cursor.line}
+          currentCol={cursor.col}
+          onGo={handleGoToLine}
+          onClose={closePicker}
+        />
+      )}
     </div>
   )
 }

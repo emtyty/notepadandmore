@@ -180,48 +180,6 @@ export function MenuBar({
       { separator: true, label: '' },
       { label: 'Split View', disabled: true },
     ],
-    Encoding: [
-      { label: 'UTF-8', action: () => window.dispatchEvent(new CustomEvent('editor:set-encoding', { detail: 'utf8' })) },
-      { label: 'UTF-8 with BOM', action: () => window.dispatchEvent(new CustomEvent('editor:set-encoding', { detail: 'utf8bom' })) },
-      { label: 'UTF-16 LE', action: () => window.dispatchEvent(new CustomEvent('editor:set-encoding', { detail: 'utf16le' })) },
-      { label: 'UTF-16 BE', action: () => window.dispatchEvent(new CustomEvent('editor:set-encoding', { detail: 'utf16be' })) },
-      { separator: true, label: '' },
-      { label: 'Windows-1252 (Latin)', action: () => window.dispatchEvent(new CustomEvent('editor:set-encoding', { detail: 'win1252' })) },
-      { label: 'ISO-8859-1 (Latin-1)', action: () => window.dispatchEvent(new CustomEvent('editor:set-encoding', { detail: 'iso88591' })) },
-      { separator: true, label: '' },
-      {
-        label: 'EOL Format', submenu: [
-          { label: 'Windows (CRLF)', action: () => window.dispatchEvent(new CustomEvent('editor:set-eol', { detail: 'CRLF' })) },
-          { label: 'Unix (LF)', action: () => window.dispatchEvent(new CustomEvent('editor:set-eol', { detail: 'LF' })) },
-          { label: 'Classic Mac (CR)', action: () => window.dispatchEvent(new CustomEvent('editor:set-eol', { detail: 'CR' })) },
-        ],
-      },
-    ],
-    Language: [
-      { label: 'Auto Detect', action: () => window.dispatchEvent(new CustomEvent('editor:set-language-local', { detail: 'auto' })) },
-      { label: 'Plain Text', action: () => window.dispatchEvent(new CustomEvent('editor:set-language-local', { detail: 'plaintext' })) },
-      { separator: true, label: '' },
-      { label: 'JavaScript', action: () => window.dispatchEvent(new CustomEvent('editor:set-language-local', { detail: 'javascript' })) },
-      { label: 'TypeScript', action: () => window.dispatchEvent(new CustomEvent('editor:set-language-local', { detail: 'typescript' })) },
-      { label: 'Python', action: () => window.dispatchEvent(new CustomEvent('editor:set-language-local', { detail: 'python' })) },
-      { label: 'C++', action: () => window.dispatchEvent(new CustomEvent('editor:set-language-local', { detail: 'cpp' })) },
-      { label: 'C', action: () => window.dispatchEvent(new CustomEvent('editor:set-language-local', { detail: 'c' })) },
-      { label: 'C#', action: () => window.dispatchEvent(new CustomEvent('editor:set-language-local', { detail: 'csharp' })) },
-      { label: 'Java', action: () => window.dispatchEvent(new CustomEvent('editor:set-language-local', { detail: 'java' })) },
-      { label: 'Go', action: () => window.dispatchEvent(new CustomEvent('editor:set-language-local', { detail: 'go' })) },
-      { label: 'Rust', action: () => window.dispatchEvent(new CustomEvent('editor:set-language-local', { detail: 'rust' })) },
-      { label: 'HTML', action: () => window.dispatchEvent(new CustomEvent('editor:set-language-local', { detail: 'html' })) },
-      { label: 'CSS', action: () => window.dispatchEvent(new CustomEvent('editor:set-language-local', { detail: 'css' })) },
-      { label: 'JSON', action: () => window.dispatchEvent(new CustomEvent('editor:set-language-local', { detail: 'json' })) },
-      { label: 'XML', action: () => window.dispatchEvent(new CustomEvent('editor:set-language-local', { detail: 'xml' })) },
-      { label: 'Markdown', action: () => window.dispatchEvent(new CustomEvent('editor:set-language-local', { detail: 'markdown' })) },
-      { label: 'SQL', action: () => window.dispatchEvent(new CustomEvent('editor:set-language-local', { detail: 'sql' })) },
-      { label: 'Shell Script', action: () => window.dispatchEvent(new CustomEvent('editor:set-language-local', { detail: 'shell' })) },
-      { label: 'PowerShell', action: () => window.dispatchEvent(new CustomEvent('editor:set-language-local', { detail: 'powershell' })) },
-      { label: 'YAML', action: () => window.dispatchEvent(new CustomEvent('editor:set-language-local', { detail: 'yaml' })) },
-      { label: 'PHP', action: () => window.dispatchEvent(new CustomEvent('editor:set-language-local', { detail: 'php' })) },
-      { label: 'Ruby', action: () => window.dispatchEvent(new CustomEvent('editor:set-language-local', { detail: 'ruby' })) },
-    ],
     Settings: [
       { label: 'Preferences...', shortcut: `${mod}+,`, action: () => useUIStore.getState().setShowPreferences(true) },
       { label: 'Shortcut Mapper...', disabled: true },
@@ -255,7 +213,7 @@ export function MenuBar({
     ],
   }
 
-  const topMenus = ['File', 'Edit', 'Search', 'View', 'Encoding', 'Language', 'Settings', 'Macro', 'Plugins', 'Window', 'Help']
+  const topMenus = ['File', 'Edit', 'Search', 'View', 'Settings', 'Macro', 'Plugins', 'Window', 'Help']
 
   const renderMenuItems = (items: MenuItem[], parentLabel: string) => (
     items.map((item, i) => {

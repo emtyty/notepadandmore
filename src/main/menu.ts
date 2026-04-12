@@ -301,60 +301,6 @@ export function buildMenu(win: BrowserWindow, recentFiles: string[] = []): void 
       ]
     },
 
-    // Encoding
-    {
-      label: 'E&ncoding',
-      submenu: [
-        { label: 'UTF-8', click: () => win.webContents.send('editor:set-encoding', 'utf8') },
-        { label: 'UTF-8 with BOM', click: () => win.webContents.send('editor:set-encoding', 'utf8bom') },
-        { label: 'UTF-16 LE', click: () => win.webContents.send('editor:set-encoding', 'utf16le') },
-        { label: 'UTF-16 BE', click: () => win.webContents.send('editor:set-encoding', 'utf16be') },
-        { type: 'separator' },
-        { label: 'Windows-1252 (Latin)', click: () => win.webContents.send('editor:set-encoding', 'win1252') },
-        { label: 'ISO-8859-1 (Latin-1)', click: () => win.webContents.send('editor:set-encoding', 'iso88591') },
-        { type: 'separator' },
-        {
-          label: 'EOL Format',
-          submenu: [
-            { label: 'Windows (CRLF)', click: () => win.webContents.send('editor:set-eol', 'CRLF') },
-            { label: 'Unix (LF)', click: () => win.webContents.send('editor:set-eol', 'LF') },
-            { label: 'Classic Mac (CR)', click: () => win.webContents.send('editor:set-eol', 'CR') }
-          ]
-        }
-      ]
-    },
-
-    // Language
-    {
-      label: '&Language',
-      id: 'language-menu',
-      submenu: [
-        { label: 'Auto Detect', click: () => win.webContents.send('editor:set-language', 'auto') },
-        { label: 'Plain Text', click: () => win.webContents.send('editor:set-language', 'plaintext') },
-        { type: 'separator' },
-        { label: 'JavaScript', click: () => win.webContents.send('editor:set-language', 'javascript') },
-        { label: 'TypeScript', click: () => win.webContents.send('editor:set-language', 'typescript') },
-        { label: 'Python', click: () => win.webContents.send('editor:set-language', 'python') },
-        { label: 'C++', click: () => win.webContents.send('editor:set-language', 'cpp') },
-        { label: 'C', click: () => win.webContents.send('editor:set-language', 'c') },
-        { label: 'C#', click: () => win.webContents.send('editor:set-language', 'csharp') },
-        { label: 'Java', click: () => win.webContents.send('editor:set-language', 'java') },
-        { label: 'Go', click: () => win.webContents.send('editor:set-language', 'go') },
-        { label: 'Rust', click: () => win.webContents.send('editor:set-language', 'rust') },
-        { label: 'HTML', click: () => win.webContents.send('editor:set-language', 'html') },
-        { label: 'CSS', click: () => win.webContents.send('editor:set-language', 'css') },
-        { label: 'JSON', click: () => win.webContents.send('editor:set-language', 'json') },
-        { label: 'XML', click: () => win.webContents.send('editor:set-language', 'xml') },
-        { label: 'Markdown', click: () => win.webContents.send('editor:set-language', 'markdown') },
-        { label: 'SQL', click: () => win.webContents.send('editor:set-language', 'sql') },
-        { label: 'Shell Script', click: () => win.webContents.send('editor:set-language', 'shell') },
-        { label: 'PowerShell', click: () => win.webContents.send('editor:set-language', 'powershell') },
-        { label: 'YAML', click: () => win.webContents.send('editor:set-language', 'yaml') },
-        { label: 'PHP', click: () => win.webContents.send('editor:set-language', 'php') },
-        { label: 'Ruby', click: () => win.webContents.send('editor:set-language', 'ruby') }
-      ]
-    },
-
     // Settings
     {
       label: '&Settings',
@@ -462,8 +408,7 @@ export function buildMenu(win: BrowserWindow, recentFiles: string[] = []): void 
         },
         { type: 'separator' },
         {
-          label: 'Open DevTools',
-          accelerator: 'F12',
+          label: 'Toggle DevTools',
           click: () => win.webContents.toggleDevTools()
         }
       ]
