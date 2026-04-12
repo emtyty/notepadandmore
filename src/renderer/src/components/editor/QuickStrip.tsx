@@ -13,7 +13,7 @@ export function QuickStrip({ onFind, onToggleSidebar, onToggleTheme }: QuickStri
 
   return (
     <div
-      className="h-7 bg-toolbar border-b border-toolbar-border flex items-center px-1 select-none shrink-0"
+      className="h-12 bg-toolbar border-b border-toolbar-border flex items-center px-1 select-none shrink-0"
       style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
       data-testid="quickstrip"
     >
