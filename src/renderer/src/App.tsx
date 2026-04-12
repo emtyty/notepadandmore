@@ -6,7 +6,6 @@ import { TabBar } from './components/TabBar/TabBar'
 import { MenuBar } from './components/editor/MenuBar'
 import { QuickStrip } from './components/editor/QuickStrip'
 import { Toolbar } from './components/editor/Toolbar'
-import { SideNav } from './components/SideNav/SideNav'
 import { StatusBar } from './components/StatusBar/StatusBar'
 import { BottomPanelContainer } from './components/Panels/BottomPanelContainer'
 import { FindReplaceDialog } from './components/Dialogs/FindReplace/FindReplaceDialog'
@@ -325,7 +324,6 @@ export default function App() {
       />
 
       <div className="flex flex-row flex-1 overflow-hidden">
-        <SideNav />
         <PanelGroup direction="vertical" className="flex-1 overflow-hidden">
           {/* Editor area */}
           <Panel minSize={15}>

@@ -1,7 +1,7 @@
 {
-  "name": "notepad-and-more",
+  "name": "NovaPad",
   "version": "1.0.0",
-  "description": "Cross-platform Notepad++ clone with plugin support",
+  "description": "A lightweight, fast, and modern text editor for Windows, macOS.",
   "main": "out/main/index.js",
   "author": "",
   "license": "MIT",
