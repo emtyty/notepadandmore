@@ -125,6 +125,22 @@ export default function App() {
       if (prev) s.setActive(prev.id)
     })
 
+    // Custom MenuBar events (Window menu)
+    const handleTabNext = () => {
+      const s = useEditorStore.getState()
+      const idx = s.buffers.findIndex((b) => b.id === s.activeId)
+      const next = s.buffers[(idx + 1) % s.buffers.length]
+      if (next) s.setActive(next.id)
+    }
+    const handleTabPrev = () => {
+      const s = useEditorStore.getState()
+      const idx = s.buffers.findIndex((b) => b.id === s.activeId)
+      const prev = s.buffers[(idx - 1 + s.buffers.length) % s.buffers.length]
+      if (prev) s.setActive(prev.id)
+    }
+    window.addEventListener('tab:next-local', handleTabNext)
+    window.addEventListener('tab:prev-local', handleTabPrev)
+
     // External file change notifications
     window.api.on('file:externally-changed', (...args) => {
       const fp = args[0] as string
@@ -251,6 +267,14 @@ export default function App() {
       <MenuBar
         onNew={newFile}
         onOpen={() => openFileInput.current?.click()}
+        onOpenFolder={async () => {
+          const dir = await window.api.file.openDirDialog()
+          if (dir) {
+            useUIStore.getState().setWorkspaceFolder(dir)
+            useUIStore.getState().setShowSidebar(true)
+            useUIStore.getState().setSidebarPanel('files')
+          }
+        }}
         onSave={() => { const id = useEditorStore.getState().activeId; if (id) saveBuffer(id) }}
         onSaveAs={() => saveActiveAs()}
         onSaveAll={() => useEditorStore.getState().buffers.forEach((b) => { if (b.isDirty) saveBuffer(b.id) })}

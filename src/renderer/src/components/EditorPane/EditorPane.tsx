@@ -379,17 +379,27 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
 
   // Handle editor option changes from menu
   useEffect(() => {
-    window.api.on('editor:set-option', (...args: unknown[]) => {
-      const opts = args[0] as monaco.editor.IEditorOptions
+    const applyEditorOptions = (opts: monaco.editor.IEditorOptions, fromMain = false) => {
       editorRef.current?.updateOptions(opts)
-      // Sync toggle state from native menu → uiStore (fromMain: true to prevent loop)
+      // Sync toggle state → uiStore
       const ui = useUIStore.getState()
-      if ('wordWrap' in opts) ui.setWordWrap(opts.wordWrap === 'on', true)
-      if ('renderWhitespace' in opts) ui.setRenderWhitespace(opts.renderWhitespace === 'all', true)
+      if ('wordWrap' in opts) ui.setWordWrap(opts.wordWrap === 'on', fromMain)
+      if ('renderWhitespace' in opts) ui.setRenderWhitespace(opts.renderWhitespace === 'all', fromMain)
       if (opts.guides && typeof opts.guides === 'object' && 'indentation' in opts.guides) {
-        ui.setIndentationGuides(!!(opts.guides as { indentation: boolean }).indentation, true)
+        ui.setIndentationGuides(!!(opts.guides as { indentation: boolean }).indentation, fromMain)
       }
+      if ('columnSelection' in opts) ui.setColumnSelectMode(!!opts.columnSelection, fromMain)
+    }
+    // From native menu (IPC)
+    window.api.on('editor:set-option', (...args: unknown[]) => {
+      applyEditorOptions(args[0] as monaco.editor.IEditorOptions, true)
     })
+    // From custom MenuBar (CustomEvent)
+    const handleLocalOption = (e: Event) => {
+      applyEditorOptions((e as CustomEvent).detail as monaco.editor.IEditorOptions)
+    }
+    window.addEventListener('editor:set-option-local', handleLocalOption)
+    return () => window.removeEventListener('editor:set-option-local', handleLocalOption)
   }, [])
 
   // Handle EOL change from menu (IPC) or status bar click (CustomEvent)
@@ -426,16 +436,19 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
     return () => window.removeEventListener('editor:set-encoding', customHandler)
   }, [updateBuffer])
 
-  // Handle language change from menu
+  // Handle language change from menu (IPC + CustomEvent)
   useEffect(() => {
-    window.api.on('editor:set-language', (...args: unknown[]) => {
-      const lang = args[0] as string
+    const applyLanguage = (lang: string) => {
       const buf = currentIdRef.current ? getBuffer(currentIdRef.current) : null
       if (buf?.model) {
         monaco.editor.setModelLanguage(buf.model, lang)
         updateBuffer(buf.id, { language: lang })
       }
-    })
+    }
+    window.api.on('editor:set-language', (...args: unknown[]) => applyLanguage(args[0] as string))
+    const handleLocalLang = (e: Event) => applyLanguage((e as CustomEvent<string>).detail)
+    window.addEventListener('editor:set-language-local', handleLocalLang)
+    return () => window.removeEventListener('editor:set-language-local', handleLocalLang)
   }, [getBuffer, updateBuffer])
 
   // Handle plugin API requests that need editor access
