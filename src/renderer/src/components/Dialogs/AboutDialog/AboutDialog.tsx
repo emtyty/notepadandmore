@@ -32,7 +32,7 @@ export function AboutDialog() {
           >✕</button>
         </div>
         <div className="px-6 py-4 text-center">
-          <div className="text-lg font-semibold text-foreground">Digital Artisan Editor</div>
+          <div className="text-lg font-semibold text-foreground">NovaPad</div>
           <div className="text-sm text-muted-foreground mt-1">Version {version}</div>
           <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
             A cross-platform text editor with full Notepad++ feature parity,

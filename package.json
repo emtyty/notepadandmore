@@ -95,7 +95,7 @@
   },
   "build": {
     "appId": "com.notepadandmore.app",
-    "productName": "Digital Artisan Editor",
+    "productName": "NovaPad",
     "directories": {
       "output": "dist"
     },

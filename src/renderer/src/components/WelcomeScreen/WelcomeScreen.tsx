@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react'
 import { FilePlus, FolderOpen, Clock } from 'lucide-react'
-import appIcon from '../../assets/app-icon.png'
 import { useConfigStore } from '../../store/configStore'
 
 interface WelcomeScreenProps {
@@ -23,22 +22,13 @@ export function WelcomeScreen({ onNewFile, onOpenFile, onOpenRecent }: WelcomeSc
   }, [maxRecentFiles])
 
   return (
-    <div className="flex items-center justify-center w-full h-full bg-background">
-      <div className="flex items-start gap-6">
-        {/* Left: app icon */}
-        <img
-          src={appIcon}
-          alt="Digital Artisan Editor"
-          className="w-[120px] h-[120px] rounded-[22px] opacity-85"
-        />
+    <div className="flex justify-center w-full h-full bg-background pt-[10%]">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-16 h-16 mx-auto rounded-xl bg-muted flex items-center justify-center">
+          <span className="text-2xl font-bold font-mono text-muted-foreground">N+</span>
+        </div>
 
-        {/* Right: app name + actions */}
-        <div className="flex flex-col">
-          <div className="text-[22px] font-semibold text-foreground tracking-tight mb-3">
-            Digital Artisan Editor
-          </div>
-
-          <div className="min-w-[300px] border border-border rounded-lg overflow-hidden bg-card">
+        <div className="min-w-[300px] border border-border rounded-lg overflow-hidden bg-card">
             <button
               className="flex items-center justify-between w-full px-3 py-2.5 text-xs text-foreground bg-transparent border-none cursor-pointer hover:bg-secondary transition-colors"
               onClick={onNewFile}
@@ -86,7 +76,6 @@ export function WelcomeScreen({ onNewFile, onOpenFile, onOpenRecent }: WelcomeSc
                 })}
               </>
             )}
-          </div>
         </div>
       </div>
     </div>
