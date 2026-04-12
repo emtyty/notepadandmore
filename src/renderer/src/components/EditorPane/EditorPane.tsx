@@ -347,12 +347,17 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
     editor.focus()
   }, [activeId, activeBufLoaded, getBuffer, updateBuffer, restoreDecorations, loadBuffer])
 
-  // Handle editor commands from menu
+  // Handle editor commands from menu (IPC from native menu + CustomEvent from custom MenuBar/context menu)
   useEffect(() => {
-    const handler = (...args: unknown[]) => {
+    const ipcHandler = (...args: unknown[]) => {
       dispatchCommand(args[0] as string)
     }
-    window.api.on('editor:command', handler)
+    const customHandler = (e: Event) => {
+      dispatchCommand((e as CustomEvent<string>).detail)
+    }
+    window.api.on('editor:command', ipcHandler)
+    window.addEventListener('editor:command', customHandler)
+    return () => window.removeEventListener('editor:command', customHandler)
   }, [dispatchCommand])
 
   // Handle macro:replay-command from macro playback (avoids IPC round-trip)
