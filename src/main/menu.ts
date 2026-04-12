@@ -198,19 +198,22 @@ export function buildMenu(win: BrowserWindow, recentFiles: string[] = []): void 
         {
           label: 'Toggle Bookmark',
           accelerator: 'CmdOrCtrl+F2',
+          enabled: false,
           click: () => win.webContents.send('editor:command', 'toggleBookmark')
         },
         {
           label: 'Next Bookmark',
           accelerator: 'F2',
+          enabled: false,
           click: () => win.webContents.send('editor:command', 'nextBookmark')
         },
         {
           label: 'Previous Bookmark',
           accelerator: 'Shift+F2',
+          enabled: false,
           click: () => win.webContents.send('editor:command', 'prevBookmark')
         },
-        { label: 'Clear All Bookmarks', click: () => win.webContents.send('editor:command', 'clearBookmarks') }
+        { label: 'Clear All Bookmarks', enabled: false, click: () => win.webContents.send('editor:command', 'clearBookmarks') }
       ]
     },
 
@@ -219,18 +222,21 @@ export function buildMenu(win: BrowserWindow, recentFiles: string[] = []): void 
       label: '&View',
       submenu: [
         {
+          id: 'toggle-toolbar',
           label: 'Toggle Toolbar',
           type: 'checkbox',
           checked: true,
           click: (item) => win.webContents.send('ui:toggle-toolbar', item.checked)
         },
         {
+          id: 'toggle-statusbar',
           label: 'Toggle Status Bar',
           type: 'checkbox',
           checked: true,
           click: (item) => win.webContents.send('ui:toggle-statusbar', item.checked)
         },
         {
+          id: 'toggle-sidebar',
           label: 'Toggle Sidebar',
           accelerator: 'CmdOrCtrl+B',
           type: 'checkbox',
@@ -239,6 +245,7 @@ export function buildMenu(win: BrowserWindow, recentFiles: string[] = []): void 
         },
         { type: 'separator' },
         {
+          id: 'toggle-word-wrap',
           label: 'Word Wrap',
           accelerator: 'Alt+Z',
           type: 'checkbox',
@@ -246,12 +253,14 @@ export function buildMenu(win: BrowserWindow, recentFiles: string[] = []): void 
           click: (item) => win.webContents.send('editor:set-option', { wordWrap: item.checked ? 'on' : 'off' })
         },
         {
+          id: 'toggle-whitespace',
           label: 'Show Whitespace',
           type: 'checkbox',
           checked: false,
           click: (item) => win.webContents.send('editor:set-option', { renderWhitespace: item.checked ? 'all' : 'none' })
         },
         {
+          id: 'toggle-indent-guides',
           label: 'Show Indentation Guides',
           type: 'checkbox',
           checked: true,
@@ -282,9 +291,11 @@ export function buildMenu(win: BrowserWindow, recentFiles: string[] = []): void 
         },
         { type: 'separator' },
         {
+          id: 'toggle-split-view',
           label: 'Split View',
           type: 'checkbox',
           checked: false,
+          enabled: false,
           click: (item) => win.webContents.send('ui:toggle-split-view', item.checked)
         }
       ]
@@ -355,15 +366,18 @@ export function buildMenu(win: BrowserWindow, recentFiles: string[] = []): void 
         },
         {
           label: 'Shortcut Mapper...',
+          enabled: false,
           click: () => win.webContents.send('menu:shortcut-mapper')
         },
         { type: 'separator' },
         {
           label: 'User Defined Languages...',
+          enabled: false,
           click: () => win.webContents.send('menu:udl-editor')
         },
         {
           label: 'Style Configurator...',
+          enabled: false,
           click: () => win.webContents.send('menu:style-configurator')
         },
         { type: 'separator' },
@@ -381,6 +395,7 @@ export function buildMenu(win: BrowserWindow, recentFiles: string[] = []): void 
         {
           label: 'Start Recording',
           accelerator: 'CmdOrCtrl+Shift+R',
+          enabled: false,
           click: () => win.webContents.send('macro:start-record')
         },
         {
@@ -393,6 +408,7 @@ export function buildMenu(win: BrowserWindow, recentFiles: string[] = []): void 
         {
           label: 'Playback',
           accelerator: 'CmdOrCtrl+Shift+P',
+          enabled: false,
           click: () => win.webContents.send('macro:playback')
         },
         { type: 'separator' },
@@ -407,6 +423,7 @@ export function buildMenu(win: BrowserWindow, recentFiles: string[] = []): void 
       submenu: [
         {
           label: 'Plugin Manager...',
+          enabled: false,
           click: () => win.webContents.send('menu:plugin-manager')
         },
         { type: 'separator' }
@@ -440,7 +457,7 @@ export function buildMenu(win: BrowserWindow, recentFiles: string[] = []): void 
       label: '&Help',
       submenu: [
         {
-          label: 'About Digital Artisan Editor',
+          label: 'About NovaPad',
           click: () => win.webContents.send('menu:about')
         },
         { type: 'separator' },

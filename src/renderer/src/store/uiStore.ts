@@ -6,11 +6,26 @@ export type MacroStep =
   | { type: 'type'; value: string }
   | { type: 'command'; value: string }
 
+export type UIToggleKey =
+  | 'showToolbar'
+  | 'showStatusBar'
+  | 'showSidebar'
+  | 'wordWrap'
+  | 'renderWhitespace'
+  | 'indentationGuides'
+  | 'columnSelectMode'
+  | 'splitView'
+
 interface UIState {
   theme: Theme
   showToolbar: boolean
   showStatusBar: boolean
   showSidebar: boolean
+  wordWrap: boolean
+  renderWhitespace: boolean
+  indentationGuides: boolean
+  columnSelectMode: boolean
+  splitView: boolean
   sidebarPanel: 'files' | 'search' | 'plugins'
   workspaceFolder: string | null
   showFindReplace: boolean
@@ -31,9 +46,15 @@ interface UIState {
 
   setTheme: (t: Theme) => void
   toggleTheme: () => void
-  setShowToolbar: (v: boolean) => void
-  setShowStatusBar: (v: boolean) => void
-  setShowSidebar: (v: boolean) => void
+  setShowToolbar: (v: boolean, fromMain?: boolean) => void
+  setShowStatusBar: (v: boolean, fromMain?: boolean) => void
+  setShowSidebar: (v: boolean, fromMain?: boolean) => void
+  setWordWrap: (v: boolean, fromMain?: boolean) => void
+  setRenderWhitespace: (v: boolean, fromMain?: boolean) => void
+  setIndentationGuides: (v: boolean, fromMain?: boolean) => void
+  setColumnSelectMode: (v: boolean, fromMain?: boolean) => void
+  setSplitView: (v: boolean, fromMain?: boolean) => void
+  syncToggleToMain: (key: UIToggleKey, value: boolean) => void
   setSidebarPanel: (p: UIState['sidebarPanel']) => void
   setWorkspaceFolder: (path: string | null) => void
   openFind: (mode?: 'find' | 'replace' | 'findInFiles', initialTerm?: string) => void
@@ -52,11 +73,16 @@ interface UIState {
   stopRecording: (steps: MacroStep[]) => void
 }
 
-export const useUIStore = create<UIState>((set) => ({
+export const useUIStore = create<UIState>((set, get) => ({
   theme: 'dark',
   showToolbar: true,
   showStatusBar: true,
   showSidebar: false,
+  wordWrap: false,
+  renderWhitespace: false,
+  indentationGuides: true,
+  columnSelectMode: false,
+  splitView: false,
   sidebarPanel: 'files',
   workspaceFolder: null,
   showFindReplace: false,
@@ -77,9 +103,41 @@ export const useUIStore = create<UIState>((set) => ({
 
   setTheme: (t) => set({ theme: t }),
   toggleTheme: () => set((s) => ({ theme: s.theme === 'dark' ? 'light' : 'dark' })),
-  setShowToolbar: (v) => set({ showToolbar: v }),
-  setShowStatusBar: (v) => set({ showStatusBar: v }),
-  setShowSidebar: (v) => set({ showSidebar: v }),
+  syncToggleToMain: (key, value) => {
+    window.api.send('ui:state-changed', { key, value })
+  },
+  setShowToolbar: (v, fromMain) => {
+    set({ showToolbar: v })
+    if (!fromMain) get().syncToggleToMain('showToolbar', v)
+  },
+  setShowStatusBar: (v, fromMain) => {
+    set({ showStatusBar: v })
+    if (!fromMain) get().syncToggleToMain('showStatusBar', v)
+  },
+  setShowSidebar: (v, fromMain) => {
+    set({ showSidebar: v })
+    if (!fromMain) get().syncToggleToMain('showSidebar', v)
+  },
+  setWordWrap: (v, fromMain) => {
+    set({ wordWrap: v })
+    if (!fromMain) get().syncToggleToMain('wordWrap', v)
+  },
+  setRenderWhitespace: (v, fromMain) => {
+    set({ renderWhitespace: v })
+    if (!fromMain) get().syncToggleToMain('renderWhitespace', v)
+  },
+  setIndentationGuides: (v, fromMain) => {
+    set({ indentationGuides: v })
+    if (!fromMain) get().syncToggleToMain('indentationGuides', v)
+  },
+  setColumnSelectMode: (v, fromMain) => {
+    set({ columnSelectMode: v })
+    if (!fromMain) get().syncToggleToMain('columnSelectMode', v)
+  },
+  setSplitView: (v, fromMain) => {
+    set({ splitView: v })
+    if (!fromMain) get().syncToggleToMain('splitView', v)
+  },
   setSidebarPanel: (p) => set({ sidebarPanel: p }),
   setWorkspaceFolder: (path) => set({ workspaceFolder: path }),
   openFind: (mode = 'find', initialTerm = '') => set({ showFindReplace: true, findReplaceMode: mode, findInitialTerm: initialTerm }),
