@@ -126,6 +126,7 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
       case 'toggleColumnSelect': {
         const current = editor.getOption(monaco.editor.EditorOption.columnSelection)
         editor.updateOptions({ columnSelection: !current })
+        useUIStore.getState().setColumnSelectMode(!current, true)
         break
       }
     }
@@ -381,6 +382,13 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
     window.api.on('editor:set-option', (...args: unknown[]) => {
       const opts = args[0] as monaco.editor.IEditorOptions
       editorRef.current?.updateOptions(opts)
+      // Sync toggle state from native menu → uiStore (fromMain: true to prevent loop)
+      const ui = useUIStore.getState()
+      if ('wordWrap' in opts) ui.setWordWrap(opts.wordWrap === 'on', true)
+      if ('renderWhitespace' in opts) ui.setRenderWhitespace(opts.renderWhitespace === 'all', true)
+      if (opts.guides && typeof opts.guides === 'object' && 'indentation' in opts.guides) {
+        ui.setIndentationGuides(!!(opts.guides as { indentation: boolean }).indentation, true)
+      }
     })
   }, [])
 
