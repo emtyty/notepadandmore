@@ -38,6 +38,8 @@ export function MenuBar({
   onNew, onOpen, onSave, onSaveAs, onSaveAll,
   onClose, onCloseAll, onFind, onReplace, onFindInFiles, onReload,
 }: MenuBarProps) {
+  // macOS uses native menu — hide custom MenuBar
+  if (isMac) return null
   const [activeMenu, setActiveMenu] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
   const { theme, showToolbar, showStatusBar, showSidebar, toggleTheme, setShowToolbar, setShowStatusBar, setShowSidebar } = useUIStore()

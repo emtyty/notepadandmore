@@ -4,6 +4,7 @@ import { EditorPane } from './components/EditorPane/EditorPane'
 import { WelcomeScreen } from './components/WelcomeScreen/WelcomeScreen'
 import { TabBar } from './components/TabBar/TabBar'
 import { MenuBar } from './components/editor/MenuBar'
+import { QuickStrip } from './components/editor/QuickStrip'
 import { Toolbar } from './components/editor/Toolbar'
 import { SideNav } from './components/SideNav/SideNav'
 import { StatusBar } from './components/StatusBar/StatusBar'
@@ -246,7 +247,7 @@ export default function App() {
 
   return (
     <div className="h-screen w-screen flex flex-col overflow-hidden bg-background text-foreground" data-testid="app">
-      {/* Menu Bar — always visible, handles its own drag region */}
+      {/* Menu Bar — Win/Linux only (returns null on macOS) */}
       <MenuBar
         onNew={newFile}
         onOpen={() => openFileInput.current?.click()}
@@ -260,6 +261,18 @@ export default function App() {
         onFindInFiles={() => openFind('findInFiles')}
         onReload={() => { const id = useEditorStore.getState().activeId; if (id) reloadBuffer(id) }}
       />
+
+      {/* QuickStrip — macOS only (separate row with app icon + quick actions) */}
+      {window.api.platform === 'darwin' && (
+        <QuickStrip
+          onFind={() => openFind('find')}
+          onToggleSidebar={() => useUIStore.getState().setShowSidebar(!useUIStore.getState().showSidebar)}
+          onToggleTheme={() => {
+            useUIStore.getState().toggleTheme()
+            useConfigStore.getState().setProp('theme', useUIStore.getState().theme)
+          }}
+        />
+      )}
 
       {/* Toolbar — conditional on showToolbar */}
       {showToolbar && (
