@@ -7,6 +7,7 @@ import { editorRegistry } from '../../utils/editorRegistry'
 import { useBookmarks } from '../../hooks/useBookmarks'
 import { useMacroRecorder } from '../../hooks/useMacroRecorder'
 import { useFileOps } from '../../hooks/useFileOps'
+import { EditorContextMenu } from './EditorContextMenu'
 
 interface EditorPaneProps {
   activeId?: string | null
@@ -158,6 +159,7 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
       suggestOnTriggerCharacters: cfg.autoCompleteEnabled,
       quickSuggestions: cfg.autoCompleteEnabled,
       parameterHints: { enabled: true },
+      contextmenu: false,
       multiCursorModifier: 'alt',
       columnSelection: false,
       links: true,
@@ -479,10 +481,12 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
   }, [getBuffer])
 
   return (
+    <EditorContextMenu>
     <div className="flex flex-col flex-1 h-full overflow-hidden relative" data-testid="editor-pane">
       <div ref={containerRef} className="flex-1 h-full w-full" />
       {loading && <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground bg-background pointer-events-none z-[1]">Loading...{loadingSize ? ` (${(loadingSize / 1024 / 1024).toFixed(1)} MB)` : ''}</div>}
       {missingFile && <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground bg-background pointer-events-none z-[1]">File not found: {missingFile}</div>}
     </div>
+    </EditorContextMenu>
   )
 }
