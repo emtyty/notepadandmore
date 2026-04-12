@@ -113,7 +113,8 @@ const api = {
       'plugin:editor-get-text:reply',
       'plugin:editor-get-selection:reply',
       'plugin:editor-get-path:reply',
-      'session:save'
+      'session:save',
+      'ui:state-changed'
     ]
     if (allowedChannels.includes(channel)) {
       ipcRenderer.send(channel, ...args)

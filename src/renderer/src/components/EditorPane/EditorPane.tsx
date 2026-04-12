@@ -7,7 +7,7 @@ import { editorRegistry } from '../../utils/editorRegistry'
 import { useBookmarks } from '../../hooks/useBookmarks'
 import { useMacroRecorder } from '../../hooks/useMacroRecorder'
 import { useFileOps } from '../../hooks/useFileOps'
-import styles from './EditorPane.module.css'
+import { EditorContextMenu } from './EditorContextMenu'
 
 interface EditorPaneProps {
   activeId?: string | null
@@ -127,6 +127,7 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
       case 'toggleColumnSelect': {
         const current = editor.getOption(monaco.editor.EditorOption.columnSelection)
         editor.updateOptions({ columnSelection: !current })
+        useUIStore.getState().setColumnSelectMode(!current, true)
         break
       }
     }
@@ -158,6 +159,7 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
       suggestOnTriggerCharacters: cfg.autoCompleteEnabled,
       quickSuggestions: cfg.autoCompleteEnabled,
       parameterHints: { enabled: true },
+      contextmenu: false,
       multiCursorModifier: 'alt',
       columnSelection: false,
       links: true,
@@ -345,12 +347,17 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
     editor.focus()
   }, [activeId, activeBufLoaded, getBuffer, updateBuffer, restoreDecorations, loadBuffer])
 
-  // Handle editor commands from menu
+  // Handle editor commands from menu (IPC from native menu + CustomEvent from custom MenuBar/context menu)
   useEffect(() => {
-    const handler = (...args: unknown[]) => {
+    const ipcHandler = (...args: unknown[]) => {
       dispatchCommand(args[0] as string)
     }
-    window.api.on('editor:command', handler)
+    const customHandler = (e: Event) => {
+      dispatchCommand((e as CustomEvent<string>).detail)
+    }
+    window.api.on('editor:command', ipcHandler)
+    window.addEventListener('editor:command', customHandler)
+    return () => window.removeEventListener('editor:command', customHandler)
   }, [dispatchCommand])
 
   // Handle macro:replay-command from macro playback (avoids IPC round-trip)
@@ -379,10 +386,27 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
 
   // Handle editor option changes from menu
   useEffect(() => {
-    window.api.on('editor:set-option', (...args: unknown[]) => {
-      const opts = args[0] as monaco.editor.IEditorOptions
+    const applyEditorOptions = (opts: monaco.editor.IEditorOptions, fromMain = false) => {
       editorRef.current?.updateOptions(opts)
+      // Sync toggle state → uiStore
+      const ui = useUIStore.getState()
+      if ('wordWrap' in opts) ui.setWordWrap(opts.wordWrap === 'on', fromMain)
+      if ('renderWhitespace' in opts) ui.setRenderWhitespace(opts.renderWhitespace === 'all', fromMain)
+      if (opts.guides && typeof opts.guides === 'object' && 'indentation' in opts.guides) {
+        ui.setIndentationGuides(!!(opts.guides as { indentation: boolean }).indentation, fromMain)
+      }
+      if ('columnSelection' in opts) ui.setColumnSelectMode(!!opts.columnSelection, fromMain)
+    }
+    // From native menu (IPC)
+    window.api.on('editor:set-option', (...args: unknown[]) => {
+      applyEditorOptions(args[0] as monaco.editor.IEditorOptions, true)
     })
+    // From custom MenuBar (CustomEvent)
+    const handleLocalOption = (e: Event) => {
+      applyEditorOptions((e as CustomEvent).detail as monaco.editor.IEditorOptions)
+    }
+    window.addEventListener('editor:set-option-local', handleLocalOption)
+    return () => window.removeEventListener('editor:set-option-local', handleLocalOption)
   }, [])
 
   // Handle EOL change from menu (IPC) or status bar click (CustomEvent)
@@ -419,17 +443,34 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
     return () => window.removeEventListener('editor:set-encoding', customHandler)
   }, [updateBuffer])
 
-  // Handle language change from menu
+  // Handle language change from menu (IPC + CustomEvent)
   useEffect(() => {
-    window.api.on('editor:set-language', (...args: unknown[]) => {
-      const lang = args[0] as string
+    const applyLanguage = (lang: string) => {
       const buf = currentIdRef.current ? getBuffer(currentIdRef.current) : null
       if (buf?.model) {
         monaco.editor.setModelLanguage(buf.model, lang)
         updateBuffer(buf.id, { language: lang })
       }
-    })
+    }
+    window.api.on('editor:set-language', (...args: unknown[]) => applyLanguage(args[0] as string))
+    const handleLocalLang = (e: Event) => applyLanguage((e as CustomEvent<string>).detail)
+    window.addEventListener('editor:set-language-local', handleLocalLang)
+    return () => window.removeEventListener('editor:set-language-local', handleLocalLang)
   }, [getBuffer, updateBuffer])
+
+  // Handle go-to-line from status bar Quick Pick
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { line, column } = (e as CustomEvent<{ line: number; column: number }>).detail
+      const editor = editorRef.current
+      if (!editor) return
+      editor.revealLineInCenter(line)
+      editor.setPosition({ lineNumber: line, column })
+      editor.focus()
+    }
+    window.addEventListener('editor:goto-line', handler)
+    return () => window.removeEventListener('editor:goto-line', handler)
+  }, [])
 
   // Handle plugin API requests that need editor access
   useEffect(() => {
@@ -459,10 +500,12 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
   }, [getBuffer])
 
   return (
-    <div className={styles.container} data-testid="editor-pane">
-      <div ref={containerRef} className={styles.editor} />
-      {loading && <div className={styles.overlay}>Loading...{loadingSize ? ` (${(loadingSize / 1024 / 1024).toFixed(1)} MB)` : ''}</div>}
-      {missingFile && <div className={styles.overlay}>File not found: {missingFile}</div>}
+    <EditorContextMenu>
+    <div className="flex flex-col flex-1 h-full overflow-hidden relative" data-testid="editor-pane">
+      <div ref={containerRef} className="flex-1 h-full w-full" />
+      {loading && <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground bg-background pointer-events-none z-[1]">Loading...{loadingSize ? ` (${(loadingSize / 1024 / 1024).toFixed(1)} MB)` : ''}</div>}
+      {missingFile && <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground bg-background pointer-events-none z-[1]">File not found: {missingFile}</div>}
     </div>
+    </EditorContextMenu>
   )
 }

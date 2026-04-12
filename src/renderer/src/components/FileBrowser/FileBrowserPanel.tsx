@@ -1,20 +1,22 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
+import { ChevronRight, ChevronDown, FolderOpen, Folder, FileText, RefreshCw } from 'lucide-react'
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from '../ui/context-menu'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip'
 import { useUIStore } from '../../store/uiStore'
 import { useFileOps } from '../../hooks/useFileOps'
-import { Tooltip } from '../Tooltip/Tooltip'
-import styles from './FileBrowserPanel.module.css'
+import { cn } from '../../lib/utils'
 
 interface TreeNode {
   name: string
   path: string
   isDir: boolean
   children?: TreeNode[]
-}
-
-interface ContextMenuState {
-  x: number
-  y: number
-  node: TreeNode
 }
 
 function parentDir(p: string): string {
@@ -25,20 +27,6 @@ function parentDir(p: string): string {
 function joinPath(dir: string, name: string): string {
   const normalized = dir.replace(/\\/g, '/')
   return normalized.endsWith('/') ? normalized + name : normalized + '/' + name
-}
-
-function getFileIcon(name: string): string {
-  const ext = name.split('.').pop()?.toLowerCase() ?? ''
-  const iconMap: Record<string, string> = {
-    ts: '📘', tsx: '📘', js: '📙', jsx: '📙',
-    json: '📋', md: '📝', txt: '📄', html: '🌐',
-    css: '🎨', scss: '🎨', py: '🐍', rs: '🦀',
-    go: '🔵', java: '☕', cpp: '⚙️', c: '⚙️',
-    sh: '🔧', yaml: '📋', yml: '📋', xml: '📋',
-    png: '🖼️', jpg: '🖼️', gif: '🖼️', svg: '🖼️',
-    pdf: '📕', zip: '📦', gz: '📦', tar: '📦',
-  }
-  return iconMap[ext] ?? '📄'
 }
 
 async function loadChildren(dirPath: string): Promise<TreeNode[]> {
@@ -65,28 +53,57 @@ interface TreeNodeRowProps {
   expanded: Set<string>
   onToggle: (node: TreeNode) => void
   onOpen: (node: TreeNode) => void
-  onContextMenu: (e: React.MouseEvent, node: TreeNode) => void
+  onContextMenu: (node: TreeNode) => void
+  handleNewFile: (node: TreeNode) => void
+  handleNewFolder: (node: TreeNode) => void
+  handleRename: (node: TreeNode) => void
+  handleDelete: (node: TreeNode) => void
+  handleCopyPath: (node: TreeNode) => void
+  handleReveal: (node: TreeNode) => void
 }
 
-function TreeNodeRow({ node, depth, expanded, onToggle, onOpen, onContextMenu }: TreeNodeRowProps) {
+function TreeNodeRow({ node, depth, expanded, onToggle, onOpen, onContextMenu, handleNewFile, handleNewFolder, handleRename, handleDelete, handleCopyPath, handleReveal }: TreeNodeRowProps) {
   return (
     <>
-      <div
-        className={styles.row}
-        style={{ paddingLeft: depth * 14 + 6 }}
-        onClick={() => (node.isDir ? onToggle(node) : onOpen(node))}
-        onDoubleClick={() => !node.isDir && onOpen(node)}
-        onContextMenu={(e) => { e.preventDefault(); onContextMenu(e, node) }}
-        title={node.path}
-      >
-        <span className={styles.arrow}>
-          {node.isDir ? (expanded.has(node.path) ? '▾' : '▸') : ''}
-        </span>
-        <span className={styles.fileIcon}>
-          {node.isDir ? (expanded.has(node.path) ? '📂' : '📁') : getFileIcon(node.name)}
-        </span>
-        <span className={styles.name}>{node.name}</span>
-      </div>
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          <div
+            className="w-full flex items-center gap-1 py-[3px] text-[11px] transition-colors hover:bg-explorer-hover cursor-pointer text-explorer-foreground"
+            style={{ paddingLeft: depth * 14 + 10 }}
+            onClick={() => (node.isDir ? onToggle(node) : onOpen(node))}
+            title={node.path}
+          >
+            <span className="shrink-0 w-3 text-muted-foreground">
+              {node.isDir ? (
+                expanded.has(node.path) ? <ChevronDown size={12} /> : <ChevronRight size={12} />
+              ) : null}
+            </span>
+            <span className="shrink-0 text-primary">
+              {node.isDir ? (
+                expanded.has(node.path) ? <FolderOpen size={13} /> : <Folder size={13} />
+              ) : (
+                <FileText size={13} className="text-tab-muted" />
+              )}
+            </span>
+            <span className="truncate">{node.name}</span>
+          </div>
+        </ContextMenuTrigger>
+        <ContextMenuContent className="w-48">
+          {!node.isDir && (
+            <ContextMenuItem onClick={() => onOpen(node)}>Open</ContextMenuItem>
+          )}
+          <ContextMenuItem onClick={() => handleNewFile(node)}>New File…</ContextMenuItem>
+          <ContextMenuItem onClick={() => handleNewFolder(node)}>New Folder…</ContextMenuItem>
+          <ContextMenuSeparator />
+          <ContextMenuItem onClick={() => handleRename(node)}>Rename</ContextMenuItem>
+          <ContextMenuItem onClick={() => handleDelete(node)}>Delete</ContextMenuItem>
+          <ContextMenuSeparator />
+          <ContextMenuItem onClick={() => handleCopyPath(node)}>Copy Path</ContextMenuItem>
+          <ContextMenuItem onClick={() => handleReveal(node)}>
+            Reveal in {window.api.platform === 'darwin' ? 'Finder' : 'Explorer'}
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
       {node.isDir && expanded.has(node.path) && node.children?.map((child) => (
         <TreeNodeRow
           key={child.path}
@@ -96,6 +113,12 @@ function TreeNodeRow({ node, depth, expanded, onToggle, onOpen, onContextMenu }:
           onToggle={onToggle}
           onOpen={onOpen}
           onContextMenu={onContextMenu}
+          handleNewFile={handleNewFile}
+          handleNewFolder={handleNewFolder}
+          handleRename={handleRename}
+          handleDelete={handleDelete}
+          handleCopyPath={handleCopyPath}
+          handleReveal={handleReveal}
         />
       ))}
     </>
@@ -107,8 +130,6 @@ export function FileBrowserPanel() {
   const { openFiles } = useFileOps()
   const [tree, setTree] = useState<TreeNode[]>([])
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
-  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
-  const contextMenuRef = useRef<HTMLDivElement>(null)
 
   // Load root when workspaceFolder changes
   useEffect(() => {
@@ -116,18 +137,6 @@ export function FileBrowserPanel() {
     setExpanded(new Set())
     loadChildren(workspaceFolder).then(setTree)
   }, [workspaceFolder])
-
-  // Close context menu on outside click
-  useEffect(() => {
-    if (!contextMenu) return
-    const handler = (e: MouseEvent) => {
-      if (contextMenuRef.current && !contextMenuRef.current.contains(e.target as Node)) {
-        setContextMenu(null)
-      }
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [contextMenu])
 
   const handleToggle = useCallback(async (node: TreeNode) => {
     const newExpanded = new Set(expanded)
@@ -147,10 +156,6 @@ export function FileBrowserPanel() {
     openFiles([node.path])
   }, [openFiles])
 
-  const handleContextMenu = useCallback((e: React.MouseEvent, node: TreeNode) => {
-    setContextMenu({ x: e.clientX, y: e.clientY, node })
-  }, [])
-
   const refreshParent = useCallback(async (nodePath: string) => {
     const dir = nodePath === workspaceFolder ? workspaceFolder : parentDir(nodePath)
     if (!dir) return
@@ -169,7 +174,6 @@ export function FileBrowserPanel() {
   }, [workspaceFolder])
 
   const handleNewFile = useCallback(async (node: TreeNode) => {
-    setContextMenu(null)
     const dir = node.isDir ? node.path : parentDir(node.path)
     const name = prompt('New file name:')
     if (!name?.trim()) return
@@ -181,7 +185,6 @@ export function FileBrowserPanel() {
   }, [refreshParent, openFiles])
 
   const handleNewFolder = useCallback(async (node: TreeNode) => {
-    setContextMenu(null)
     const dir = node.isDir ? node.path : parentDir(node.path)
     const name = prompt('New folder name:')
     if (!name?.trim()) return
@@ -192,7 +195,6 @@ export function FileBrowserPanel() {
   }, [refreshParent])
 
   const handleRename = useCallback(async (node: TreeNode) => {
-    setContextMenu(null)
     const newName = prompt('Rename to:', node.name)
     if (!newName?.trim() || newName.trim() === node.name) return
     const newPath = joinPath(parentDir(node.path), newName.trim())
@@ -202,7 +204,6 @@ export function FileBrowserPanel() {
   }, [refreshParent])
 
   const handleDelete = useCallback(async (node: TreeNode) => {
-    setContextMenu(null)
     if (!confirm(`Delete "${node.name}"? This cannot be undone.`)) return
     const result = await window.api.file.delete(node.path)
     if (result.error) { alert(`Error: ${result.error}`); return }
@@ -210,12 +211,10 @@ export function FileBrowserPanel() {
   }, [refreshParent])
 
   const handleCopyPath = useCallback((node: TreeNode) => {
-    setContextMenu(null)
     navigator.clipboard.writeText(node.path)
   }, [])
 
   const handleReveal = useCallback((node: TreeNode) => {
-    setContextMenu(null)
     window.api.file.reveal(node.path)
   }, [])
 
@@ -228,9 +227,14 @@ export function FileBrowserPanel() {
 
   if (!workspaceFolder) {
     return (
-      <div className={styles.panel}>
-        <div className={styles.noRoot}>
-          <button className={styles.openBtn} onClick={handleOpenFolder}>Open Folder…</button>
+      <div className="flex flex-col h-full overflow-hidden text-foreground">
+        <div className="flex flex-col items-center justify-center flex-1 gap-2.5 p-4 text-muted-foreground text-[12px] text-center">
+          <button
+            className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 border-none cursor-pointer"
+            onClick={handleOpenFolder}
+          >
+            Open Folder…
+          </button>
           <p>Open a folder to browse files.</p>
         </div>
       </div>
@@ -238,16 +242,26 @@ export function FileBrowserPanel() {
   }
 
   return (
-    <div className={styles.panel}>
-      <div className={styles.header}>
+    <div className="flex flex-col h-full overflow-hidden text-foreground relative">
+      <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-3 py-1.5 shrink-0">
         <span>{workspaceFolder.replace(/\\/g, '/').split('/').pop()}</span>
-        <Tooltip text="Refresh" side="bottom">
-          <button className={styles.refreshBtn} onClick={handleRefresh}>↻</button>
-        </Tooltip>
+        <TooltipProvider delayDuration={300}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                className="bg-transparent border-none cursor-pointer text-muted-foreground p-0.5 rounded hover:text-foreground hover:bg-secondary"
+                onClick={handleRefresh}
+              >
+                <RefreshCw size={12} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-xs">Refresh</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
-      <div className={styles.tree}>
+      <div className="flex-1 overflow-y-auto overflow-x-hidden editor-scrollbar select-none py-1">
         {tree.length === 0 ? (
-          <div className={styles.empty}>Empty folder</div>
+          <div className="p-4 text-muted-foreground text-xs text-center">Empty folder</div>
         ) : (
           tree.map((node) => (
             <TreeNodeRow
@@ -257,45 +271,17 @@ export function FileBrowserPanel() {
               expanded={expanded}
               onToggle={handleToggle}
               onOpen={handleOpen}
-              onContextMenu={handleContextMenu}
+              onContextMenu={() => {}}
+              handleNewFile={handleNewFile}
+              handleNewFolder={handleNewFolder}
+              handleRename={handleRename}
+              handleDelete={handleDelete}
+              handleCopyPath={handleCopyPath}
+              handleReveal={handleReveal}
             />
           ))
         )}
       </div>
-
-      {contextMenu && (
-        <div
-          ref={contextMenuRef}
-          className={styles.contextMenu}
-          style={{ left: contextMenu.x, top: contextMenu.y }}
-        >
-          {!contextMenu.node.isDir && (
-            <button className={styles.contextItem} onClick={() => { setContextMenu(null); handleOpen(contextMenu.node) }}>
-              Open
-            </button>
-          )}
-          <button className={styles.contextItem} onClick={() => handleNewFile(contextMenu.node)}>
-            New File…
-          </button>
-          <button className={styles.contextItem} onClick={() => handleNewFolder(contextMenu.node)}>
-            New Folder…
-          </button>
-          <div className={styles.contextSeparator} />
-          <button className={styles.contextItem} onClick={() => handleRename(contextMenu.node)}>
-            Rename
-          </button>
-          <button className={styles.contextItem} onClick={() => handleDelete(contextMenu.node)}>
-            Delete
-          </button>
-          <div className={styles.contextSeparator} />
-          <button className={styles.contextItem} onClick={() => handleCopyPath(contextMenu.node)}>
-            Copy Path
-          </button>
-          <button className={styles.contextItem} onClick={() => handleReveal(contextMenu.node)}>
-            Reveal in {window.api.platform === 'darwin' ? 'Finder' : 'Explorer'}
-          </button>
-        </div>
-      )}
     </div>
   )
 }

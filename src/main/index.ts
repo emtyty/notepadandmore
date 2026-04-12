@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, Menu } from 'electron'
 import { join } from 'path'
 import { buildMenu } from './menu'
 import { registerFileHandlers } from './ipc/fileHandlers'
@@ -22,7 +22,7 @@ function createWindow(): void {
     minWidth: 600,
     minHeight: 400,
     show: false,
-    autoHideMenuBar: false,
+    autoHideMenuBar: process.platform !== 'darwin',
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -105,6 +105,27 @@ ipcMain.on('app:close-cancelled', () => {
 
 ipcMain.on('session:save', (_event, session) => {
   SessionManager.getInstance().save(session)
+})
+
+// Bidirectional state sync: renderer → main (update native menu checkboxes)
+const toggleKeyToMenuId: Record<string, string> = {
+  showToolbar: 'toggle-toolbar',
+  showStatusBar: 'toggle-statusbar',
+  showSidebar: 'toggle-sidebar',
+  wordWrap: 'toggle-word-wrap',
+  renderWhitespace: 'toggle-whitespace',
+  indentationGuides: 'toggle-indent-guides',
+  columnSelectMode: 'column-select',
+  splitView: 'toggle-split-view'
+}
+
+ipcMain.on('ui:state-changed', (_event, payload: { key: string; value: boolean }) => {
+  const menuId = toggleKeyToMenuId[payload.key]
+  if (!menuId) return
+  const menu = Menu.getApplicationMenu()
+  if (!menu) return
+  const item = menu.getMenuItemById(menuId)
+  if (item) item.checked = payload.value
 })
 
 ipcMain.on('app:close-confirmed', () => {

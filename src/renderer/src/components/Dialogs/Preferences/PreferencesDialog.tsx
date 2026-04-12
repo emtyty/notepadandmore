@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { useUIStore } from '../../../store/uiStore'
 import { useConfigStore, AppConfig } from '../../../store/configStore'
-import styles from './PreferencesDialog.module.css'
+import { cn } from '../../../lib/utils'
 
 type PrefTab = 'general' | 'editor' | 'appearance' | 'newDoc' | 'backup' | 'completion'
 
@@ -27,6 +27,8 @@ const MONO_FONTS = [
   "'Source Code Pro', monospace",
   "monospace",
 ]
+
+const inputCls = "bg-input border border-border rounded px-2 py-1 text-xs text-foreground outline-none focus:border-ring"
 
 export function PreferencesDialog() {
   const { showPreferences, setShowPreferences } = useUIStore()
@@ -76,20 +78,23 @@ export function PreferencesDialog() {
     : {}
 
   return (
-    <div className={styles.overlay}>
-      <div ref={dialogRef} className={styles.dialog} style={dialogStyle}>
-        <div className={styles.titleBar} onMouseDown={onTitleMouseDown}>
-          <span className={styles.titleText}>Preferences</span>
-          <button className={styles.closeBtn} onClick={() => setShowPreferences(false)} title="Close">✕</button>
+    <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/50">
+      <div ref={dialogRef} className="fixed z-[9001] bg-popover border border-border rounded-lg shadow-2xl min-w-[560px] max-w-[700px] max-h-[85vh] flex flex-col" style={dialogStyle}>
+        <div className="flex items-center justify-between px-3 py-2 border-b border-border cursor-move select-none" onMouseDown={onTitleMouseDown}>
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Preferences</span>
+          <button className="bg-transparent border-none cursor-pointer text-muted-foreground text-sm w-6 h-6 flex items-center justify-center rounded hover:bg-secondary hover:text-foreground" onClick={() => setShowPreferences(false)} title="Close">✕</button>
         </div>
 
-        <div className={styles.body}>
+        <div className="flex flex-1 overflow-hidden">
           {/* Tab list */}
-          <div className={styles.tabList}>
+          <div className="w-[140px] border-r border-border shrink-0 py-1 overflow-y-auto editor-scrollbar">
             {TABS.map((t) => (
               <button
                 key={t.id}
-                className={`${styles.tabBtn} ${activeTab === t.id ? styles.tabBtnActive : ''}`}
+                className={cn(
+                  'w-full text-left px-3 py-1.5 text-xs cursor-pointer bg-transparent border-none text-foreground transition-colors hover:bg-secondary',
+                  activeTab === t.id && 'bg-primary/15 text-primary font-medium'
+                )}
                 onClick={() => setActiveTab(t.id)}
               >
                 {t.label}
@@ -98,19 +103,14 @@ export function PreferencesDialog() {
           </div>
 
           {/* Tab content */}
-          <div className={styles.tabContent}>
+          <div className="flex-1 overflow-y-auto p-3 editor-scrollbar">
             {activeTab === 'general' && (
-              <div className={styles.section}>
+              <div className="flex flex-col gap-3">
                 <Row label="Max recent files">
-                  <input
-                    type="number" min={1} max={50}
-                    className={styles.numInput}
-                    value={config.maxRecentFiles}
-                    onChange={(e) => set('maxRecentFiles', Math.max(1, parseInt(e.target.value) || 1))}
-                  />
+                  <input type="number" min={1} max={50} className={cn(inputCls, 'w-[72px]')} value={config.maxRecentFiles} onChange={(e) => set('maxRecentFiles', Math.max(1, parseInt(e.target.value) || 1))} />
                 </Row>
                 <Row label="UI Language">
-                  <select className={styles.select} value={config.language} onChange={(e) => set('language', e.target.value)}>
+                  <select className={cn(inputCls, 'max-w-[200px]')} value={config.language} onChange={(e) => set('language', e.target.value)}>
                     <option value="en">English</option>
                   </select>
                 </Row>
@@ -118,30 +118,18 @@ export function PreferencesDialog() {
             )}
 
             {activeTab === 'editor' && (
-              <div className={styles.section}>
+              <div className="flex flex-col gap-3">
                 <Row label="Font family">
-                  <select className={styles.select} value={config.fontFamily} onChange={(e) => set('fontFamily', e.target.value)}>
-                    {MONO_FONTS.map((f) => (
-                      <option key={f} value={f}>{f.split(',')[0].replace(/'/g, '')}</option>
-                    ))}
+                  <select className={cn(inputCls, 'max-w-[260px]')} value={config.fontFamily} onChange={(e) => set('fontFamily', e.target.value)}>
+                    {MONO_FONTS.map((f) => (<option key={f} value={f}>{f.split(',')[0].replace(/'/g, '')}</option>))}
                   </select>
                 </Row>
                 <Row label="Font size">
-                  <input
-                    type="number" min={8} max={32}
-                    className={styles.numInput}
-                    value={config.fontSize}
-                    onChange={(e) => set('fontSize', Math.max(8, parseInt(e.target.value) || 14))}
-                  />
-                  <span className={styles.unit}>px</span>
+                  <input type="number" min={8} max={32} className={cn(inputCls, 'w-[72px]')} value={config.fontSize} onChange={(e) => set('fontSize', Math.max(8, parseInt(e.target.value) || 14))} />
+                  <span className="text-[11px] text-muted-foreground ml-1">px</span>
                 </Row>
                 <Row label="Tab size">
-                  <input
-                    type="number" min={1} max={16}
-                    className={styles.numInput}
-                    value={config.tabSize}
-                    onChange={(e) => set('tabSize', Math.max(1, parseInt(e.target.value) || 4))}
-                  />
+                  <input type="number" min={1} max={16} className={cn(inputCls, 'w-[72px]')} value={config.tabSize} onChange={(e) => set('tabSize', Math.max(1, parseInt(e.target.value) || 4))} />
                 </Row>
                 <CheckRow label="Insert spaces (not tabs)" checked={config.insertSpaces} onChange={(v) => set('insertSpaces', v)} />
                 <CheckRow label="Word wrap" checked={config.wordWrap} onChange={(v) => set('wordWrap', v)} />
@@ -154,27 +142,15 @@ export function PreferencesDialog() {
             )}
 
             {activeTab === 'appearance' && (
-              <div className={styles.section}>
+              <div className="flex flex-col gap-3">
                 <Row label="Theme">
-                  <select
-                    className={styles.select}
-                    value={config.theme}
-                    onChange={(e) => {
-                      const t = e.target.value as 'light' | 'dark'
-                      useUIStore.getState().setTheme(t)
-                      set('theme', t)
-                    }}
-                  >
+                  <select className={cn(inputCls, 'max-w-[200px]')} value={config.theme} onChange={(e) => { const t = e.target.value as 'light' | 'dark'; useUIStore.getState().setTheme(t); set('theme', t) }}>
                     <option value="dark">Dark</option>
                     <option value="light">Light</option>
                   </select>
                 </Row>
                 <Row label="Render whitespace">
-                  <select
-                    className={styles.select}
-                    value={config.renderWhitespace}
-                    onChange={(e) => set('renderWhitespace', e.target.value as AppConfig['renderWhitespace'])}
-                  >
+                  <select className={cn(inputCls, 'max-w-[200px]')} value={config.renderWhitespace} onChange={(e) => set('renderWhitespace', e.target.value as AppConfig['renderWhitespace'])}>
                     <option value="none">None</option>
                     <option value="boundary">Boundary</option>
                     <option value="all">All</option>
@@ -184,66 +160,45 @@ export function PreferencesDialog() {
             )}
 
             {activeTab === 'newDoc' && (
-              <div className={styles.section}>
+              <div className="flex flex-col gap-3">
                 <Row label="Default EOL">
-                  <select
-                    className={styles.select}
-                    value={config.defaultEol}
-                    onChange={(e) => set('defaultEol', e.target.value as AppConfig['defaultEol'])}
-                  >
+                  <select className={cn(inputCls, 'max-w-[200px]')} value={config.defaultEol} onChange={(e) => set('defaultEol', e.target.value as AppConfig['defaultEol'])}>
                     <option value="LF">LF (Unix/macOS)</option>
                     <option value="CRLF">CRLF (Windows)</option>
                     <option value="CR">CR (old macOS)</option>
                   </select>
                 </Row>
                 <Row label="Default encoding">
-                  <select className={styles.select} value={config.defaultEncoding} onChange={(e) => set('defaultEncoding', e.target.value)}>
+                  <select className={cn(inputCls, 'max-w-[200px]')} value={config.defaultEncoding} onChange={(e) => set('defaultEncoding', e.target.value)}>
                     {ENCODINGS.map((enc) => <option key={enc} value={enc}>{enc}</option>)}
                   </select>
                 </Row>
                 <Row label="Default language">
-                  <input
-                    type="text"
-                    className={styles.textInput}
-                    value={config.defaultLanguage}
-                    onChange={(e) => set('defaultLanguage', e.target.value)}
-                    placeholder="plaintext"
-                  />
+                  <input type="text" className={cn(inputCls, 'max-w-[200px]')} value={config.defaultLanguage} onChange={(e) => set('defaultLanguage', e.target.value)} placeholder="plaintext" />
                 </Row>
               </div>
             )}
 
             {activeTab === 'backup' && (
-              <div className={styles.section}>
+              <div className="flex flex-col gap-3">
                 <CheckRow label="Enable AutoSave" checked={config.autoSaveEnabled} onChange={(v) => set('autoSaveEnabled', v)} />
                 {config.autoSaveEnabled && (
                   <Row label="AutoSave interval">
-                    <input
-                      type="number" min={5000} max={600000} step={5000}
-                      className={styles.numInput}
-                      value={config.autoSaveIntervalMs / 1000}
-                      onChange={(e) => set('autoSaveIntervalMs', Math.max(5, parseInt(e.target.value) || 60) * 1000)}
-                    />
-                    <span className={styles.unit}>seconds</span>
+                    <input type="number" min={5000} max={600000} step={5000} className={cn(inputCls, 'w-[72px]')} value={config.autoSaveIntervalMs / 1000} onChange={(e) => set('autoSaveIntervalMs', Math.max(5, parseInt(e.target.value) || 60) * 1000)} />
+                    <span className="text-[11px] text-muted-foreground ml-1">seconds</span>
                   </Row>
                 )}
                 <CheckRow label="Enable file backup on save" checked={config.backupEnabled} onChange={(v) => set('backupEnabled', v)} />
                 {config.backupEnabled && (
                   <Row label="Backup directory">
-                    <input
-                      type="text"
-                      className={styles.textInput}
-                      value={config.backupDir}
-                      onChange={(e) => set('backupDir', e.target.value)}
-                      placeholder="Leave empty for default"
-                    />
+                    <input type="text" className={cn(inputCls, 'flex-1')} value={config.backupDir} onChange={(e) => set('backupDir', e.target.value)} placeholder="Leave empty for default" />
                   </Row>
                 )}
               </div>
             )}
 
             {activeTab === 'completion' && (
-              <div className={styles.section}>
+              <div className="flex flex-col gap-3">
                 <CheckRow label="Enable auto-complete suggestions" checked={config.autoCompleteEnabled} onChange={(v) => set('autoCompleteEnabled', v)} />
                 <CheckRow label="Auto-close brackets" checked={config.autoCloseBrackets} onChange={(v) => set('autoCloseBrackets', v)} />
                 <CheckRow label="Auto-close quotes" checked={config.autoCloseQuotes} onChange={(v) => set('autoCloseQuotes', v)} />
@@ -253,28 +208,27 @@ export function PreferencesDialog() {
           </div>
         </div>
 
-        <div className={styles.footer}>
-          <button className={styles.closeFooterBtn} onClick={() => setShowPreferences(false)}>Close</button>
+        <div className="flex items-center justify-end px-3 py-2 border-t border-border">
+          <button className="px-4 py-1.5 text-xs border border-border rounded bg-secondary text-foreground cursor-pointer hover:bg-muted transition-colors" onClick={() => setShowPreferences(false)}>Close</button>
         </div>
       </div>
     </div>
   )
 }
 
-// ─── Helper sub-components ────────────────────────────────────────────────────
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className={styles.row}>
-      <label className={styles.rowLabel}>{label}</label>
-      <div className={styles.rowControl}>{children}</div>
+    <div className="flex items-center gap-2">
+      <label className="text-xs text-muted-foreground w-32 shrink-0">{label}</label>
+      <div className="flex items-center gap-1 flex-1">{children}</div>
     </div>
   )
 }
 
 function CheckRow({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <label className={styles.checkRow}>
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+    <label className="flex items-center gap-1.5 text-xs text-foreground cursor-pointer">
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="accent-primary" />
       <span>{label}</span>
     </label>
   )

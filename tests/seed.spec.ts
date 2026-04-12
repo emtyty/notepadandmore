@@ -2,6 +2,7 @@ import { test, expect } from './fixtures'
 
 test('app launches and shows editor', async ({ page }) => {
   await expect(page.locator('[data-testid="app"]')).toBeVisible()
+  await expect(page.locator('[data-testid="menubar"]')).toBeVisible()
   await expect(page.locator('[data-testid="toolbar"]')).toBeVisible()
   await expect(page.locator('[data-testid="tabbar"]')).toBeVisible()
   await expect(page.locator('[data-testid="editor-pane"]')).toBeVisible()

@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import * as monaco from 'monaco-editor'
+import { RefreshCw } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip'
 import { useEditorStore } from '../../store/editorStore'
 import { editorRegistry } from '../../utils/editorRegistry'
-import { Tooltip } from '../Tooltip/Tooltip'
-import styles from './FunctionListPanel.module.css'
 
 interface SymbolNode {
   name: string
@@ -52,7 +52,6 @@ function toSymbolNode(sym: monaco.languages.DocumentSymbol): SymbolNode {
 
 async function getSymbols(model: monaco.editor.ITextModel): Promise<SymbolNode[]> {
   try {
-    // Access DocumentSymbolProviderRegistry via internal API
     const registry = (monaco.languages as unknown as Record<string, unknown>)['DocumentSymbolProviderRegistry']
     if (!registry || typeof (registry as Record<string, unknown>)['ordered'] !== 'function') return []
     const providers = (registry as { ordered: (model: monaco.editor.ITextModel) => unknown[] }).ordered(model)
@@ -81,14 +80,16 @@ function SymbolRow({ node, depth, onClick }: SymbolRowProps) {
   return (
     <>
       <div
-        className={styles.symbolRow}
+        className="flex items-center gap-1.5 py-[3px] cursor-pointer text-xs whitespace-nowrap overflow-hidden rounded hover:bg-explorer-hover"
         style={{ paddingLeft: depth * 12 + 8 }}
         onClick={() => onClick(node)}
         title={`${node.name}${node.detail ? ` — ${node.detail}` : ''} (line ${node.range.startLineNumber})`}
       >
-        <span className={styles.symbolIcon}>{SYMBOL_ICONS[node.kind] ?? '·'}</span>
-        <span className={styles.symbolName}>{node.name}</span>
-        {node.detail && <span className={styles.symbolDetail}>{node.detail}</span>}
+        <span className="text-[11px] font-bold w-3.5 text-center shrink-0 text-primary font-mono">
+          {SYMBOL_ICONS[node.kind] ?? '·'}
+        </span>
+        <span className="truncate flex-1">{node.name}</span>
+        {node.detail && <span className="text-[11px] text-muted-foreground shrink-0 ml-1">{node.detail}</span>}
       </div>
       {node.children.map((child, i) => (
         <SymbolRow key={i} node={child} depth={depth + 1} onClick={onClick} />
@@ -135,16 +136,26 @@ export function FunctionListPanel() {
   }, [])
 
   return (
-    <div className={styles.panel}>
-      <div className={styles.header}>
+    <div className="flex flex-col h-full overflow-hidden text-foreground">
+      <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-3 py-1.5 shrink-0 bg-explorer border-b border-border">
         <span>Functions</span>
-        <Tooltip text="Refresh" side="bottom">
-          <button className={styles.refreshBtn} onClick={refresh}>↻</button>
-        </Tooltip>
+        <TooltipProvider delayDuration={300}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                className="bg-transparent border-none cursor-pointer text-muted-foreground p-0.5 rounded hover:text-foreground hover:bg-secondary"
+                onClick={refresh}
+              >
+                <RefreshCw size={12} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-xs">Refresh</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
-      <div className={styles.list}>
+      <div className="flex-1 overflow-y-auto editor-scrollbar">
         {symbols.length === 0 ? (
-          <div className={styles.empty}>No symbols found.</div>
+          <div className="p-4 text-muted-foreground text-xs text-center">No symbols found.</div>
         ) : (
           symbols.map((s, i) => (
             <SymbolRow key={i} node={s} depth={0} onClick={handleClick} />
