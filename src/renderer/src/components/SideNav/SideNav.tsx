@@ -2,6 +2,7 @@ import React from 'react'
 import { Files, Search, Settings, Puzzle } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip'
 import { useUIStore } from '../../store/uiStore'
+import { useEditorStore } from '../../store/editorStore'
 import { cn } from '../../lib/utils'
 
 type SidebarPanelId = 'files' | 'search' | 'plugins'
@@ -21,7 +22,6 @@ export function SideNav() {
     setSidebarPanel,
     setShowSidebar,
     openFind,
-    setShowPreferences,
     setShowPluginManager,
   } = useUIStore()
 
@@ -31,7 +31,7 @@ export function SideNav() {
       return
     }
     if (id === 'preferences') {
-      setShowPreferences(true)
+      useEditorStore.getState().openVirtualTab('settings')
       return
     }
     if (id === 'plugins') {

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { useUIStore } from '../../store/uiStore'
 import { useConfigStore } from '../../store/configStore'
+import { useEditorStore } from '../../store/editorStore'
 
 interface MenuBarProps {
   onNew: () => void
@@ -181,7 +182,7 @@ export function MenuBar({
       { label: 'Split View', disabled: true },
     ],
     Settings: [
-      { label: 'Preferences...', shortcut: `${mod}+,`, action: () => useUIStore.getState().setShowPreferences(true) },
+      { label: 'Settings', shortcut: `${mod}+,`, action: () => useEditorStore.getState().openVirtualTab('settings') },
       { label: 'Shortcut Mapper...', disabled: true },
       { separator: true, label: '' },
       { label: 'User Defined Languages...', disabled: true },
