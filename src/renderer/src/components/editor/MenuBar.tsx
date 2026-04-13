@@ -9,6 +9,7 @@ import {
 import { useUIStore } from '../../store/uiStore'
 import { isMacOS, shortcutMod, shortcutAlt } from '../../utils/platform'
 import { SettingsMenu } from './SettingsMenu'
+import { NavButtons } from './NavButtons'
 
 interface MenuBarProps {
   onNew: () => void
@@ -306,6 +307,7 @@ export function MenuBar({
 
       {/* Right-side quick icons */}
       <div className="flex items-center gap-0.5 mr-1" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+        <NavButtons />
         <button
           onClick={() => setShowSidebar(!showSidebar)}
           className="p-2 text-toolbar-foreground hover:bg-secondary rounded-sm transition-colors"

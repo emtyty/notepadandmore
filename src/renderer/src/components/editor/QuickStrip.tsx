@@ -1,6 +1,7 @@
 import { PanelLeftClose, PanelLeft } from 'lucide-react'
 import { useUIStore } from '../../store/uiStore'
 import { SettingsMenu } from './SettingsMenu'
+import { NavButtons } from './NavButtons'
 
 interface QuickStripProps {
   onToggleSidebar: () => void
@@ -30,6 +31,7 @@ export function QuickStrip({ onToggleSidebar }: QuickStripProps) {
 
       {/* Quick action icons */}
       <div className="flex items-center gap-0.5 mr-1" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+        <NavButtons />
         <button
           onClick={onToggleSidebar}
           className="p-2 text-toolbar-foreground hover:bg-secondary rounded-sm transition-colors"
