@@ -3,7 +3,7 @@ import * as monaco from 'monaco-editor'
 
 export type EOLType = 'CRLF' | 'LF' | 'CR'
 
-export type BufferKind = 'file' | 'settings' | 'shortcuts'
+export type BufferKind = 'file' | 'settings' | 'shortcuts' | 'whatsNew'
 
 export interface Buffer {
   id: string
@@ -43,7 +43,10 @@ interface EditorState {
   getActive: () => Buffer | null
   getBuffer: (id: string) => Buffer | null
   findVirtualBuffer: (kind: BufferKind) => Buffer | null
-  openVirtualTab: (kind: 'settings' | 'shortcuts') => string
+  openVirtualTab: (
+    kind: 'settings' | 'shortcuts' | 'whatsNew',
+    options?: { activate?: boolean }
+  ) => string
 }
 
 let _idCounter = 0
@@ -125,14 +128,18 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   findVirtualBuffer: (kind) => get().buffers.find((b) => b.kind === kind) ?? null,
 
-  openVirtualTab: (kind) => {
+  openVirtualTab: (kind, options) => {
+    const activate = options?.activate ?? true
     const existing = get().buffers.find((b) => b.kind === kind)
     if (existing) {
-      set({ activeId: existing.id })
+      if (activate) set({ activeId: existing.id })
       return existing.id
     }
     const id = newId()
-    const title = kind === 'settings' ? 'Settings' : 'Keyboard Shortcuts'
+    const title =
+      kind === 'settings' ? 'Settings'
+      : kind === 'shortcuts' ? 'Keyboard Shortcuts'
+      : "What's New"
     set((s) => ({
       buffers: [
         ...s.buffers,
@@ -156,7 +163,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
           isLargeFile: false
         }
       ],
-      activeId: id
+      ...(activate ? { activeId: id } : {})
     }))
     return id
   }
