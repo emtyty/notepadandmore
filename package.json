@@ -9,9 +9,14 @@
     "dev": "node scripts/build-worker.mjs && env -u ELECTRON_RUN_AS_NODE electron-vite dev",
     "build": "electron-vite build && node scripts/build-worker.mjs",
     "preview": "env -u ELECTRON_RUN_AS_NODE electron-vite preview",
-    "package": "electron-builder",
-    "package:win": "electron-builder --win",
-    "package:mac": "electron-builder --mac",
+    "package": "[ -f .env ] && set -a && . ./.env && set +a; electron-builder",
+    "package:win": "[ -f .env ] && set -a && . ./.env && set +a; electron-builder --win",
+    "package:mac": "[ -f .env ] && set -a && . ./.env && set +a; electron-builder --mac",
+    "release:preflight": "[ -f .env ] && set -a && . ./.env && set +a; node scripts/release-preflight.mjs",
+    "release:mac": "[ -f .env ] && set -a && . ./.env && set +a; npm run release:preflight -- mac && npm run build && GH_TOKEN=$(gh auth token) electron-builder --mac --publish always",
+    "release:win": "[ -f .env ] && set -a && . ./.env && set +a; npm run release:preflight -- win && npm run build && GH_TOKEN=$(gh auth token) electron-builder --win --publish always",
+    "release:verify": "[ -f .env ] && set -a && . ./.env && set +a; node scripts/verify-release.mjs",
+    "release:all": "[ -f .env ] && set -a && . ./.env && set +a; npm run release:preflight -- all && npm run release:mac && npm run release:win && npm run release:verify",
     "test:e2e": "npm run build && playwright test",
     "test:e2e:headed": "npm run build && playwright test --headed",
     "test:e2e:report": "playwright show-report",
@@ -92,36 +97,5 @@
     "tailwindcss": "^3.4.19",
     "typescript": "^5.7.3",
     "vite": "^6.0.7"
-  },
-  "build": {
-    "appId": "com.notepadandmore.app",
-    "productName": "NovaPad",
-    "directories": {
-      "output": "dist"
-    },
-    "files": [
-      "out/**/*",
-      "resources/**/*"
-    ],
-    "win": {
-      "target": [
-        "nsis",
-        "portable"
-      ],
-      "icon": "resources/icon.ico"
-    },
-    "mac": {
-      "target": [
-        "dmg"
-      ],
-      "icon": "resources/icon.icns",
-      "category": "public.app-category.developer-tools"
-    },
-    "linux": {
-      "target": [
-        "AppImage"
-      ],
-      "icon": "resources/icon.png"
-    }
   }
 }
