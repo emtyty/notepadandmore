@@ -198,7 +198,7 @@ export default function App() {
       const uiState = useUIStore.getState()
 
       // Session v3: virtualTabs first, then files. activeIndex is a flat index into virtualTabs++files.
-      const virtualBuffers = freshState.buffers.filter((b) => b.kind === 'settings' || b.kind === 'shortcuts')
+      const virtualBuffers = freshState.buffers.filter((b) => b.kind === 'settings' || b.kind === 'shortcuts' || b.kind === 'whatsNew')
       const fileBuffers = freshState.buffers.filter((b) => b.kind === 'file' && b.filePath)
 
       let activeIndex = 0
