@@ -19,7 +19,7 @@ export interface SessionData {
     eol: string
     viewState: object | null
   }>
-  virtualTabs?: Array<{ kind: 'settings' | 'shortcuts' }>
+  virtualTabs?: Array<{ kind: 'settings' | 'shortcuts' | 'whatsNew' }>
   activeIndex: number
   workspaceFolder?: string
 }
