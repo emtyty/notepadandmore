@@ -3,6 +3,7 @@ import { Settings as SettingsIcon, Sun, Moon, Keyboard } from 'lucide-react'
 import { useUIStore } from '../../store/uiStore'
 import { useConfigStore } from '../../store/configStore'
 import { useEditorStore } from '../../store/editorStore'
+import { shortcutMod } from '../../utils/platform'
 
 /**
  * Gear icon in the top-right of the menu/title bar. Clicking opens a small
@@ -10,6 +11,7 @@ import { useEditorStore } from '../../store/editorStore'
  * the only way to reach Settings once the legacy menu has been removed.
  */
 export function SettingsMenu() {
+  const mod = shortcutMod()
   const { theme } = useUIStore()
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
@@ -101,6 +103,9 @@ export function SettingsMenu() {
           >
             <span className="w-5 flex justify-center shrink-0"><SettingsIcon size={18} /></span>
             <span className="flex-1 text-left">Settings</span>
+            <span className="text-lg text-muted-foreground ml-4 font-mono tabular-nums shrink-0 leading-none">
+              {mod}+,
+            </span>
           </button>
         </div>
       )}
