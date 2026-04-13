@@ -1,0 +1,48 @@
+appId: com.novapad.app
+productName: NovaPad
+copyright: Copyright © 2026 NovaPad
+
+directories:
+  buildResources: resources
+  output: dist
+
+files:
+  - out/**/*
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: resources/icons/win/icon.ico
+
+mac:
+  target:
+    - target: dmg
+      arch: [universal]
+    - target: zip
+      arch: [universal]
+  artifactName: "${productName}-${version}-mac.${ext}"
+  icon: resources/icons/mac/icon.icns
+  category: public.app-category.graphics-design
+  darkModeSupport: true
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+
+dmg:
+  artifactName: "${productName}.${ext}"
+  window:
+    width: 540
+    height: 380
+
+publish:
+  provider: github
+  owner: haht-dev
+  repo: novapad-releases

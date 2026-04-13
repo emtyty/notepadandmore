@@ -10,7 +10,8 @@ node_modules/
 # ── Build outputs ────────────────────────────────────────────────────────────────
 out/
 dist/
-build/
+build/*
+!build/entitlements.mac.plist
 *.tsbuildinfo
 
 # ── Electron builder artifacts ───────────────────────────────────────────────────
