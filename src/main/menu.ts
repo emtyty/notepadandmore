@@ -11,6 +11,11 @@ export function buildMenu(win: BrowserWindow, recentFiles: string[] = []): void 
             label: app.name,
             submenu: [
               { role: 'about' as const },
+              {
+                label: 'Settings…',
+                accelerator: 'CmdOrCtrl+,',
+                click: () => win.webContents.send('menu:settings-open')
+              },
               { type: 'separator' as const },
               { role: 'services' as const },
               { type: 'separator' as const },
@@ -301,39 +306,6 @@ export function buildMenu(win: BrowserWindow, recentFiles: string[] = []): void 
       ]
     },
 
-    // Settings
-    {
-      label: '&Settings',
-      submenu: [
-        {
-          label: 'Preferences...',
-          accelerator: 'CmdOrCtrl+,',
-          click: () => win.webContents.send('menu:preferences')
-        },
-        {
-          label: 'Shortcut Mapper...',
-          enabled: false,
-          click: () => win.webContents.send('menu:shortcut-mapper')
-        },
-        { type: 'separator' },
-        {
-          label: 'User Defined Languages...',
-          enabled: false,
-          click: () => win.webContents.send('menu:udl-editor')
-        },
-        {
-          label: 'Style Configurator...',
-          enabled: false,
-          click: () => win.webContents.send('menu:style-configurator')
-        },
-        { type: 'separator' },
-        {
-          label: 'Toggle Dark Mode',
-          click: () => win.webContents.send('ui:toggle-theme')
-        }
-      ]
-    },
-
     // Macro
     {
       label: '&Macro',
@@ -410,7 +382,19 @@ export function buildMenu(win: BrowserWindow, recentFiles: string[] = []): void 
         {
           label: 'Toggle DevTools',
           click: () => win.webContents.toggleDevTools()
-        }
+        },
+        // Windows-only hidden accelerator for Settings (Ctrl+,). On macOS the
+        // App → Settings… menu item owns the accelerator.
+        ...(!isMac
+          ? [
+              {
+                label: 'Open Settings',
+                accelerator: 'CmdOrCtrl+,',
+                visible: false,
+                click: () => win.webContents.send('menu:settings-open')
+              }
+            ]
+          : [])
       ]
     }
   ]
