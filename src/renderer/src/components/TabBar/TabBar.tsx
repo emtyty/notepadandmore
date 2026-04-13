@@ -1,5 +1,5 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react'
-import { X, Plus, ChevronLeft, ChevronRight } from 'lucide-react'
+import { X, Plus, ChevronLeft, ChevronRight, Settings as SettingsIcon, Keyboard } from 'lucide-react'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -115,12 +115,15 @@ export const TabBar: React.FC<TabBarProps> = ({ onClose, onNewFile }) => {
         className="flex-1 flex items-stretch overflow-x-hidden"
         onWheel={handleWheel}
       >
-        {buffers.map((buf) => (
+        {buffers.map((buf) => {
+          const isVirtual = buf.kind !== 'file'
+          return (
           <ContextMenu key={buf.id}>
             <ContextMenuTrigger asChild>
               <div
                 data-tab-id={buf.id}
                 data-tab-title={buf.title}
+                data-tab-kind={buf.kind}
                 data-tab-dirty={buf.isDirty ? 'true' : 'false'}
                 data-testid={buf.id === activeId ? 'active-tab' : undefined}
                 className={cn(
@@ -136,21 +139,25 @@ export const TabBar: React.FC<TabBarProps> = ({ onClose, onNewFile }) => {
                 onDragStart={() => handleDragStart(buf.id)}
                 onDragOver={(e) => handleDragOver(e, buf.id)}
                 onDrop={handleDrop}
-                title={buf.filePath ?? buf.title}
+                title={isVirtual ? buf.title : (buf.filePath ?? buf.title)}
               >
                 {/* Active indicator — blue top line */}
                 {buf.id === activeId && (
                   <div className="absolute top-0 left-0 right-0 h-[2px] bg-primary" />
                 )}
 
+                {/* Kind icon for virtual tabs */}
+                {buf.kind === 'settings' && <SettingsIcon size={12} className="shrink-0 opacity-80" />}
+                {buf.kind === 'shortcuts' && <Keyboard size={12} className="shrink-0 opacity-80" />}
+
                 {/* Tab title */}
                 <span className={cn('truncate', buf.missing && 'line-through opacity-50')}>
                   {buf.title}
                 </span>
 
-                {/* Modified dot / Close button */}
+                {/* Modified dot / Close button (virtual tabs never show dirty dot) */}
                 <span className="ml-1 w-4 h-4 flex items-center justify-center shrink-0">
-                  {buf.isDirty && buf.id !== activeId ? (
+                  {!isVirtual && buf.isDirty && buf.id !== activeId ? (
                     <span className="w-2 h-2 rounded-full bg-tab-muted" />
                   ) : (
                     <button
@@ -167,12 +174,17 @@ export const TabBar: React.FC<TabBarProps> = ({ onClose, onNewFile }) => {
               <ContextMenuItem onClick={() => onClose?.(buf.id)}>Close</ContextMenuItem>
               <ContextMenuItem onClick={() => closeOthers(buf.id)}>Close Others</ContextMenuItem>
               <ContextMenuItem onClick={() => closeAll()}>Close All</ContextMenuItem>
-              <ContextMenuSeparator />
-              <ContextMenuItem onClick={() => copyPath(buf.id)}>Copy File Path</ContextMenuItem>
-              <ContextMenuItem onClick={() => revealInExplorer(buf.id)}>Reveal in Explorer</ContextMenuItem>
+              {!isVirtual && (
+                <>
+                  <ContextMenuSeparator />
+                  <ContextMenuItem onClick={() => copyPath(buf.id)}>Copy File Path</ContextMenuItem>
+                  <ContextMenuItem onClick={() => revealInExplorer(buf.id)}>Reveal in Explorer</ContextMenuItem>
+                </>
+              )}
             </ContextMenuContent>
           </ContextMenu>
-        ))}
+          )
+        })}
       </div>
 
       {/* Right scroll arrow */}

@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useRef } from 'react'
 import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels'
 import { EditorPane } from './components/EditorPane/EditorPane'
+import { SettingsTab } from './components/SettingsTab/SettingsTab'
+import { ShortcutsTab } from './components/ShortcutsTab/ShortcutsTab'
 import { WelcomeScreen } from './components/WelcomeScreen/WelcomeScreen'
 import { TabBar } from './components/TabBar/TabBar'
 import { MenuBar } from './components/editor/MenuBar'
@@ -11,10 +13,6 @@ import { BottomPanelContainer } from './components/Panels/BottomPanelContainer'
 import { FindReplaceDialog } from './components/Dialogs/FindReplace/FindReplaceDialog'
 import { PluginManagerDialog } from './components/Dialogs/PluginManager/PluginManagerDialog'
 import { AboutDialog } from './components/Dialogs/AboutDialog/AboutDialog'
-import { PreferencesDialog } from './components/Dialogs/Preferences/PreferencesDialog'
-import { ShortcutMapperDialog } from './components/Dialogs/ShortcutMapper/ShortcutMapperDialog'
-import { StyleConfiguratorDialog } from './components/Dialogs/StyleConfigurator/StyleConfiguratorDialog'
-import { UDLEditorDialog } from './components/Dialogs/UDLEditor/UDLEditorDialog'
 import { Sidebar } from './components/Sidebar/Sidebar'
 import { Toaster, toast } from './components/ui/sonner'
 import { useEditorStore } from './store/editorStore'
@@ -26,6 +24,7 @@ import { editorRegistry } from './utils/editorRegistry'
 
 export default function App() {
   const { activeId, buffers } = useEditorStore()
+  const activeKind = buffers.find((b) => b.id === activeId)?.kind ?? 'file'
   const { theme, showToolbar, showStatusBar, showBottomPanel, showSidebar, openFind } = useUIStore()
   const { openFiles, newFile, saveBuffer, saveActiveAs, closeBuffer, reloadBuffer, loadBuffer, restoreSession } = useFileOps()
   const editorRef = useRef<{ focus: () => void } | null>(null)
@@ -338,7 +337,7 @@ export default function App() {
               <Panel defaultSize={showSidebar ? 82 : 100} minSize={20}>
                 <div className="flex flex-col h-full overflow-hidden">
                   <TabBar onClose={closeBuffer} onNewFile={newFile} />
-                  <div className="flex flex-1 overflow-hidden">
+                  <div className="flex flex-1 overflow-hidden relative">
                     {buffers.length === 0 ? (
                       <WelcomeScreen
                         onNewFile={newFile}
@@ -346,7 +345,16 @@ export default function App() {
                         onOpenRecent={openFiles}
                       />
                     ) : (
-                      <EditorPane activeId={activeId} />
+                      <>
+                        {/* Monaco stays mounted so switching to a virtual tab preserves file view state */}
+                        <EditorPane activeId={activeId} />
+                        {activeKind === 'settings' && (
+                          <div className="absolute inset-0 bg-background z-10"><SettingsTab /></div>
+                        )}
+                        {activeKind === 'shortcuts' && (
+                          <div className="absolute inset-0 bg-background z-10"><ShortcutsTab /></div>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -366,15 +374,11 @@ export default function App() {
         </PanelGroup>
       </div>
 
-      {showStatusBar && buffers.length > 0 && <StatusBar />}
+      {showStatusBar && buffers.length > 0 && activeKind === 'file' && <StatusBar />}
 
       <FindReplaceDialog />
       <PluginManagerDialog />
       <AboutDialog />
-      <PreferencesDialog />
-      <ShortcutMapperDialog />
-      <StyleConfiguratorDialog />
-      <UDLEditorDialog />
       <Toaster position="bottom-right" richColors closeButton />
       <SonnerBridge />
     </div>
