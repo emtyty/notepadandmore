@@ -12,6 +12,11 @@ export function buildMenu(win: BrowserWindow, recentFiles: string[] = []): void 
             submenu: [
               { label: 'About NovaPad', click: () => win.webContents.send('menu:about') },
               {
+                label: 'Check for Updates…',
+                click: () => win.webContents.send('menu:check-for-updates')
+              },
+              { type: 'separator' as const },
+              {
                 label: 'Settings…',
                 accelerator: 'CmdOrCtrl+,',
                 click: () => win.webContents.send('menu:settings-open')
@@ -382,6 +387,11 @@ export function buildMenu(win: BrowserWindow, recentFiles: string[] = []): void 
           label: 'About NovaPad',
           click: () => win.webContents.send('menu:about')
         }]),
+        { type: 'separator' },
+        {
+          label: 'Check for Updates...',
+          click: () => win.webContents.send('menu:check-for-updates')
+        },
         { type: 'separator' },
         {
           label: 'Toggle Developer Tools',

@@ -63,6 +63,14 @@ const api = {
     getVersion: (): Promise<string> => ipcRenderer.invoke('app:get-version')
   },
 
+  // Auto-update operations
+  update: {
+    /** Trigger a manual update check. Renderer should show feedback toasts. */
+    check: (): Promise<void> => ipcRenderer.invoke('update:check'),
+    /** Quit the app and install the downloaded update. */
+    install: (): Promise<void> => ipcRenderer.invoke('update:install')
+  },
+
   // IPC event listeners (main -> renderer)
   on: (channel: string, callback: (...args: unknown[]) => void) => {
     const allowedChannels = [
@@ -82,7 +90,10 @@ const api = {
       'plugin:add-menu-item', 'plugin:insert-text',
       'plugin:editor-get-text', 'plugin:editor-get-selection', 'plugin:editor-get-path',
       'file:externally-changed', 'file:externally-deleted',
-      'search:chunk', 'search:progress', 'search:done'
+      'search:chunk', 'search:progress', 'search:done',
+      'menu:check-for-updates',
+      'update:checking', 'update:available', 'update:not-available',
+      'update:downloading', 'update:downloaded', 'update:error'
     ]
     if (allowedChannels.includes(channel)) {
       ipcRenderer.on(channel, (_event, ...args) => callback(...args))
@@ -107,7 +118,10 @@ const api = {
       'plugin:add-menu-item', 'plugin:insert-text',
       'plugin:editor-get-text', 'plugin:editor-get-selection', 'plugin:editor-get-path',
       'file:externally-changed', 'file:externally-deleted',
-      'search:chunk', 'search:progress', 'search:done'
+      'search:chunk', 'search:progress', 'search:done',
+      'menu:check-for-updates',
+      'update:checking', 'update:available', 'update:not-available',
+      'update:downloading', 'update:downloaded', 'update:error'
     ]
     if (allowedChannels.includes(channel)) {
       ipcRenderer.removeAllListeners(channel)

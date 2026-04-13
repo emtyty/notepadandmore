@@ -197,6 +197,8 @@ export function MenuBar({
     Help: [
       { label: 'About NovaPad', action: () => useUIStore.getState().setShowAbout(true) },
       { separator: true, label: '' },
+      { label: 'Check for Updates...', action: () => { void window.api.update.check() } },
+      { separator: true, label: '' },
       { label: 'Open DevTools', shortcut: 'F12', action: () => window.dispatchEvent(new CustomEvent('dev:toggle-devtools')) },
     ],
   }
