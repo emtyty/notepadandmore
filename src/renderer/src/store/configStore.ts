@@ -37,6 +37,10 @@ export interface AppConfig {
   autoSaveIntervalMs: number
   backupEnabled: boolean
   backupDir: string
+
+  // What's New
+  /** App version string the user was last shown the auto-open for; null = never seen. */
+  lastSeenVersion: string | null
 }
 
 export const CONFIG_DEFAULTS: AppConfig = {
@@ -64,7 +68,8 @@ export const CONFIG_DEFAULTS: AppConfig = {
   autoSaveEnabled: false,
   autoSaveIntervalMs: 60000,
   backupEnabled: false,
-  backupDir: ''
+  backupDir: '',
+  lastSeenVersion: null
 }
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null
