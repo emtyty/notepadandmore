@@ -195,19 +195,35 @@ export default function App() {
 
       const freshState = useEditorStore.getState()
       const uiState = useUIStore.getState()
+
+      // Session v3: virtualTabs first, then files. activeIndex is a flat index into virtualTabs++files.
+      const virtualBuffers = freshState.buffers.filter((b) => b.kind === 'settings' || b.kind === 'shortcuts')
+      const fileBuffers = freshState.buffers.filter((b) => b.kind === 'file' && b.filePath)
+
+      let activeIndex = 0
+      const active = freshState.buffers.find((b) => b.id === freshState.activeId)
+      if (active) {
+        if (active.kind === 'file') {
+          const i = fileBuffers.findIndex((b) => b.id === active.id)
+          activeIndex = i >= 0 ? virtualBuffers.length + i : 0
+        } else {
+          const i = virtualBuffers.findIndex((b) => b.id === active.id)
+          activeIndex = i >= 0 ? i : 0
+        }
+      }
+
       window.api.send('session:save', {
-        version: 2,
-        files: freshState.buffers
-          .filter((b) => b.filePath)
-          .map((b) => ({
-            filePath: b.filePath,
-            language: b.language,
-            encoding: b.encoding,
-            eol: b.eol,
-            // Use live viewState if available, fall back to savedViewState for ghost tabs
-            viewState: b.viewState ? JSON.parse(JSON.stringify(b.viewState)) : b.savedViewState
-          })),
-        activeIndex: Math.max(0, freshState.buffers.findIndex((b) => b.id === freshState.activeId)),
+        version: 3,
+        files: fileBuffers.map((b) => ({
+          filePath: b.filePath,
+          language: b.language,
+          encoding: b.encoding,
+          eol: b.eol,
+          // Use live viewState if available, fall back to savedViewState for ghost tabs
+          viewState: b.viewState ? JSON.parse(JSON.stringify(b.viewState)) : b.savedViewState
+        })),
+        virtualTabs: virtualBuffers.map((b) => ({ kind: b.kind })),
+        activeIndex,
         workspaceFolder: uiState.workspaceFolder
       })
       window.api.send('app:close-confirmed')

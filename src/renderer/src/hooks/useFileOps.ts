@@ -19,6 +19,7 @@ export interface SessionData {
     eol: string
     viewState: object | null
   }>
+  virtualTabs?: Array<{ kind: 'settings' | 'shortcuts' }>
   activeIndex: number
   workspaceFolder?: string
 }
@@ -148,13 +149,18 @@ export function useFileOps() {
   const restoreSession = useCallback(async (session: SessionData) => {
     const store = useEditorStore.getState()
 
+    // Session v3 flat order: [...virtualTabs, ...files]. Restore in that order so
+    // activeIndex stays meaningful.
+    const virtualTabs = session.virtualTabs ?? []
+    const virtualIds: string[] = virtualTabs.map((v) => store.openVirtualTab(v.kind))
+
     // Batch check file existence — single IPC call
     const filePaths = session.files.map((f) => f.filePath).filter(Boolean)
-    const stats = await window.api.file.statBatch(filePaths)
+    const stats = filePaths.length > 0 ? await window.api.file.statBatch(filePaths) : []
     const existsMap = new Map(stats.map((s) => [s.filePath, s.exists]))
 
     // Phase 1: Create ghost buffers for all files (no content, no Monaco model)
-    const ids: string[] = []
+    const fileIds: string[] = []
     for (const file of session.files) {
       if (!file.filePath) continue
       const exists = existsMap.get(file.filePath) ?? false
@@ -174,19 +180,22 @@ export function useFileOps() {
         missing: !exists,
         isLargeFile: false
       })
-      ids.push(id)
+      fileIds.push(id)
     }
 
-    if (ids.length === 0) return
+    const allIds = [...virtualIds, ...fileIds]
+    if (allIds.length === 0) return
 
     // Set active tab (tab bar renders immediately)
     // EditorPane will detect the ghost buffer and trigger loadBuffer on mount
-    const activeIdx = Math.min(Math.max(0, session.activeIndex), ids.length - 1)
-    useEditorStore.getState().setActive(ids[activeIdx])
+    const activeIdx = Math.min(Math.max(0, session.activeIndex), allIds.length - 1)
+    useEditorStore.getState().setActive(allIds[activeIdx])
 
-    // Phase 3: Background preload non-active tabs (neighbors first)
+    // Phase 3: Background preload non-active file tabs (neighbors first)
     // Active tab is loaded by EditorPane; skip it in the preload queue
-    const preloadIds = ids.filter((_, i) => i !== activeIdx)
+    const activeIsFile = activeIdx >= virtualIds.length
+    const activeFileIdx = activeIsFile ? activeIdx - virtualIds.length : -1
+    const preloadIds = fileIds.filter((_, i) => i !== activeFileIdx)
     schedulePreload(preloadIds, 0, loadBuffer)
   }, [loadBuffer])
 
