@@ -57,6 +57,12 @@ const api = {
     remove: (filePath: string) => ipcRenderer.invoke('watch:remove', filePath)
   },
 
+  // App-level metadata
+  app: {
+    /** Reliable app version from app.getVersion() (preferred over the legacy appVersion constant). */
+    getVersion: (): Promise<string> => ipcRenderer.invoke('app:get-version')
+  },
+
   // IPC event listeners (main -> renderer)
   on: (channel: string, callback: (...args: unknown[]) => void) => {
     const allowedChannels = [
