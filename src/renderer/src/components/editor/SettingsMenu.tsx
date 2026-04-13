@@ -1,0 +1,109 @@
+import { useEffect, useRef, useState } from 'react'
+import { Settings as SettingsIcon, Sun, Moon, Keyboard } from 'lucide-react'
+import { useUIStore } from '../../store/uiStore'
+import { useConfigStore } from '../../store/configStore'
+import { useEditorStore } from '../../store/editorStore'
+
+/**
+ * Gear icon in the top-right of the menu/title bar. Clicking opens a small
+ * dropdown with the theme toggle, Keyboard Shortcuts, and Settings entries —
+ * the only way to reach Settings once the legacy menu has been removed.
+ */
+export function SettingsMenu() {
+  const { theme } = useUIStore()
+  const [open, setOpen] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onDocMouseDown = (e: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('mousedown', onDocMouseDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDocMouseDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  const toggleTheme = () => {
+    useUIStore.getState().toggleTheme()
+    useConfigStore.getState().setProp('theme', useUIStore.getState().theme)
+    setOpen(false)
+  }
+
+  const openShortcuts = () => {
+    useEditorStore.getState().openVirtualTab('shortcuts')
+    setOpen(false)
+  }
+
+  const openSettings = () => {
+    useEditorStore.getState().openVirtualTab('settings')
+    setOpen(false)
+  }
+
+  return (
+    <div ref={rootRef} className="relative" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="p-1.5 text-toolbar-foreground hover:bg-secondary rounded-sm transition-colors"
+        title="Settings"
+        data-testid="settings-menu-trigger"
+        aria-haspopup="menu"
+        aria-expanded={open}
+      >
+        <SettingsIcon size={14} />
+      </button>
+
+      {open && (
+        <div
+          className="absolute right-0 top-full mt-1 min-w-[200px] bg-popover border border-border rounded-md shadow-lg py-1 z-50"
+          role="menu"
+          data-testid="settings-menu-dropdown"
+        >
+          <button
+            role="menuitem"
+            onClick={toggleTheme}
+            className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-popover-foreground hover:bg-secondary transition-colors"
+            data-testid="settings-menu-theme"
+          >
+            <span className="w-4 flex justify-center">
+              {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+            </span>
+            <span className="flex-1 text-left">
+              {theme === 'dark' ? 'Toggle Light Mode' : 'Toggle Dark Mode'}
+            </span>
+          </button>
+
+          <div className="h-px bg-border mx-2 my-1" />
+
+          <button
+            role="menuitem"
+            onClick={openShortcuts}
+            className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-popover-foreground hover:bg-secondary transition-colors"
+            data-testid="settings-menu-shortcuts"
+          >
+            <span className="w-4 flex justify-center"><Keyboard size={14} /></span>
+            <span className="flex-1 text-left">Keyboard Shortcuts</span>
+          </button>
+
+          <button
+            role="menuitem"
+            onClick={openSettings}
+            className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-popover-foreground hover:bg-secondary transition-colors"
+            data-testid="settings-menu-settings"
+          >
+            <span className="w-4 flex justify-center"><SettingsIcon size={14} /></span>
+            <span className="flex-1 text-left">Settings</span>
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
