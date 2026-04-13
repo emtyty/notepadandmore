@@ -3,9 +3,12 @@ import * as monaco from 'monaco-editor'
 
 export type EOLType = 'CRLF' | 'LF' | 'CR'
 
+export type BufferKind = 'file' | 'settings' | 'shortcuts'
+
 export interface Buffer {
   id: string
-  filePath: string | null      // null = untitled
+  kind: BufferKind             // 'file' for normal file/untitled buffers; virtual tabs otherwise
+  filePath: string | null      // null = untitled or virtual
   title: string                // display name
   content: string
   isDirty: boolean
@@ -29,8 +32,8 @@ interface EditorState {
   splitActiveId: string | null
 
   // Actions
-  addBuffer: (buf: Omit<Buffer, 'id' | 'model'>) => string
-  addGhostBuffer: (buf: Omit<Buffer, 'id' | 'model'>) => string
+  addBuffer: (buf: Omit<Buffer, 'id' | 'model' | 'kind'> & { kind?: BufferKind }) => string
+  addGhostBuffer: (buf: Omit<Buffer, 'id' | 'model' | 'kind'> & { kind?: BufferKind }) => string
   hydrateBuffer: (id: string, patch: { content: string; encoding: string; eol: EOLType; mtime: number }) => void
   removeBuffer: (id: string) => void
   updateBuffer: (id: string, patch: Partial<Buffer>) => void
@@ -39,6 +42,8 @@ interface EditorState {
   toggleSplit: () => void
   getActive: () => Buffer | null
   getBuffer: (id: string) => Buffer | null
+  findVirtualBuffer: (kind: BufferKind) => Buffer | null
+  openVirtualTab: (kind: 'settings' | 'shortcuts') => string
 }
 
 let _idCounter = 0
@@ -58,7 +63,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     const lang = buf.isLargeFile ? 'plaintext' : (buf.language || 'plaintext')
     const model = monaco.editor.createModel(buf.content, lang)
     set((s) => ({
-      buffers: [...s.buffers, { ...buf, id, model, loaded: true, missing: false, savedViewState: buf.savedViewState ?? null }],
+      buffers: [...s.buffers, { ...buf, kind: buf.kind ?? 'file', id, model, loaded: true, missing: false, savedViewState: buf.savedViewState ?? null }],
       activeId: s.activeId ?? id
     }))
     return id
@@ -67,7 +72,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   addGhostBuffer: (buf) => {
     const id = newId()
     set((s) => ({
-      buffers: [...s.buffers, { ...buf, id, model: null }],
+      buffers: [...s.buffers, { ...buf, kind: buf.kind ?? 'file', id, model: null }],
       activeId: s.activeId ?? id
     }))
     return id
@@ -116,5 +121,43 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     return s.buffers.find((b) => b.id === s.activeId) ?? null
   },
 
-  getBuffer: (id) => get().buffers.find((b) => b.id === id) ?? null
+  getBuffer: (id) => get().buffers.find((b) => b.id === id) ?? null,
+
+  findVirtualBuffer: (kind) => get().buffers.find((b) => b.kind === kind) ?? null,
+
+  openVirtualTab: (kind) => {
+    const existing = get().buffers.find((b) => b.kind === kind)
+    if (existing) {
+      set({ activeId: existing.id })
+      return existing.id
+    }
+    const id = newId()
+    const title = kind === 'settings' ? 'Settings' : 'Keyboard Shortcuts'
+    set((s) => ({
+      buffers: [
+        ...s.buffers,
+        {
+          id,
+          kind,
+          filePath: null,
+          title,
+          content: '',
+          isDirty: false,
+          encoding: 'UTF-8',
+          eol: 'LF',
+          language: 'plaintext',
+          mtime: 0,
+          viewState: null,
+          savedViewState: null,
+          model: null,
+          bookmarks: [],
+          loaded: true,
+          missing: false,
+          isLargeFile: false
+        }
+      ],
+      activeId: id
+    }))
+    return id
+  }
 }))
