@@ -374,6 +374,10 @@ export function buildMenu(win: BrowserWindow, recentFiles: string[] = []): void 
     {
       label: '&Help',
       submenu: [
+        {
+          label: "What's New",
+          click: () => win.webContents.send('menu:whats-new-open')
+        },
         ...(isMac ? [] : [{
           label: 'About NovaPad',
           click: () => win.webContents.send('menu:about')
