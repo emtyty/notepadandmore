@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels'
 import { EditorPane } from './components/EditorPane/EditorPane'
 import { SettingsTab } from './components/SettingsTab/SettingsTab'
@@ -57,15 +57,25 @@ export default function App() {
     })()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // What's New auto-open: after config is loaded, compare the current app
-  // version to the persisted lastSeenVersion. On mismatch (including the
-  // null/fresh-install case), open the WhatsNew tab in the BACKGROUND
-  // (no focus steal) and write the current version back immediately so
-  // the auto-open is at-most-once per (user, version). Silent on failure.
+  // What's New auto-open: after config is loaded AND any session restore
+  // has settled, compare the current app version to the persisted
+  // lastSeenVersion. On mismatch (including the null/fresh-install case),
+  // open the WhatsNew tab in the BACKGROUND (no focus steal) and write the
+  // current version back immediately. Silent on failure.
   const configLoaded = useConfigStore((s) => s.loaded)
+  const [readyForAutoOpen, setReadyForAutoOpen] = useState(false)
   const autoOpenFiredRef = useRef(false)
+
+  // Fallback: if no session:restore IPC arrives (e.g., main process skipped
+  // restore in E2E mode, or there is no session.json on a fresh install
+  // outside test mode), still let the auto-open fire after a short window.
   useEffect(() => {
-    if (!configLoaded || autoOpenFiredRef.current) return
+    const t = setTimeout(() => setReadyForAutoOpen(true), 200)
+    return () => clearTimeout(t)
+  }, [])
+
+  useEffect(() => {
+    if (!configLoaded || !readyForAutoOpen || autoOpenFiredRef.current) return
     autoOpenFiredRef.current = true
     void (async () => {
       try {
@@ -81,7 +91,7 @@ export default function App() {
         console.warn('whats-new auto-open: version check failed', err)
       }
     })()
-  }, [configLoaded])
+  }, [configLoaded, readyForAutoOpen])
 
   // Wire up menu IPC events
   useEffect(() => {
@@ -194,12 +204,18 @@ export default function App() {
     // Restore session (lazy 2-phase: ghost buffers first, then load active tab)
     window.api.on('session:restore', (...args) => {
       const session = args[0] as SessionData
-      if (session?.files?.length) {
+      // Restore if EITHER files OR virtualTabs are present (a session that
+      // contains only a "What's New" virtual tab and no files still needs
+      // restoreSession to walk session.virtualTabs).
+      if (session?.files?.length || session?.virtualTabs?.length) {
         restoreSession(session)
       }
       if (session?.workspaceFolder) {
         useUIStore.getState().setWorkspaceFolder(session.workspaceFolder)
       }
+      // Mark the auto-open trigger ready: any restored buffers are now in
+      // place, so the auto-open will append AFTER them (BR-002 + Test 6).
+      setReadyForAutoOpen(true)
     })
 
     // Before close: check for unsaved buffers, flush config, then save session
