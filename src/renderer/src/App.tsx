@@ -3,6 +3,7 @@ import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels'
 import { EditorPane } from './components/EditorPane/EditorPane'
 import { SettingsTab } from './components/SettingsTab/SettingsTab'
 import { ShortcutsTab } from './components/ShortcutsTab/ShortcutsTab'
+import { WhatsNewTab } from './components/WhatsNewTab/WhatsNewTab'
 import { WelcomeScreen } from './components/WelcomeScreen/WelcomeScreen'
 import { TabBar } from './components/TabBar/TabBar'
 import { MenuBar } from './components/editor/MenuBar'
@@ -366,6 +367,9 @@ export default function App() {
                         )}
                         {activeKind === 'shortcuts' && (
                           <div className="absolute inset-0 bg-background z-10"><ShortcutsTab /></div>
+                        )}
+                        {activeKind === 'whatsNew' && (
+                          <div className="absolute inset-0 bg-background z-10"><WhatsNewTab /></div>
                         )}
                       </>
                     )}
