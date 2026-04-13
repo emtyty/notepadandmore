@@ -3,19 +3,20 @@ import { Files, Search, Settings, Puzzle } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip'
 import { useUIStore } from '../../store/uiStore'
 import { useEditorStore } from '../../store/editorStore'
+import { shortcutMod } from '../../utils/platform'
 import { cn } from '../../lib/utils'
 
 type SidebarPanelId = 'files' | 'search' | 'plugins'
 
-const NAV_ITEMS: { id: SidebarPanelId; icon: React.ReactNode; label: string; tip: string }[] = [
-  { id: 'files',     icon: <Files size={20} />,            label: 'Files',    tip: 'File Browser' },
-  { id: 'search',    icon: <Search size={20} />,           label: 'Search',   tip: 'Find & Replace (Ctrl+F)' },
-  { id: 'plugins',   icon: <Puzzle size={20} />,           label: 'Plugins',  tip: 'Plugin Manager' },
-]
-
 const PANEL_IDS = new Set<string>(['files', 'project', 'docmap', 'functions'])
 
 export function SideNav() {
+  const mod = shortcutMod()
+  const NAV_ITEMS: { id: SidebarPanelId; icon: React.ReactNode; label: string; tip: string }[] = [
+    { id: 'files',     icon: <Files size={18} />,            label: 'Files',    tip: 'File Browser' },
+    { id: 'search',    icon: <Search size={18} />,           label: 'Search',   tip: `Find & Replace (${mod}+F)` },
+    { id: 'plugins',   icon: <Puzzle size={18} />,           label: 'Plugins',  tip: 'Plugin Manager' },
+  ]
   const {
     sidebarPanel,
     showSidebar,
@@ -90,7 +91,7 @@ export function SideNav() {
                 className="flex flex-col items-center justify-center w-full min-h-[44px] py-2 text-muted-foreground hover:text-foreground hover:bg-sidebar-accent transition-colors"
                 onClick={() => handleNav('preferences')}
               >
-                <Settings size={20} />
+                <Settings size={18} />
               </button>
             </TooltipTrigger>
             <TooltipContent side="right">Preferences</TooltipContent>
