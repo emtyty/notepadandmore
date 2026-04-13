@@ -81,7 +81,7 @@ export const StatusBar: React.FC = () => {
 
   return (
     <div
-      className="h-6 bg-statusbar text-statusbar-foreground flex items-center px-2 text-[11px] select-none shrink-0"
+      className="h-7 bg-statusbar text-statusbar-foreground flex items-center px-2 text-base select-none shrink-0"
       data-testid="statusbar"
     >
       {/* Spacer */}

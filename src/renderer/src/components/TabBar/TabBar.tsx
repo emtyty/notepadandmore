@@ -98,14 +98,14 @@ export const TabBar: React.FC<TabBarProps> = ({ onClose, onNewFile }) => {
   if (buffers.length === 0) return null
 
   return (
-    <div className="h-[34px] bg-tab-inactive border-b border-border flex items-stretch select-none shrink-0 relative" data-testid="tabbar">
+    <div className="h-9 bg-tab-inactive border-b border-border flex items-stretch select-none shrink-0 relative" data-testid="tabbar">
       {/* Left scroll arrow */}
       {canScrollLeft && (
         <button
           className="absolute left-0 z-10 h-full px-1 bg-tab-inactive/90 backdrop-blur-sm border-r border-border text-tab-muted hover:text-tab-foreground transition-colors"
           onClick={() => scrollRef.current?.scrollBy({ left: -200, behavior: 'smooth' })}
         >
-          <ChevronLeft size={14} />
+          <ChevronLeft size={18} />
         </button>
       )}
 
@@ -127,7 +127,7 @@ export const TabBar: React.FC<TabBarProps> = ({ onClose, onNewFile }) => {
                 data-tab-dirty={buf.isDirty ? 'true' : 'false'}
                 data-testid={buf.id === activeId ? 'active-tab' : undefined}
                 className={cn(
-                  'group relative flex items-center gap-1.5 pl-3 pr-2 cursor-pointer text-[11px] min-w-0 shrink-0 transition-colors border-r border-border',
+                  'group relative flex items-center gap-1.5 pl-3 pr-2 cursor-pointer text-base min-w-0 shrink-0 transition-colors border-r border-border',
                   buf.id === activeId
                     ? 'bg-tab-active text-tab-foreground'
                     : 'bg-tab-inactive text-tab-muted hover:bg-tab-hover',
@@ -147,8 +147,8 @@ export const TabBar: React.FC<TabBarProps> = ({ onClose, onNewFile }) => {
                 )}
 
                 {/* Kind icon for virtual tabs */}
-                {buf.kind === 'settings' && <SettingsIcon size={12} className="shrink-0 opacity-80" />}
-                {buf.kind === 'shortcuts' && <Keyboard size={12} className="shrink-0 opacity-80" />}
+                {buf.kind === 'settings' && <SettingsIcon size={18} className="shrink-0 opacity-80" />}
+                {buf.kind === 'shortcuts' && <Keyboard size={18} className="shrink-0 opacity-80" />}
 
                 {/* Tab title */}
                 <span className={cn('truncate', buf.missing && 'line-through opacity-50')}>
@@ -156,15 +156,16 @@ export const TabBar: React.FC<TabBarProps> = ({ onClose, onNewFile }) => {
                 </span>
 
                 {/* Modified dot / Close button (virtual tabs never show dirty dot) */}
-                <span className="ml-1 w-4 h-4 flex items-center justify-center shrink-0">
+                <span className="ml-1 w-[22px] h-[22px] flex items-center justify-center shrink-0">
                   {!isVirtual && buf.isDirty && buf.id !== activeId ? (
                     <span className="w-2 h-2 rounded-full bg-tab-muted" />
                   ) : (
                     <button
-                      className="opacity-0 group-hover:opacity-100 hover:bg-secondary rounded-sm transition-opacity"
+                      type="button"
+                      className="opacity-0 group-hover:opacity-100 hover:bg-secondary rounded-sm transition-opacity p-0.5 flex items-center justify-center"
                       onClick={(e) => { e.stopPropagation(); onClose?.(buf.id) }}
                     >
-                      <X size={12} />
+                      <X size={18} />
                     </button>
                   )}
                 </span>
@@ -190,21 +191,21 @@ export const TabBar: React.FC<TabBarProps> = ({ onClose, onNewFile }) => {
       {/* Right scroll arrow */}
       {canScrollRight && (
         <button
-          className="absolute right-[34px] z-10 h-full px-1 bg-tab-inactive/90 backdrop-blur-sm border-l border-border text-tab-muted hover:text-tab-foreground transition-colors"
+          className="absolute right-9 z-10 h-full px-1 bg-tab-inactive/90 backdrop-blur-sm border-l border-border text-tab-muted hover:text-tab-foreground transition-colors"
           onClick={() => scrollRef.current?.scrollBy({ left: 200, behavior: 'smooth' })}
         >
-          <ChevronRight size={14} />
+          <ChevronRight size={18} />
         </button>
       )}
 
       {/* New file button */}
       <button
-        className="w-[34px] flex items-center justify-center text-tab-muted hover:text-tab-foreground hover:bg-tab-hover transition-colors shrink-0 border-l border-border"
+        className="w-9 flex items-center justify-center text-tab-muted hover:text-tab-foreground hover:bg-tab-hover transition-colors shrink-0 border-l border-border"
         onClick={() => onNewFile?.()}
         title="New file"
         data-testid="tabbar-new-btn"
       >
-        <Plus size={14} />
+        <Plus size={18} />
       </button>
     </div>
   )

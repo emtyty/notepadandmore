@@ -28,7 +28,7 @@ const MONO_FONTS = [
   "monospace",
 ]
 
-const inputCls = "bg-input border border-border rounded px-2 py-1 text-xs text-foreground outline-none focus:border-ring"
+const inputCls = "bg-input border border-border rounded px-2 py-1 text-sm text-foreground outline-none focus:border-ring"
 
 export function SettingsTab() {
   const config = useConfigStore()
@@ -39,8 +39,8 @@ export function SettingsTab() {
   return (
     <div className="flex flex-col flex-1 h-full overflow-hidden bg-background" data-testid="settings-tab">
       <div className="px-4 py-3 border-b border-border">
-        <h2 className="text-sm font-semibold text-foreground">Settings</h2>
-        <p className="text-[11px] text-muted-foreground mt-0.5">Changes are saved automatically.</p>
+        <h2 className="text-base font-semibold text-foreground">Settings</h2>
+        <p className="text-sm text-muted-foreground mt-0.5">Changes are saved automatically.</p>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
@@ -50,7 +50,7 @@ export function SettingsTab() {
             <button
               key={t.id}
               className={cn(
-                'w-full text-left px-3 py-1.5 text-xs cursor-pointer bg-transparent border-none text-foreground transition-colors hover:bg-secondary',
+                'w-full text-left px-3 py-1.5 text-sm cursor-pointer bg-transparent border-none text-foreground transition-colors hover:bg-secondary',
                 activeTab === t.id && 'bg-primary/15 text-primary font-medium'
               )}
               onClick={() => setActiveTab(t.id)}
@@ -85,7 +85,7 @@ export function SettingsTab() {
               </Row>
               <Row label="Font size">
                 <input type="number" min={8} max={32} className={cn(inputCls, 'w-[72px]')} value={config.fontSize} onChange={(e) => set('fontSize', Math.max(8, parseInt(e.target.value) || 14))} />
-                <span className="text-[11px] text-muted-foreground ml-1">px</span>
+                <span className="text-sm text-muted-foreground ml-1">px</span>
               </Row>
               <Row label="Tab size">
                 <input type="number" min={1} max={16} className={cn(inputCls, 'w-[72px]')} value={config.tabSize} onChange={(e) => set('tabSize', Math.max(1, parseInt(e.target.value) || 4))} />
@@ -144,7 +144,7 @@ export function SettingsTab() {
               {config.autoSaveEnabled && (
                 <Row label="AutoSave interval">
                   <input type="number" min={5} max={600} step={5} className={cn(inputCls, 'w-[72px]')} value={config.autoSaveIntervalMs / 1000} onChange={(e) => set('autoSaveIntervalMs', Math.max(5, parseInt(e.target.value) || 60) * 1000)} />
-                  <span className="text-[11px] text-muted-foreground ml-1">seconds</span>
+                  <span className="text-sm text-muted-foreground ml-1">seconds</span>
                 </Row>
               )}
               <CheckRow label="Enable file backup on save" checked={config.backupEnabled} onChange={(v) => set('backupEnabled', v)} />
@@ -173,7 +173,7 @@ export function SettingsTab() {
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-2">
-      <label className="text-xs text-muted-foreground w-32 shrink-0">{label}</label>
+      <label className="text-sm text-muted-foreground w-32 shrink-0">{label}</label>
       <div className="flex items-center gap-1 flex-1">{children}</div>
     </div>
   )
@@ -181,7 +181,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 
 function CheckRow({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <label className="flex items-center gap-1.5 text-xs text-foreground cursor-pointer">
+    <label className="flex items-center gap-1.5 text-sm text-foreground cursor-pointer">
       <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="accent-primary" />
       <span>{label}</span>
     </label>

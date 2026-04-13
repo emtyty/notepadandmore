@@ -321,19 +321,29 @@ export default function App() {
       )}
 
       <div className="flex flex-row flex-1 overflow-hidden">
-        <PanelGroup direction="vertical" className="flex-1 overflow-hidden">
+        <PanelGroup direction="vertical" id="main-vertical" className="flex-1 overflow-hidden">
           {/* Editor area */}
-          <Panel minSize={15}>
-            <PanelGroup direction="horizontal">
+          <Panel id="editor-stack" order={1} minSize={15}>
+            <PanelGroup direction="horizontal" id="sidebar-editor-split">
               {showSidebar && (
                 <>
-                  <Panel defaultSize={18} minSize={12} maxSize={40} className="overflow-hidden">
+                  <Panel
+                    id="sidebar"
+                    order={1}
+                    defaultSize={18}
+                    minSize={12}
+                    maxSize={40}
+                    className="overflow-hidden"
+                  >
                     <Sidebar />
                   </Panel>
-                  <PanelResizeHandle className="w-1 bg-border cursor-col-resize shrink-0 transition-colors hover:bg-primary data-[resize-handle-active]:bg-primary" />
+                  <PanelResizeHandle
+                    id="sidebar-resize"
+                    className="w-1 bg-border cursor-col-resize shrink-0 transition-colors hover:bg-primary data-[resize-handle-active]:bg-primary"
+                  />
                 </>
               )}
-              <Panel defaultSize={showSidebar ? 82 : 100} minSize={20}>
+              <Panel id="editor-main" order={2} defaultSize={showSidebar ? 82 : 100} minSize={20}>
                 <div className="flex flex-col h-full overflow-hidden">
                   <TabBar onClose={closeBuffer} onNewFile={newFile} />
                   <div className="flex flex-1 overflow-hidden relative">
@@ -364,8 +374,11 @@ export default function App() {
           {/* Bottom panel (resizable) */}
           {showBottomPanel && (
             <>
-              <PanelResizeHandle className="h-1 bg-border cursor-row-resize shrink-0 transition-colors hover:bg-primary data-[resize-handle-active]:bg-primary" />
-              <Panel defaultSize={25} minSize={8} maxSize={70}>
+              <PanelResizeHandle
+                id="bottom-panel-resize"
+                className="h-1 bg-border cursor-row-resize shrink-0 transition-colors hover:bg-primary data-[resize-handle-active]:bg-primary"
+              />
+              <Panel id="bottom-panel" order={2} defaultSize={25} minSize={8} maxSize={70}>
                 <BottomPanelContainer />
               </Panel>
             </>

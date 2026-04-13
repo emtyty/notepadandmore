@@ -11,8 +11,8 @@ type Row =
   | { kind: 'file-header'; file: FindResultFile; hitCount: number; fileIndex: number }
   | { kind: 'result-line'; file: FindResultFile; result: FindResultLine }
 
-const ROW_HEIGHT_HEADER = 28
-const ROW_HEIGHT_LINE = 22
+const ROW_HEIGHT_HEADER = 34
+const ROW_HEIGHT_LINE = 30
 
 // ─── Highlight match text within a line ──────────────────────────────────────
 function HighlightedLine({
@@ -34,7 +34,7 @@ function HighlightedLine({
   const displayAfter = trimmed ? after.slice(0, 60) : after
 
   return (
-    <span className="text-foreground whitespace-pre truncate text-xs">
+    <span className="text-foreground whitespace-pre truncate text-base">
       {trimmed && before.length > 60 && <span className="text-muted-foreground">…</span>}
       {displayBefore}
       <span className="bg-yellow-500/30 rounded-sm text-foreground">{match}</span>
@@ -117,7 +117,7 @@ export function FindResultsPanel() {
       <div className="flex items-center px-2.5 py-[3px] bg-background border-b border-border shrink-0 min-h-[24px]">
         <div className="flex items-center gap-2 overflow-hidden">
           {findResults && (
-            <span className="text-[11px] text-muted-foreground whitespace-nowrap truncate">
+            <span className="text-base text-muted-foreground whitespace-nowrap truncate">
               &ldquo;{findResults.query}&rdquo; — {findResults.totalHits} hit{findResults.totalHits !== 1 ? 's' : ''} in{' '}
               {findResults.files.length} file{findResults.files.length !== 1 ? 's' : ''} · {findResults.scope}
               {findResults.searchDurationMs != null && !isSearching && (
@@ -134,7 +134,7 @@ export function FindResultsPanel() {
             </span>
           )}
           {isSearching && searchProgress && (
-            <span className="text-[11px] text-primary whitespace-nowrap shrink-0">
+            <span className="text-base text-primary whitespace-nowrap shrink-0">
               {searchProgress.scanned > 0
                 ? `Scanning ${searchProgress.scanned} files…`
                 : 'Collecting files…'}
@@ -143,9 +143,9 @@ export function FindResultsPanel() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto overflow-x-hidden text-xs font-mono editor-scrollbar" ref={parentRef}>
+      <div className="flex-1 overflow-y-auto overflow-x-hidden text-base font-mono editor-scrollbar" ref={parentRef}>
         {!findResults || findResults.files.length === 0 ? (
-          <div className="p-4 text-muted-foreground font-sans text-xs">{isSearching ? 'Searching…' : 'No results.'}</div>
+          <div className="p-4 text-muted-foreground font-sans text-base">{isSearching ? 'Searching…' : 'No results.'}</div>
         ) : (
           <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
             {virtualizer.getVirtualItems().map((vItem) => {
@@ -162,9 +162,9 @@ export function FindResultsPanel() {
                     onClick={() => toggleCollapse(key)}
                     title={row.file.filePath ?? row.file.title}
                   >
-                    <span className="text-[10px] text-muted-foreground w-2.5 shrink-0">{isCollapsed ? '▶' : '▼'}</span>
-                    <span className="text-primary font-semibold text-xs truncate flex-1">{row.file.filePath ?? row.file.title}</span>
-                    <span className="text-muted-foreground text-[11px] shrink-0">
+                    <span className="text-base text-muted-foreground w-3 shrink-0">{isCollapsed ? '▶' : '▼'}</span>
+                    <span className="text-primary font-semibold text-base truncate flex-1">{row.file.filePath ?? row.file.title}</span>
+                    <span className="text-muted-foreground text-base shrink-0">
                       ({row.hitCount} hit{row.hitCount !== 1 ? 's' : ''})
                     </span>
                   </div>
@@ -180,7 +180,7 @@ export function FindResultsPanel() {
                   onClick={() => handleNavigate(row.file, row.result.lineNumber, row.result.column)}
                   title={`${row.file.filePath ?? row.file.title}:${row.result.lineNumber}:${row.result.column}`}
                 >
-                  <span className="text-muted-foreground min-w-[48px] text-right mr-2 shrink-0 text-[11px] pt-px">{row.result.lineNumber}</span>
+                  <span className="text-muted-foreground min-w-[48px] text-right mr-2 shrink-0 text-base pt-px">{row.result.lineNumber}</span>
                   <HighlightedLine
                     lineText={row.result.lineText}
                     column={row.result.column}

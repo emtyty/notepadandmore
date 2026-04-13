@@ -9,9 +9,7 @@ import {
   ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from '../ui/context-menu'
-
-const isMac = window.api.platform === 'darwin'
-const mod = isMac ? '⌘' : 'Ctrl'
+import { shortcutMod } from '../../utils/platform'
 
 const editorCmd = (cmd: string) =>
   window.dispatchEvent(new CustomEvent('editor:command', { detail: cmd }))
@@ -21,6 +19,7 @@ interface EditorContextMenuProps {
 }
 
 export function EditorContextMenu({ children }: EditorContextMenuProps) {
+  const mod = shortcutMod()
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>

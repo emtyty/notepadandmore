@@ -73,7 +73,7 @@ export const GoToLineInput: React.FC<GoToLineInputProps> = ({
           <input
             ref={inputRef}
             type="text"
-            className="w-full bg-input border border-border rounded px-2 py-1 text-sm text-popover-foreground outline-none focus:ring-1 focus:ring-ring"
+            className="w-full bg-input border border-border rounded px-2 py-1 text-base text-popover-foreground outline-none focus:ring-1 focus:ring-ring"
             placeholder={`Go to Line:Column (current ${currentLine}:${currentCol})`}
             value={value}
             onChange={(e) => setValue(e.target.value)}
@@ -81,7 +81,7 @@ export const GoToLineInput: React.FC<GoToLineInputProps> = ({
             data-testid="gotoline-input"
           />
         </div>
-        <div className="px-3 pb-2 text-xs text-muted-foreground">
+        <div className="px-3 pb-2 text-sm text-muted-foreground">
           Type a line number or line:column to go to
         </div>
       </div>

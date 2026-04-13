@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useUIStore } from '../../../store/uiStore'
 import { useSearchStore, SearchMode } from '../../../store/searchStore'
 import { useSearchEngine } from '../../../hooks/useSearchEngine'
@@ -21,7 +21,7 @@ function HistoryDropdown({ items, onSelect, onClose }: HistoryDropdownProps) {
       {items.map((item, i) => (
         <div
           key={i}
-          className="px-2 py-1 text-xs text-foreground hover:bg-secondary cursor-pointer truncate"
+          className="px-2 py-1 text-sm text-foreground hover:bg-secondary cursor-pointer truncate"
           onMouseDown={(e) => { e.preventDefault(); onSelect(item); onClose() }}
           title={item}
         >
@@ -49,7 +49,7 @@ function SearchInput({ value, onChange, placeholder, history, onKeyDown, autoFoc
     <div className="relative flex-1">
       <input
         ref={inputRef}
-        className="w-full bg-input border border-border rounded px-2 py-1 text-xs text-foreground outline-none focus:border-ring pr-6"
+        className="w-full bg-input border border-border rounded px-2 py-1 text-sm text-foreground outline-none focus:border-ring pr-6"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
@@ -59,7 +59,7 @@ function SearchInput({ value, onChange, placeholder, history, onKeyDown, autoFoc
         spellCheck={false}
       />
       <button
-        className="absolute right-1 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-muted-foreground text-xs hover:text-foreground"
+        className="absolute right-1 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-muted-foreground text-sm hover:text-foreground"
         tabIndex={-1}
         onMouseDown={(e) => { e.preventDefault(); setShowHistory((v) => !v) }}
         title="Recent searches"
@@ -86,9 +86,9 @@ function SearchOptionsPanel({ showInSelection }: SearchOptionsProps) {
   return (
     <>
       <div className="flex items-center gap-3 mt-1.5">
-        <span className="text-[11px] text-muted-foreground mr-1">Mode:</span>
+        <span className="text-base text-muted-foreground mr-1">Mode:</span>
         {(['normal', 'extended', 'regex'] as SearchMode[]).map((m) => (
-          <label key={m} className="flex items-center gap-1 text-[11px] text-foreground cursor-pointer">
+          <label key={m} className="flex items-center gap-1 text-base text-foreground cursor-pointer">
             <input
               type="radio"
               name="searchMode"
@@ -102,26 +102,26 @@ function SearchOptionsPanel({ showInSelection }: SearchOptionsProps) {
         ))}
       </div>
       <div className="flex items-center gap-3 mt-1">
-        <label className="flex items-center gap-1 text-[11px] text-foreground cursor-pointer">
+        <label className="flex items-center gap-1 text-base text-foreground cursor-pointer">
           <input type="checkbox" checked={options.isCaseSensitive} onChange={(e) => setOptions({ isCaseSensitive: e.target.checked })} className="accent-primary" />
           Match case
         </label>
-        <label className="flex items-center gap-1 text-[11px] text-foreground cursor-pointer">
+        <label className="flex items-center gap-1 text-base text-foreground cursor-pointer">
           <input type="checkbox" checked={options.isWholeWord} onChange={(e) => setOptions({ isWholeWord: e.target.checked })} className="accent-primary" />
           Whole word
         </label>
-        <label className="flex items-center gap-1 text-[11px] text-foreground cursor-pointer">
+        <label className="flex items-center gap-1 text-base text-foreground cursor-pointer">
           <input type="checkbox" checked={options.isWrapAround} onChange={(e) => setOptions({ isWrapAround: e.target.checked })} className="accent-primary" />
           Wrap around
         </label>
         {options.searchMode === 'regex' && (
-          <label className="flex items-center gap-1 text-[11px] text-foreground cursor-pointer">
+          <label className="flex items-center gap-1 text-base text-foreground cursor-pointer">
             <input type="checkbox" checked={options.dotMatchesNewline} onChange={(e) => setOptions({ dotMatchesNewline: e.target.checked })} className="accent-primary" />
             . matches newline
           </label>
         )}
         {showInSelection && (
-          <label className="flex items-center gap-1 text-[11px] text-foreground cursor-pointer">
+          <label className="flex items-center gap-1 text-base text-foreground cursor-pointer">
             <input type="checkbox" checked={options.inSelection} onChange={(e) => setOptions({ inSelection: e.target.checked })} className="accent-primary" />
             In selection
           </label>
@@ -142,33 +142,6 @@ export function FindReplaceDialog() {
   useEffect(() => {
     if (showFindReplace) setActiveTab(findReplaceMode as DialogTab)
   }, [showFindReplace, findReplaceMode])
-
-  // Dragging
-  const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
-  const dialogRef = useRef<HTMLDivElement>(null)
-  const dragRef = useRef({ dragging: false, sx: 0, sy: 0, ox: 0, oy: 0 })
-
-  useEffect(() => { if (showFindReplace) setPos(null) }, [showFindReplace])
-
-  const onTitleMouseDown = useCallback((e: React.MouseEvent) => {
-    const rect = dialogRef.current?.getBoundingClientRect()
-    const ox = rect ? rect.left : pos?.x ?? 0
-    const oy = rect ? rect.top : pos?.y ?? 0
-    dragRef.current = { dragging: true, sx: e.clientX, sy: e.clientY, ox, oy }
-    setPos({ x: ox, y: oy })
-    e.preventDefault()
-  }, [pos])
-
-  useEffect(() => {
-    const onMove = (e: MouseEvent) => {
-      if (!dragRef.current.dragging) return
-      setPos({ x: dragRef.current.ox + e.clientX - dragRef.current.sx, y: dragRef.current.oy + e.clientY - dragRef.current.sy })
-    }
-    const onUp = () => { dragRef.current.dragging = false }
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
-    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp) }
-  }, [])
 
   useEffect(() => {
     if (!showFindReplace) return
@@ -220,19 +193,17 @@ export function FindReplaceDialog() {
     { id: 'findInFiles', label: 'Find in Files' }, { id: 'mark', label: 'Mark' },
   ]
 
-  const btn = "px-3 py-1 text-[11px] border border-border rounded bg-secondary text-foreground cursor-pointer hover:bg-muted transition-colors"
-  const btnPrimary = "px-3 py-1 text-[11px] border-none rounded bg-primary text-primary-foreground cursor-pointer hover:bg-primary/90 transition-colors"
+  const btn = "px-3 py-1 text-base border border-border rounded bg-secondary text-foreground cursor-pointer hover:bg-muted transition-colors"
+  const btnPrimary = "px-3 py-1 text-base border-none rounded bg-primary text-primary-foreground cursor-pointer hover:bg-primary/90 transition-colors"
 
   return (
     <div className="fixed inset-0 z-[9000] pointer-events-none">
       <div
-        ref={dialogRef}
-        className="fixed z-[9001] bg-popover border border-border rounded-lg shadow-2xl min-w-[480px] max-w-[640px] flex flex-col pointer-events-auto"
-        style={pos ? { left: pos.x, top: pos.y } : { left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}
+        className="fixed z-[9001] bg-popover border border-border rounded-lg shadow-2xl min-w-[480px] max-w-[640px] flex flex-col pointer-events-auto left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
       >
         {/* Title bar */}
-        <div className="flex items-center justify-between px-3 py-2 border-b border-border cursor-move select-none" onMouseDown={onTitleMouseDown}>
-          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Find & Replace</span>
+        <div className="flex items-center justify-between px-3 py-2 border-b border-border">
+          <span className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Find & Replace</span>
           <button className="bg-transparent border-none cursor-pointer text-muted-foreground text-sm w-6 h-6 flex items-center justify-center rounded hover:bg-secondary hover:text-foreground" onClick={closeFind} tabIndex={-1} title="Close (Esc)">✕</button>
         </div>
 
@@ -242,7 +213,7 @@ export function FindReplaceDialog() {
             <button
               key={tab.id}
               className={cn(
-                'px-3 py-1.5 text-[11px] font-medium cursor-pointer border-none bg-transparent text-muted-foreground border-b-2 border-transparent -mb-px transition-colors hover:text-foreground hover:bg-secondary',
+                'px-3 py-1.5 text-base font-medium cursor-pointer border-none bg-transparent text-muted-foreground border-b-2 border-transparent -mb-px transition-colors hover:text-foreground hover:bg-secondary',
                 activeTab === tab.id && 'text-primary border-b-primary'
               )}
               onClick={() => setActiveTab(tab.id)}
@@ -258,7 +229,7 @@ export function FindReplaceDialog() {
           {activeTab === 'find' && (
             <>
               <div className="flex items-center gap-2">
-                <span className="text-[11px] text-muted-foreground w-14 shrink-0">Find:</span>
+                <span className="text-base text-muted-foreground w-14 shrink-0">Find:</span>
                 <SearchInput value={options.pattern} onChange={(v) => setOptions({ pattern: v })} placeholder="Search pattern…" history={patternHistory} onKeyDown={findInputKeyDown} autoFocus inputRef={findInputRef} />
               </div>
               <SearchOptionsPanel showInSelection />
@@ -277,11 +248,11 @@ export function FindReplaceDialog() {
           {activeTab === 'replace' && (
             <>
               <div className="flex items-center gap-2">
-                <span className="text-[11px] text-muted-foreground w-14 shrink-0">Find:</span>
+                <span className="text-base text-muted-foreground w-14 shrink-0">Find:</span>
                 <SearchInput value={options.pattern} onChange={(v) => setOptions({ pattern: v })} placeholder="Search pattern…" history={patternHistory} onKeyDown={findInputKeyDown} autoFocus inputRef={findInputRef} />
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[11px] text-muted-foreground w-14 shrink-0">Replace:</span>
+                <span className="text-base text-muted-foreground w-14 shrink-0">Replace:</span>
                 <SearchInput value={options.replaceText} onChange={(v) => setOptions({ replaceText: v })} placeholder="Replacement text…" history={replaceHistory} onKeyDown={replaceInputKeyDown} />
               </div>
               <SearchOptionsPanel showInSelection />
@@ -299,36 +270,36 @@ export function FindReplaceDialog() {
           {activeTab === 'findInFiles' && (
             <>
               <div className="flex items-center gap-2">
-                <span className="text-[11px] text-muted-foreground w-14 shrink-0">Find:</span>
+                <span className="text-base text-muted-foreground w-14 shrink-0">Find:</span>
                 <SearchInput value={options.pattern} onChange={(v) => setOptions({ pattern: v })} placeholder="Search pattern…" history={patternHistory} onKeyDown={(e) => { if (e.key === 'Enter') handleFindInFiles() }} autoFocus inputRef={findInputRef} />
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[11px] text-muted-foreground w-14 shrink-0">Directory:</span>
+                <span className="text-base text-muted-foreground w-14 shrink-0">Directory:</span>
                 <div className="flex flex-1 gap-1.5">
-                  <input className="flex-1 bg-input border border-border rounded px-2 py-1 text-xs text-foreground outline-none focus:border-ring" value={fifDir} onChange={(e) => setFifDir(e.target.value)} placeholder="/path/to/search…" spellCheck={false} />
+                  <input className="flex-1 bg-input border border-border rounded px-2 py-1 text-sm text-foreground outline-none focus:border-ring" value={fifDir} onChange={(e) => setFifDir(e.target.value)} placeholder="/path/to/search…" spellCheck={false} />
                   <button className={btn} onClick={handleBrowseDir}>Browse…</button>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[11px] text-muted-foreground w-14 shrink-0">Filter:</span>
-                <input className="flex-1 bg-input border border-border rounded px-2 py-1 text-xs text-foreground outline-none focus:border-ring" value={fifFilter} onChange={(e) => setFifFilter(e.target.value)} placeholder="*.ts *.js (space-separated)" spellCheck={false} />
+                <span className="text-base text-muted-foreground w-14 shrink-0">Filter:</span>
+                <input className="flex-1 bg-input border border-border rounded px-2 py-1 text-sm text-foreground outline-none focus:border-ring" value={fifFilter} onChange={(e) => setFifFilter(e.target.value)} placeholder="*.ts *.js (space-separated)" spellCheck={false} />
               </div>
               <div className="flex items-center gap-3 mt-1">
                 {(['normal', 'extended', 'regex'] as SearchMode[]).map((m) => (
-                  <label key={m} className="flex items-center gap-1 text-[11px] text-foreground cursor-pointer">
+                  <label key={m} className="flex items-center gap-1 text-base text-foreground cursor-pointer">
                     <input type="radio" name="searchMode" value={m} checked={options.searchMode === m} onChange={() => setOptions({ searchMode: m })} className="accent-primary" />
                     {m === 'normal' ? 'Normal' : m === 'extended' ? 'Extended' : 'Regex'}
                   </label>
                 ))}
               </div>
               <div className="flex items-center gap-3 mt-1">
-                <label className="flex items-center gap-1 text-[11px] text-foreground cursor-pointer">
+                <label className="flex items-center gap-1 text-base text-foreground cursor-pointer">
                   <input type="checkbox" checked={options.isCaseSensitive} onChange={(e) => setOptions({ isCaseSensitive: e.target.checked })} className="accent-primary" />Match case
                 </label>
-                <label className="flex items-center gap-1 text-[11px] text-foreground cursor-pointer">
+                <label className="flex items-center gap-1 text-base text-foreground cursor-pointer">
                   <input type="checkbox" checked={options.isWholeWord} onChange={(e) => setOptions({ isWholeWord: e.target.checked })} className="accent-primary" />Whole word
                 </label>
-                <label className="flex items-center gap-1 text-[11px] text-foreground cursor-pointer">
+                <label className="flex items-center gap-1 text-base text-foreground cursor-pointer">
                   <input type="checkbox" checked={fifRecursive} onChange={(e) => setFifRecursive(e.target.checked)} className="accent-primary" />Recursive
                 </label>
               </div>
@@ -341,7 +312,7 @@ export function FindReplaceDialog() {
                 {isSearching && currentSearchId && <button className={btn} onClick={handleCancelSearch}>Cancel</button>}
               </div>
               {isSearching && searchProgress && searchProgress.scanned > 0 && (
-                <div className="text-[11px] text-primary mt-1">Scanning {searchProgress.scanned} files…</div>
+                <div className="text-base text-primary mt-1">Scanning {searchProgress.scanned} files…</div>
               )}
             </>
           )}
@@ -350,12 +321,12 @@ export function FindReplaceDialog() {
           {activeTab === 'mark' && (
             <>
               <div className="flex items-center gap-2">
-                <span className="text-[11px] text-muted-foreground w-14 shrink-0">Find:</span>
+                <span className="text-base text-muted-foreground w-14 shrink-0">Find:</span>
                 <SearchInput value={options.pattern} onChange={(v) => setOptions({ pattern: v })} placeholder="Pattern to mark…" history={patternHistory} onKeyDown={(e) => { if (e.key === 'Enter') handleMarkAll() }} autoFocus inputRef={findInputRef} />
               </div>
               <SearchOptionsPanel />
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-[11px] text-muted-foreground w-14 shrink-0">Style:</span>
+                <span className="text-base text-muted-foreground w-14 shrink-0">Style:</span>
                 <div className="flex items-center gap-1.5">
                   {MARK_COLORS_CSS.map((color, i) => (
                     <button
@@ -366,11 +337,11 @@ export function FindReplaceDialog() {
                       title={`Mark style ${i + 1}`}
                     />
                   ))}
-                  <span className="text-[11px] text-muted-foreground ml-1">Style {markStyleIndex + 1}</span>
+                  <span className="text-base text-muted-foreground ml-1">Style {markStyleIndex + 1}</span>
                 </div>
               </div>
               <div className="flex items-center gap-3 mt-1">
-                <label className="flex items-center gap-1 text-[11px] text-foreground cursor-pointer">
+                <label className="flex items-center gap-1 text-base text-foreground cursor-pointer">
                   <input type="checkbox" onChange={(e) => { if (e.target.checked) handleBookmark() }} className="accent-primary" />
                   Also bookmark matched lines
                 </label>
@@ -386,7 +357,7 @@ export function FindReplaceDialog() {
         </div>
 
         {/* Status bar */}
-        <div className="px-3 py-1.5 border-t border-border min-h-[24px] text-[11px]">
+        <div className="px-3 py-1.5 border-t border-border min-h-[24px] text-base">
           {status.msg && (
             <span className={cn(status.type === 'ok' && 'text-green-500', status.type === 'warn' && 'text-yellow-500')}>
               {status.msg}

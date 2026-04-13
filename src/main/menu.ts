@@ -10,7 +10,7 @@ export function buildMenu(win: BrowserWindow, recentFiles: string[] = []): void 
           {
             label: app.name,
             submenu: [
-              { role: 'about' as const },
+              { label: 'About NovaPad', click: () => win.webContents.send('menu:about') },
               {
                 label: 'Settings…',
                 accelerator: 'CmdOrCtrl+,',
@@ -374,13 +374,13 @@ export function buildMenu(win: BrowserWindow, recentFiles: string[] = []): void 
     {
       label: '&Help',
       submenu: [
-        {
+        ...(isMac ? [] : [{
           label: 'About NovaPad',
           click: () => win.webContents.send('menu:about')
-        },
+        }]),
         { type: 'separator' },
         {
-          label: 'Toggle DevTools',
+          label: 'Toggle Developer Tools',
           click: () => win.webContents.toggleDevTools()
         },
         // Windows-only hidden accelerator for Settings (Ctrl+,). On macOS the

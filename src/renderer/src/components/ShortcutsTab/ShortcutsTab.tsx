@@ -9,7 +9,7 @@ export function ShortcutsTab() {
       <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-3 px-8">
         <Keyboard size={48} strokeWidth={1.2} />
         <div className="text-sm font-medium text-foreground">Keyboard Shortcuts editor — coming soon</div>
-        <p className="text-[11px] text-center max-w-[460px] leading-relaxed">
+        <p className="text-base text-center max-w-[460px] leading-relaxed">
           This is a placeholder. A full keyboard-shortcut editor will live here in a future release.
           For now, shortcuts are defined in the application menu and can be viewed alongside each menu item.
         </p>

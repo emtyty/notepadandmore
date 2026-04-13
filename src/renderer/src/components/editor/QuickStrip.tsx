@@ -19,11 +19,11 @@ export function QuickStrip({ onToggleSidebar }: QuickStripProps) {
       <div className="w-[78px] h-full shrink-0" />
 
       {/* App icon */}
-      <div className="flex items-center gap-1.5 px-2" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-        <div className="w-4 h-4 rounded-sm bg-primary flex items-center justify-center">
-          <span className="text-primary-foreground text-[8px] font-bold font-mono">N+</span>
+      <div className="flex items-center gap-2 px-2" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+        <div className="w-5 h-5 rounded-sm bg-primary flex items-center justify-center shrink-0">
+          <span className="text-primary-foreground text-[10px] font-bold font-mono leading-none">N+</span>
         </div>
-        <span className="text-xs font-semibold text-toolbar-foreground tracking-tight">NovaPad</span>
+        <span className="text-sm font-semibold text-toolbar-foreground tracking-tight">NovaPad</span>
       </div>
 
       <div className="flex-1" />
@@ -32,11 +32,11 @@ export function QuickStrip({ onToggleSidebar }: QuickStripProps) {
       <div className="flex items-center gap-0.5 mr-1" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
         <button
           onClick={onToggleSidebar}
-          className="p-1.5 text-toolbar-foreground hover:bg-secondary rounded-sm transition-colors"
+          className="p-2 text-toolbar-foreground hover:bg-secondary rounded-sm transition-colors"
           title={showSidebar ? 'Hide Explorer' : 'Show Explorer'}
           data-testid="quickstrip-sidebar"
         >
-          {showSidebar ? <PanelLeftClose size={14} /> : <PanelLeft size={14} />}
+          {showSidebar ? <PanelLeftClose size={18} /> : <PanelLeft size={18} />}
         </button>
         <SettingsMenu />
       </div>

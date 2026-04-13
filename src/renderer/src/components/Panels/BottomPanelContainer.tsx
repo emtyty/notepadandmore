@@ -27,7 +27,7 @@ export function BottomPanelContainer() {
           <button
             key={p.id}
             className={cn(
-              'px-3.5 py-1.5 text-[11px] font-medium cursor-pointer border-none bg-transparent text-muted-foreground border-b-2 border-transparent -mb-px whitespace-nowrap uppercase tracking-wider transition-colors',
+              'px-3.5 py-1.5 text-base font-medium cursor-pointer border-none bg-transparent text-muted-foreground border-b-2 border-transparent -mb-px whitespace-nowrap uppercase tracking-wider transition-colors',
               'hover:text-foreground hover:bg-secondary',
               active.id === p.id && 'text-primary border-b-primary'
             )}
@@ -44,10 +44,10 @@ export function BottomPanelContainer() {
                 className="bg-transparent border-none cursor-pointer text-muted-foreground text-sm p-1 px-2 rounded mr-1 hover:bg-secondary hover:text-foreground transition-colors"
                 onClick={() => setShowBottomPanel(false)}
               >
-                <X size={14} />
+                <X size={18} />
               </button>
             </TooltipTrigger>
-            <TooltipContent side="top" className="text-xs">Close panel</TooltipContent>
+            <TooltipContent side="top" className="text-base">Close panel</TooltipContent>
           </Tooltip>
         </TooltipProvider>
       </div>

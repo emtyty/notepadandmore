@@ -7,6 +7,7 @@ import {
   RotateCcw, ChevronRight,
 } from 'lucide-react'
 import { useUIStore } from '../../store/uiStore'
+import { isMacOS, shortcutMod, shortcutAlt } from '../../utils/platform'
 import { SettingsMenu } from './SettingsMenu'
 
 interface MenuBarProps {
@@ -35,9 +36,6 @@ interface MenuItem {
   submenu?: MenuItem[]
 }
 
-const isMac = window.api.platform === 'darwin'
-const mod = isMac ? '⌘' : 'Ctrl'
-
 const editorCmd = (cmd: string) => () =>
   window.dispatchEvent(new CustomEvent('editor:command', { detail: cmd }))
 
@@ -46,7 +44,10 @@ export function MenuBar({
   onClose, onCloseAll, onFind, onReplace, onFindInFiles, onReload,
 }: MenuBarProps) {
   // macOS uses native menu — hide custom MenuBar
-  if (isMac) return null
+  if (isMacOS()) return null
+
+  const mod = shortcutMod()
+  const alt = shortcutAlt()
 
   const [activeMenu, setActiveMenu] = useState<string | null>(null)
   const [hoveredSubmenu, setHoveredSubmenu] = useState<string | null>(null)
@@ -71,34 +72,34 @@ export function MenuBar({
 
   const menuItems: Record<string, MenuItem[]> = {
     File: [
-      { label: 'New File', icon: <FilePlus size={14} />, shortcut: `${mod}+N`, action: onNew },
-      { label: 'Open File...', icon: <FolderOpen size={14} />, shortcut: `${mod}+O`, action: onOpen },
+      { label: 'New File', icon: <FilePlus size={18} />, shortcut: `${mod}+N`, action: onNew },
+      { label: 'Open File...', icon: <FolderOpen size={18} />, shortcut: `${mod}+O`, action: onOpen },
       { label: 'Open Folder...', shortcut: `${mod}+Shift+O`, action: onOpenFolder },
-      { label: 'Save', icon: <Save size={14} />, shortcut: `${mod}+S`, action: onSave },
+      { label: 'Save', icon: <Save size={18} />, shortcut: `${mod}+S`, action: onSave },
       { label: 'Save As...', shortcut: `${mod}+Shift+S`, action: onSaveAs },
-      { label: 'Save All', shortcut: `${mod}+Alt+S`, action: onSaveAll },
+      { label: 'Save All', shortcut: `${mod}+${alt}+S`, action: onSaveAll },
       { separator: true, label: '' },
-      { label: 'Reload from Disk', icon: <RotateCcw size={14} />, shortcut: `${mod}+R`, action: onReload },
+      { label: 'Reload from Disk', icon: <RotateCcw size={18} />, shortcut: `${mod}+R`, action: onReload },
       { separator: true, label: '' },
-      { label: 'Close File', icon: <X size={14} />, shortcut: `${mod}+W`, action: onClose },
+      { label: 'Close File', icon: <X size={18} />, shortcut: `${mod}+W`, action: onClose },
       { label: 'Close All Files', action: onCloseAll },
     ],
     Edit: [
-      { label: 'Undo', icon: <Undo2 size={14} />, shortcut: `${mod}+Z`, action: () => window.dispatchEvent(new CustomEvent('editor:undo')) },
-      { label: 'Redo', icon: <Redo2 size={14} />, shortcut: `${mod}+Y`, action: () => window.dispatchEvent(new CustomEvent('editor:redo')) },
+      { label: 'Undo', icon: <Undo2 size={18} />, shortcut: `${mod}+Z`, action: () => window.dispatchEvent(new CustomEvent('editor:undo')) },
+      { label: 'Redo', icon: <Redo2 size={18} />, shortcut: `${mod}+Y`, action: () => window.dispatchEvent(new CustomEvent('editor:redo')) },
       { separator: true, label: '' },
-      { label: 'Cut', icon: <Scissors size={14} />, shortcut: `${mod}+X`, action: () => document.execCommand('cut') },
-      { label: 'Copy', icon: <Copy size={14} />, shortcut: `${mod}+C`, action: () => document.execCommand('copy') },
-      { label: 'Paste', icon: <Clipboard size={14} />, shortcut: `${mod}+V`, action: () => document.execCommand('paste') },
+      { label: 'Cut', icon: <Scissors size={18} />, shortcut: `${mod}+X`, action: () => document.execCommand('cut') },
+      { label: 'Copy', icon: <Copy size={18} />, shortcut: `${mod}+C`, action: () => document.execCommand('copy') },
+      { label: 'Paste', icon: <Clipboard size={18} />, shortcut: `${mod}+V`, action: () => document.execCommand('paste') },
       { separator: true, label: '' },
-      { label: 'Select All', icon: <SquareDashedMousePointer size={14} />, shortcut: `${mod}+A`, action: () => document.execCommand('selectAll') },
+      { label: 'Select All', icon: <SquareDashedMousePointer size={18} />, shortcut: `${mod}+A`, action: () => document.execCommand('selectAll') },
       { separator: true, label: '' },
       {
         label: 'Line Operations', submenu: [
           { label: 'Duplicate Line', shortcut: `${mod}+D`, action: editorCmd('duplicateLine') },
           { label: 'Delete Line', shortcut: `${mod}+Shift+K`, action: editorCmd('deleteLine') },
-          { label: 'Move Line Up', shortcut: 'Alt+Up', action: editorCmd('moveLineUp') },
-          { label: 'Move Line Down', shortcut: 'Alt+Down', action: editorCmd('moveLineDown') },
+          { label: 'Move Line Up', shortcut: `${alt}+Up`, action: editorCmd('moveLineUp') },
+          { label: 'Move Line Down', shortcut: `${alt}+Down`, action: editorCmd('moveLineDown') },
           { separator: true, label: '' },
           { label: 'Sort Lines Ascending', action: editorCmd('sortLinesAsc') },
           { label: 'Sort Lines Descending', action: editorCmd('sortLinesDesc') },
@@ -120,9 +121,9 @@ export function MenuBar({
       { label: 'Outdent Selection', shortcut: 'Shift+Tab', action: editorCmd('outdentSelection') },
     ],
     Search: [
-      { label: 'Find...', icon: <Search size={14} />, shortcut: `${mod}+F`, action: onFind },
-      { label: 'Replace...', icon: <Replace size={14} />, shortcut: `${mod}+H`, action: onReplace },
-      { label: 'Find in Files...', icon: <FolderSearch size={14} />, shortcut: `${mod}+Shift+F`, action: onFindInFiles },
+      { label: 'Find...', icon: <Search size={18} />, shortcut: `${mod}+F`, action: onFind },
+      { label: 'Replace...', icon: <Replace size={18} />, shortcut: `${mod}+H`, action: onReplace },
+      { label: 'Find in Files...', icon: <FolderSearch size={18} />, shortcut: `${mod}+Shift+F`, action: onFindInFiles },
       { separator: true, label: '' },
       { label: 'Go to Line...', shortcut: `${mod}+G`, action: editorCmd('goToLine') },
       { separator: true, label: '' },
@@ -134,10 +135,10 @@ export function MenuBar({
     View: [
       { label: showToolbar ? 'Hide Toolbar' : 'Show Toolbar', action: () => setShowToolbar(!showToolbar) },
       { label: showStatusBar ? 'Hide Status Bar' : 'Show Status Bar', action: () => setShowStatusBar(!showStatusBar) },
-      { label: showSidebar ? 'Hide Sidebar' : 'Show Sidebar', icon: showSidebar ? <PanelLeftClose size={14} /> : <PanelLeft size={14} />, shortcut: `${mod}+B`, action: () => setShowSidebar(!showSidebar) },
+      { label: showSidebar ? 'Hide Sidebar' : 'Show Sidebar', icon: showSidebar ? <PanelLeftClose size={18} /> : <PanelLeft size={18} />, shortcut: `${mod}+B`, action: () => setShowSidebar(!showSidebar) },
       { separator: true, label: '' },
       {
-        label: 'Word Wrap', shortcut: 'Alt+Z', checked: wordWrap,
+        label: 'Word Wrap', shortcut: `${alt}+Z`, checked: wordWrap,
         action: () => {
           const v = !wordWrap
           setWordWrap(v)
@@ -215,13 +216,13 @@ export function MenuBar({
             onMouseEnter={() => setHoveredSubmenu(subKey)}
             onMouseLeave={() => setHoveredSubmenu(null)}
           >
-            <div className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-popover-foreground hover:bg-secondary transition-colors cursor-default">
-              <span className="w-4 flex justify-center">{item.icon}</span>
+            <div className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-popover-foreground hover:bg-secondary transition-colors cursor-default">
+              <span className="w-5 flex justify-center shrink-0">{item.icon}</span>
               <span className="flex-1 text-left">{item.label}</span>
-              <ChevronRight size={12} className="text-muted-foreground" />
+              <ChevronRight size={18} className="text-muted-foreground shrink-0" />
             </div>
             {hoveredSubmenu === subKey && (
-              <div className="absolute left-full top-0 ml-0.5 min-w-[200px] bg-popover border border-border rounded-md shadow-lg py-1 z-50">
+              <div className="absolute left-full top-0 ml-0.5 min-w-[220px] bg-popover border border-border rounded-md shadow-lg py-1 z-50">
                 {renderMenuItems(item.submenu, subKey)}
               </div>
             )}
@@ -231,7 +232,7 @@ export function MenuBar({
       return (
         <button
           key={item.label}
-          className={`w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-popover-foreground transition-colors ${
+          className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm text-popover-foreground transition-colors ${
             item.disabled ? 'opacity-40 pointer-events-none' : 'hover:bg-secondary'
           }`}
           disabled={item.disabled}
@@ -243,16 +244,16 @@ export function MenuBar({
             }
           }}
         >
-          <span className="w-4 flex justify-center">
+          <span className="w-5 flex justify-center shrink-0">
             {item.checked !== undefined ? (
-              <span className="text-[11px]">{item.checked ? '✓' : ''}</span>
+              <span className="text-sm">{item.checked ? '✓' : ''}</span>
             ) : (
               item.icon
             )}
           </span>
           <span className="flex-1 text-left">{item.label}</span>
           {item.shortcut && (
-            <span className="text-[10px] text-muted-foreground ml-4">{item.shortcut}</span>
+            <span className="text-sm text-muted-foreground ml-4 font-mono tabular-nums shrink-0">{item.shortcut}</span>
           )}
         </button>
       )
@@ -262,16 +263,16 @@ export function MenuBar({
   return (
     <div
       ref={menuRef}
-      className="h-8 bg-toolbar border-b border-toolbar-border flex items-center px-1 select-none shrink-0"
+      className="h-9 bg-toolbar border-b border-toolbar-border flex items-center px-1 select-none shrink-0"
       style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
       data-testid="menubar"
     >
       {/* App icon */}
-      <div className="flex items-center gap-1.5 px-2 mr-1" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-        <div className="w-4 h-4 rounded-sm bg-primary flex items-center justify-center">
-          <span className="text-primary-foreground text-[8px] font-bold font-mono">N+</span>
+      <div className="flex items-center gap-2 px-2 mr-1" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+        <div className="w-5 h-5 rounded-sm bg-primary flex items-center justify-center shrink-0">
+          <span className="text-primary-foreground text-[10px] font-bold font-mono leading-none">N+</span>
         </div>
-        <span className="text-xs font-semibold text-toolbar-foreground tracking-tight">NovaPad</span>
+        <span className="text-sm font-semibold text-toolbar-foreground tracking-tight">NovaPad</span>
       </div>
 
       {/* Menu items */}
@@ -279,7 +280,7 @@ export function MenuBar({
         {topMenus.map((label) => (
           <div key={label} className="relative">
             <button
-              className={`px-2.5 py-1 text-[11px] text-toolbar-foreground hover:bg-secondary rounded-sm transition-colors ${
+              className={`px-3 py-1.5 text-sm text-toolbar-foreground hover:bg-secondary rounded-sm transition-colors ${
                 activeMenu === label ? 'bg-secondary' : ''
               }`}
               onMouseEnter={() => activeMenu && setActiveMenu(label)}
@@ -293,7 +294,7 @@ export function MenuBar({
 
             {/* Dropdown */}
             {activeMenu === label && menuItems[label] && (
-              <div className="absolute top-full left-0 mt-0.5 min-w-[220px] max-h-[80vh] overflow-y-auto bg-popover border border-border rounded-md shadow-lg py-1 z-50">
+              <div className="absolute top-full left-0 mt-0.5 min-w-[260px] max-h-[80vh] overflow-y-auto bg-popover border border-border rounded-md shadow-lg py-1 z-50">
                 {renderMenuItems(menuItems[label], label)}
               </div>
             )}
@@ -307,10 +308,10 @@ export function MenuBar({
       <div className="flex items-center gap-0.5 mr-1" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
         <button
           onClick={() => setShowSidebar(!showSidebar)}
-          className="p-1.5 text-toolbar-foreground hover:bg-secondary rounded-sm transition-colors"
+          className="p-2 text-toolbar-foreground hover:bg-secondary rounded-sm transition-colors"
           title={showSidebar ? 'Hide Explorer' : 'Show Explorer'}
         >
-          {showSidebar ? <PanelLeftClose size={14} /> : <PanelLeft size={14} />}
+          {showSidebar ? <PanelLeftClose size={18} /> : <PanelLeft size={18} />}
         </button>
         <SettingsMenu />
       </div>

@@ -29,17 +29,17 @@ export function Sidebar() {
   return (
     <div className="flex flex-col h-full bg-explorer overflow-hidden" data-testid="sidebar">
       <div className="flex items-center h-9 px-3 border-b border-border shrink-0">
-        <span className="flex-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="flex-1 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
           {PANEL_TITLES[sidebarPanel]}
         </span>
         <TooltipProvider delayDuration={300}>
           <Tooltip>
             <TooltipTrigger asChild>
               <button
-                className="w-[22px] h-[22px] flex items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+                className="w-7 h-7 flex items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
                 onClick={() => setShowSidebar(false)}
               >
-                <X size={12} />
+                <X size={18} />
               </button>
             </TooltipTrigger>
             <TooltipContent side="bottom">Close Sidebar</TooltipContent>

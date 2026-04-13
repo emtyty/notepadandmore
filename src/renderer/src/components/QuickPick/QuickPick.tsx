@@ -106,7 +106,7 @@ export const QuickPick: React.FC<QuickPickProps> = ({
           <input
             ref={inputRef}
             type="text"
-            className="w-full bg-input border border-border rounded px-2 py-1 text-sm text-popover-foreground outline-none focus:ring-1 focus:ring-ring"
+            className="w-full bg-input border border-border rounded px-2 py-1 text-base text-popover-foreground outline-none focus:ring-1 focus:ring-ring"
             placeholder={placeholder}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -122,7 +122,7 @@ export const QuickPick: React.FC<QuickPickProps> = ({
         >
           {filtered.length === 0 ? (
             <div
-              className="px-3 py-2 text-sm text-muted-foreground text-center"
+              className="px-3 py-2 text-base text-muted-foreground text-center"
               data-testid="quickpick-empty"
             >
               No matching items
@@ -134,7 +134,7 @@ export const QuickPick: React.FC<QuickPickProps> = ({
               return (
                 <div
                   key={item.value}
-                  className={`flex items-center gap-2 px-3 py-1.5 text-sm cursor-pointer ${
+                  className={`flex items-center gap-2 px-3 py-1.5 text-base cursor-pointer ${
                     isHighlighted
                       ? 'bg-secondary text-secondary-foreground'
                       : 'text-popover-foreground hover:bg-secondary/50'
@@ -146,12 +146,12 @@ export const QuickPick: React.FC<QuickPickProps> = ({
                   onMouseEnter={() => setHighlightedIndex(index)}
                   data-testid="quickpick-item"
                 >
-                  <span className="w-4 shrink-0">
-                    {isActive && <Check size={14} />}
+                  <span className="w-[18px] shrink-0 flex items-center justify-center">
+                    {isActive && <Check size={18} />}
                   </span>
                   <span>{item.label}</span>
                   {item.description && (
-                    <span className="text-muted-foreground ml-auto text-xs">
+                    <span className="text-muted-foreground ml-auto text-sm">
                       {item.description}
                     </span>
                   )}

@@ -68,21 +68,21 @@ function TreeNodeRow({ node, depth, expanded, onToggle, onOpen, onContextMenu, h
       <ContextMenu>
         <ContextMenuTrigger asChild>
           <div
-            className="w-full flex items-center gap-1 py-[3px] text-[11px] transition-colors hover:bg-explorer-hover cursor-pointer text-explorer-foreground"
+            className="w-full flex items-center gap-1.5 py-1 text-base transition-colors hover:bg-explorer-hover cursor-pointer text-explorer-foreground"
             style={{ paddingLeft: depth * 14 + 10 }}
             onClick={() => (node.isDir ? onToggle(node) : onOpen(node))}
             title={node.path}
           >
-            <span className="shrink-0 w-3 text-muted-foreground">
+            <span className="shrink-0 w-[18px] flex justify-center text-muted-foreground">
               {node.isDir ? (
-                expanded.has(node.path) ? <ChevronDown size={12} /> : <ChevronRight size={12} />
+                expanded.has(node.path) ? <ChevronDown size={18} /> : <ChevronRight size={18} />
               ) : null}
             </span>
-            <span className="shrink-0 text-primary">
+            <span className="shrink-0 text-primary flex items-center justify-center">
               {node.isDir ? (
-                expanded.has(node.path) ? <FolderOpen size={13} /> : <Folder size={13} />
+                expanded.has(node.path) ? <FolderOpen size={18} /> : <Folder size={18} />
               ) : (
-                <FileText size={13} className="text-tab-muted" />
+                <FileText size={18} className="text-tab-muted" />
               )}
             </span>
             <span className="truncate">{node.name}</span>
@@ -228,7 +228,7 @@ export function FileBrowserPanel() {
   if (!workspaceFolder) {
     return (
       <div className="flex flex-col h-full overflow-hidden text-foreground">
-        <div className="flex flex-col items-center justify-center flex-1 gap-2.5 p-4 text-muted-foreground text-[12px] text-center">
+        <div className="flex flex-col items-center justify-center flex-1 gap-2.5 p-4 text-muted-foreground text-base text-center">
           <button
             className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 border-none cursor-pointer"
             onClick={handleOpenFolder}
@@ -243,25 +243,25 @@ export function FileBrowserPanel() {
 
   return (
     <div className="flex flex-col h-full overflow-hidden text-foreground relative">
-      <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-3 py-1.5 shrink-0">
+      <div className="flex items-center justify-between text-sm font-semibold uppercase tracking-wider text-muted-foreground px-3 py-1.5 shrink-0">
         <span>{workspaceFolder.replace(/\\/g, '/').split('/').pop()}</span>
         <TooltipProvider delayDuration={300}>
           <Tooltip>
             <TooltipTrigger asChild>
               <button
-                className="bg-transparent border-none cursor-pointer text-muted-foreground p-0.5 rounded hover:text-foreground hover:bg-secondary"
+                className="bg-transparent border-none cursor-pointer text-muted-foreground p-1 rounded hover:text-foreground hover:bg-secondary"
                 onClick={handleRefresh}
               >
-                <RefreshCw size={12} />
+                <RefreshCw size={18} />
               </button>
             </TooltipTrigger>
-            <TooltipContent side="bottom" className="text-xs">Refresh</TooltipContent>
+            <TooltipContent side="bottom" className="text-base">Refresh</TooltipContent>
           </Tooltip>
         </TooltipProvider>
       </div>
       <div className="flex-1 overflow-y-auto overflow-x-hidden editor-scrollbar select-none py-1">
         {tree.length === 0 ? (
-          <div className="p-4 text-muted-foreground text-xs text-center">Empty folder</div>
+          <div className="p-4 text-muted-foreground text-sm text-center">Empty folder</div>
         ) : (
           tree.map((node) => (
             <TreeNodeRow

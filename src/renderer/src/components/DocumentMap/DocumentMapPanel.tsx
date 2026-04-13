@@ -102,7 +102,7 @@ export function DocumentMapPanel() {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-3 py-1.5 shrink-0 bg-explorer border-b border-border">
+      <div className="text-sm font-semibold uppercase tracking-wider text-muted-foreground px-3 py-1.5 shrink-0 bg-explorer border-b border-border">
         Document Map
       </div>
       <div ref={containerRef} className="flex-1 overflow-hidden" />

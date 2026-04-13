@@ -80,16 +80,16 @@ function SymbolRow({ node, depth, onClick }: SymbolRowProps) {
   return (
     <>
       <div
-        className="flex items-center gap-1.5 py-[3px] cursor-pointer text-xs whitespace-nowrap overflow-hidden rounded hover:bg-explorer-hover"
+        className="flex items-center gap-1.5 py-[3px] cursor-pointer text-base whitespace-nowrap overflow-hidden rounded hover:bg-explorer-hover"
         style={{ paddingLeft: depth * 12 + 8 }}
         onClick={() => onClick(node)}
         title={`${node.name}${node.detail ? ` — ${node.detail}` : ''} (line ${node.range.startLineNumber})`}
       >
-        <span className="text-[11px] font-bold w-3.5 text-center shrink-0 text-primary font-mono">
+        <span className="text-base font-bold w-3.5 text-center shrink-0 text-primary font-mono">
           {SYMBOL_ICONS[node.kind] ?? '·'}
         </span>
         <span className="truncate flex-1">{node.name}</span>
-        {node.detail && <span className="text-[11px] text-muted-foreground shrink-0 ml-1">{node.detail}</span>}
+        {node.detail && <span className="text-sm text-muted-foreground shrink-0 ml-1">{node.detail}</span>}
       </div>
       {node.children.map((child, i) => (
         <SymbolRow key={i} node={child} depth={depth + 1} onClick={onClick} />
@@ -137,25 +137,25 @@ export function FunctionListPanel() {
 
   return (
     <div className="flex flex-col h-full overflow-hidden text-foreground">
-      <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-3 py-1.5 shrink-0 bg-explorer border-b border-border">
+      <div className="flex items-center justify-between text-sm font-semibold uppercase tracking-wider text-muted-foreground px-3 py-1.5 shrink-0 bg-explorer border-b border-border">
         <span>Functions</span>
         <TooltipProvider delayDuration={300}>
           <Tooltip>
             <TooltipTrigger asChild>
               <button
-                className="bg-transparent border-none cursor-pointer text-muted-foreground p-0.5 rounded hover:text-foreground hover:bg-secondary"
+                className="bg-transparent border-none cursor-pointer text-muted-foreground p-1 rounded hover:text-foreground hover:bg-secondary"
                 onClick={refresh}
               >
-                <RefreshCw size={12} />
+                <RefreshCw size={18} />
               </button>
             </TooltipTrigger>
-            <TooltipContent side="bottom" className="text-xs">Refresh</TooltipContent>
+            <TooltipContent side="bottom" className="text-base">Refresh</TooltipContent>
           </Tooltip>
         </TooltipProvider>
       </div>
       <div className="flex-1 overflow-y-auto editor-scrollbar">
         {symbols.length === 0 ? (
-          <div className="p-4 text-muted-foreground text-xs text-center">No symbols found.</div>
+          <div className="p-4 text-muted-foreground text-sm text-center">No symbols found.</div>
         ) : (
           symbols.map((s, i) => (
             <SymbolRow key={i} node={s} depth={0} onClick={handleClick} />

@@ -2,6 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Typography: html font-size 13px → 1rem = 13px (Tailwind text-base). Icons in app chrome use 18px (Lucide size / size-[18px]). */
 @layer base {
   html, body, #root {
     height: 100%;
@@ -9,6 +10,9 @@
     overflow: hidden;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
     font-size: 13px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   button {

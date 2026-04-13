@@ -52,29 +52,29 @@ export function SettingsMenu() {
     <div ref={rootRef} className="relative" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="p-1.5 text-toolbar-foreground hover:bg-secondary rounded-sm transition-colors"
+        className="p-2 text-toolbar-foreground hover:bg-secondary rounded-sm transition-colors"
         title="Settings"
         data-testid="settings-menu-trigger"
         aria-haspopup="menu"
         aria-expanded={open}
       >
-        <SettingsIcon size={14} />
+        <SettingsIcon size={18} />
       </button>
 
       {open && (
         <div
-          className="absolute right-0 top-full mt-1 min-w-[200px] bg-popover border border-border rounded-md shadow-lg py-1 z-50"
+          className="absolute right-0 top-full mt-1 min-w-[220px] bg-popover border border-border rounded-md shadow-lg py-1 z-50"
           role="menu"
           data-testid="settings-menu-dropdown"
         >
           <button
             role="menuitem"
             onClick={toggleTheme}
-            className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-popover-foreground hover:bg-secondary transition-colors"
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-popover-foreground hover:bg-secondary transition-colors"
             data-testid="settings-menu-theme"
           >
-            <span className="w-4 flex justify-center">
-              {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+            <span className="w-5 flex justify-center shrink-0">
+              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             </span>
             <span className="flex-1 text-left">
               {theme === 'dark' ? 'Toggle Light Mode' : 'Toggle Dark Mode'}
@@ -86,20 +86,20 @@ export function SettingsMenu() {
           <button
             role="menuitem"
             onClick={openShortcuts}
-            className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-popover-foreground hover:bg-secondary transition-colors"
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-popover-foreground hover:bg-secondary transition-colors"
             data-testid="settings-menu-shortcuts"
           >
-            <span className="w-4 flex justify-center"><Keyboard size={14} /></span>
+            <span className="w-5 flex justify-center shrink-0"><Keyboard size={18} /></span>
             <span className="flex-1 text-left">Keyboard Shortcuts</span>
           </button>
 
           <button
             role="menuitem"
             onClick={openSettings}
-            className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-popover-foreground hover:bg-secondary transition-colors"
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-popover-foreground hover:bg-secondary transition-colors"
             data-testid="settings-menu-settings"
           >
-            <span className="w-4 flex justify-center"><SettingsIcon size={14} /></span>
+            <span className="w-5 flex justify-center shrink-0"><SettingsIcon size={18} /></span>
             <span className="flex-1 text-left">Settings</span>
           </button>
         </div>
