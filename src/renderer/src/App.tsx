@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useCallback, useEffect, useRef } from 'react'
 import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels'
 import { EditorPane } from './components/EditorPane/EditorPane'
 import { WelcomeScreen } from './components/WelcomeScreen/WelcomeScreen'
@@ -29,7 +29,11 @@ export default function App() {
   const { theme, showToolbar, showStatusBar, showBottomPanel, showSidebar, openFind } = useUIStore()
   const { openFiles, newFile, saveBuffer, saveActiveAs, closeBuffer, reloadBuffer, loadBuffer, restoreSession } = useFileOps()
   const editorRef = useRef<{ focus: () => void } | null>(null)
-  const openFileInput = useRef<HTMLInputElement | null>(null)
+
+  const handleOpenFile = useCallback(async () => {
+    const filePaths = await window.api.file.openDialog()
+    if (filePaths) openFiles(filePaths)
+  }, [openFiles])
 
   // Apply theme to root — .dark class on <html> drives Tailwind theme
   useEffect(() => {
@@ -265,7 +269,7 @@ export default function App() {
       {/* Menu Bar — Win/Linux only (returns null on macOS) */}
       <MenuBar
         onNew={newFile}
-        onOpen={() => openFileInput.current?.click()}
+        onOpen={handleOpenFile}
         onOpenFolder={async () => {
           const dir = await window.api.file.openDirDialog()
           if (dir) {
@@ -301,7 +305,7 @@ export default function App() {
       {showToolbar && (
         <Toolbar
           onNew={newFile}
-          onOpen={() => openFileInput.current?.click()}
+          onOpen={handleOpenFile}
           onSave={() => { const id = useEditorStore.getState().activeId; if (id) saveBuffer(id) }}
           onSaveAll={() => useEditorStore.getState().buffers.forEach((b) => { if (b.isDirty) saveBuffer(b.id) })}
           onFind={() => openFind('find')}
@@ -309,19 +313,6 @@ export default function App() {
           onClose={() => { const id = useEditorStore.getState().activeId; if (id) closeBuffer(id) }}
         />
       )}
-
-      {/* Hidden file input for Open button */}
-      <input
-        ref={openFileInput}
-        type="file"
-        multiple
-        style={{ display: 'none' }}
-        onChange={(e) => {
-          const files = Array.from(e.target.files ?? [])
-          if (files.length) openFiles(files.map((f) => (f as File & { path: string }).path))
-          e.target.value = ''
-        }}
-      />
 
       <div className="flex flex-row flex-1 overflow-hidden">
         <PanelGroup direction="vertical" className="flex-1 overflow-hidden">
@@ -343,7 +334,7 @@ export default function App() {
                     {buffers.length === 0 ? (
                       <WelcomeScreen
                         onNewFile={newFile}
-                        onOpenFile={() => openFileInput.current?.click()}
+                        onOpenFile={handleOpenFile}
                         onOpenRecent={openFiles}
                       />
                     ) : (

@@ -164,6 +164,21 @@ export function registerFileHandlers(): void {
     if (win) updateRecentFiles(win, updated)
   })
 
+  ipcMain.handle('file:open-dialog', async () => {
+    const win = BrowserWindow.getFocusedWindow()
+    if (!win) return null
+    const result = await dialog.showOpenDialog(win, {
+      properties: ['openFile', 'multiSelections'],
+      filters: [
+        { name: 'All Files', extensions: ['*'] },
+        { name: 'Text Files', extensions: ['txt', 'md', 'log'] },
+        { name: 'Source Code', extensions: ['js', 'ts', 'jsx', 'tsx', 'py', 'cpp', 'c', 'h', 'java', 'cs', 'go', 'rs'] }
+      ]
+    })
+    if (result.canceled || result.filePaths.length === 0) return null
+    return result.filePaths
+  })
+
   ipcMain.handle('file:open-dir-dialog', async () => {
     const win = BrowserWindow.getFocusedWindow()
     if (!win) return null
