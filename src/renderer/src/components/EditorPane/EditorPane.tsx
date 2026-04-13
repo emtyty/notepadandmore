@@ -3,11 +3,15 @@ import * as monaco from 'monaco-editor'
 import { useEditorStore, EOLType } from '../../store/editorStore'
 import { useUIStore } from '../../store/uiStore'
 import { useConfigStore } from '../../store/configStore'
+import { useNavigationStore } from '../../store/navigationStore'
 import { editorRegistry } from '../../utils/editorRegistry'
 import { useBookmarks } from '../../hooks/useBookmarks'
 import { useMacroRecorder } from '../../hooks/useMacroRecorder'
 import { useFileOps } from '../../hooks/useFileOps'
 import { EditorContextMenu } from './EditorContextMenu'
+
+/** Same-buffer cursor moves below this line-delta do not push a navigation entry (spec BR-005). */
+const NAV_LINE_THRESHOLD = 10
 
 interface EditorPaneProps {
   activeId?: string | null
@@ -22,6 +26,8 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
   const { theme } = useUIStore()
   const { loadBuffer } = useFileOps()
   const currentIdRef = useRef<string | null>(null)
+  /** Last cursor line recorded into the navigation history for the active buffer. */
+  const lastRecordedLineRef = useRef<number>(1)
   const [loading, setLoading] = useState(false)
   const [loadingSize, setLoadingSize] = useState<number | null>(null)
   const [missingFile, setMissingFile] = useState<string | null>(null)
@@ -198,13 +204,32 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
       if (id) updateBuffer(id, { isDirty: true })
     })
 
-    // Track cursor position -> status bar
+    // Track cursor position -> status bar + navigation history (threshold)
     editor.onDidChangeCursorPosition((e) => {
       const id = currentIdRef.current
-      if (id) {
-        window.dispatchEvent(new CustomEvent('editor:cursor', {
-          detail: { line: e.position.lineNumber, col: e.position.column }
-        }))
+      if (!id) return
+
+      window.dispatchEvent(new CustomEvent('editor:cursor', {
+        detail: { line: e.position.lineNumber, col: e.position.column }
+      }))
+
+      // Navigation history: push only on "significant" jumps (spec §3.2 / BR-005).
+      // Skip while a programmatic navigation is replaying — it sets its own position.
+      const nav = useNavigationStore.getState()
+      if (nav.isNavigating) return
+
+      const newLine = e.position.lineNumber
+      if (Math.abs(newLine - lastRecordedLineRef.current) > NAV_LINE_THRESHOLD) {
+        const buf = useEditorStore.getState().getBuffer(id)
+        if (buf?.kind === 'file') {
+          nav.pushEntry({
+            bufferId: id,
+            line: newLine,
+            column: e.position.column,
+            timestamp: Date.now(),
+          })
+          lastRecordedLineRef.current = newLine
+        }
       }
     })
 
@@ -266,13 +291,38 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
     const buf = getBuffer(activeId)
     if (!buf) return
 
-    // Save view state of previous buffer
+    // Save view state of previous buffer + push a navigation entry for where
+    // we're leaving (spec §3.1). Skip while a programmatic back/forward
+    // navigation is in flight — its own setActive call shouldn't pollute the
+    // history it's trying to traverse.
     if (currentIdRef.current && currentIdRef.current !== activeId) {
       const vs = editor.saveViewState()
       updateBuffer(currentIdRef.current, { viewState: vs })
+
+      const nav = useNavigationStore.getState()
+      if (!nav.isNavigating) {
+        const prevBuf = getBuffer(currentIdRef.current)
+        if (prevBuf && prevBuf.kind === 'file') {
+          const pos = editor.getPosition()
+          if (pos) {
+            nav.pushEntry({
+              bufferId: currentIdRef.current,
+              line: pos.lineNumber,
+              column: pos.column,
+              timestamp: Date.now(),
+            })
+          }
+        }
+      }
     }
 
     currentIdRef.current = activeId
+    // Seed lastRecordedLine for the threshold check (spec §3.2, P2.3). If the
+    // new buffer already has a known cursor via its viewState, use it; else 1.
+    const seedLine = buf.viewState?.cursorState?.[0]?.position?.lineNumber
+      ?? (buf.savedViewState as { cursorState?: Array<{ position?: { lineNumber?: number } }> } | null)?.cursorState?.[0]?.position?.lineNumber
+      ?? 1
+    lastRecordedLineRef.current = seedLine
     setMissingFile(null)
 
     // Missing file — show placeholder
