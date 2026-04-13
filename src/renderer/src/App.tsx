@@ -113,6 +113,7 @@ export default function App() {
     window.api.on('menu:about',              () => useUIStore.getState().setShowAbout(true))
     window.api.on('menu:settings-open',      () => useEditorStore.getState().openVirtualTab('settings'))
     window.api.on('menu:shortcuts-open',     () => useEditorStore.getState().openVirtualTab('shortcuts'))
+    window.api.on('menu:whats-new-open',     () => useEditorStore.getState().openVirtualTab('whatsNew'))
     window.api.on('plugin:add-menu-item', (...args) => {
       const [pluginName, label] = args as [string, string]
       usePluginStore.getState().addDynamicMenuItem({ pluginName, label })
@@ -259,6 +260,7 @@ export default function App() {
       window.api.off('menu:about')
       window.api.off('menu:settings-open')
       window.api.off('menu:shortcuts-open')
+      window.api.off('menu:whats-new-open')
       window.api.off('plugin:add-menu-item')
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
