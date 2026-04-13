@@ -1,15 +1,13 @@
-import { Search, PanelLeftClose, PanelLeft, Sun, Moon } from 'lucide-react'
+import { PanelLeftClose, PanelLeft } from 'lucide-react'
 import { useUIStore } from '../../store/uiStore'
-import { useConfigStore } from '../../store/configStore'
+import { SettingsMenu } from './SettingsMenu'
 
 interface QuickStripProps {
-  onFind: () => void
   onToggleSidebar: () => void
-  onToggleTheme: () => void
 }
 
-export function QuickStrip({ onFind, onToggleSidebar, onToggleTheme }: QuickStripProps) {
-  const { theme, showSidebar } = useUIStore()
+export function QuickStrip({ onToggleSidebar }: QuickStripProps) {
+  const { showSidebar } = useUIStore()
 
   return (
     <div
@@ -33,14 +31,6 @@ export function QuickStrip({ onFind, onToggleSidebar, onToggleTheme }: QuickStri
       {/* Quick action icons */}
       <div className="flex items-center gap-0.5 mr-1" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
         <button
-          onClick={onFind}
-          className="p-1.5 text-toolbar-foreground hover:bg-secondary rounded-sm transition-colors"
-          title="Find"
-          data-testid="quickstrip-find"
-        >
-          <Search size={14} />
-        </button>
-        <button
           onClick={onToggleSidebar}
           className="p-1.5 text-toolbar-foreground hover:bg-secondary rounded-sm transition-colors"
           title={showSidebar ? 'Hide Explorer' : 'Show Explorer'}
@@ -48,14 +38,7 @@ export function QuickStrip({ onFind, onToggleSidebar, onToggleTheme }: QuickStri
         >
           {showSidebar ? <PanelLeftClose size={14} /> : <PanelLeft size={14} />}
         </button>
-        <button
-          onClick={onToggleTheme}
-          className="p-1.5 text-toolbar-foreground hover:bg-secondary rounded-sm transition-colors"
-          title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-          data-testid="quickstrip-theme"
-        >
-          {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
-        </button>
+        <SettingsMenu />
       </div>
     </div>
   )

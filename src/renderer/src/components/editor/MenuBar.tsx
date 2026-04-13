@@ -3,12 +3,11 @@ import {
   FilePlus, FolderOpen, Save, X,
   Undo2, Redo2, Scissors, Copy, Clipboard, SquareDashedMousePointer,
   Search, Replace, FolderSearch,
-  Sun, Moon, PanelLeftClose, PanelLeft,
+  PanelLeftClose, PanelLeft,
   RotateCcw, ChevronRight,
 } from 'lucide-react'
 import { useUIStore } from '../../store/uiStore'
-import { useConfigStore } from '../../store/configStore'
-import { useEditorStore } from '../../store/editorStore'
+import { SettingsMenu } from './SettingsMenu'
 
 interface MenuBarProps {
   onNew: () => void
@@ -53,9 +52,9 @@ export function MenuBar({
   const [hoveredSubmenu, setHoveredSubmenu] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
   const {
-    theme, showToolbar, showStatusBar, showSidebar,
+    showToolbar, showStatusBar, showSidebar,
     wordWrap, renderWhitespace, indentationGuides, columnSelectMode,
-    toggleTheme, setShowToolbar, setShowStatusBar, setShowSidebar,
+    setShowToolbar, setShowStatusBar, setShowSidebar,
     setWordWrap, setRenderWhitespace, setIndentationGuides, setColumnSelectMode,
   } = useUIStore()
 
@@ -69,11 +68,6 @@ export function MenuBar({
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
-
-  const handleThemeToggle = () => {
-    toggleTheme()
-    useConfigStore.getState().setProp('theme', useUIStore.getState().theme)
-  }
 
   const menuItems: Record<string, MenuItem[]> = {
     File: [
@@ -181,15 +175,6 @@ export function MenuBar({
       { separator: true, label: '' },
       { label: 'Split View', disabled: true },
     ],
-    Settings: [
-      { label: 'Settings', shortcut: `${mod}+,`, action: () => useEditorStore.getState().openVirtualTab('settings') },
-      { label: 'Shortcut Mapper...', disabled: true },
-      { separator: true, label: '' },
-      { label: 'User Defined Languages...', disabled: true },
-      { label: 'Style Configurator...', disabled: true },
-      { separator: true, label: '' },
-      { label: theme === 'dark' ? 'Light Mode' : 'Dark Mode', icon: theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />, action: handleThemeToggle },
-    ],
     Macro: [
       { label: 'Start Recording', shortcut: `${mod}+Shift+R`, disabled: true },
       { label: 'Stop Recording', shortcut: `${mod}+Shift+R`, disabled: true },
@@ -214,7 +199,7 @@ export function MenuBar({
     ],
   }
 
-  const topMenus = ['File', 'Edit', 'Search', 'View', 'Settings', 'Macro', 'Plugins', 'Window', 'Help']
+  const topMenus = ['File', 'Edit', 'Search', 'View', 'Macro', 'Plugins', 'Window', 'Help']
 
   const renderMenuItems = (items: MenuItem[], parentLabel: string) => (
     items.map((item, i) => {
@@ -321,26 +306,13 @@ export function MenuBar({
       {/* Right-side quick icons */}
       <div className="flex items-center gap-0.5 mr-1" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
         <button
-          onClick={onFind}
-          className="p-1.5 text-toolbar-foreground hover:bg-secondary rounded-sm transition-colors"
-          title="Find (Ctrl+F)"
-        >
-          <Search size={14} />
-        </button>
-        <button
           onClick={() => setShowSidebar(!showSidebar)}
           className="p-1.5 text-toolbar-foreground hover:bg-secondary rounded-sm transition-colors"
           title={showSidebar ? 'Hide Explorer' : 'Show Explorer'}
         >
           {showSidebar ? <PanelLeftClose size={14} /> : <PanelLeft size={14} />}
         </button>
-        <button
-          onClick={handleThemeToggle}
-          className="p-1.5 text-toolbar-foreground hover:bg-secondary rounded-sm transition-colors"
-          title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-        >
-          {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
-        </button>
+        <SettingsMenu />
       </div>
     </div>
   )

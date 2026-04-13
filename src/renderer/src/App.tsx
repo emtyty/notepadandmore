@@ -106,6 +106,8 @@ export default function App() {
     })
     window.api.on('menu:plugin-manager', () => useUIStore.getState().setShowPluginManager(true))
     window.api.on('menu:about',              () => useUIStore.getState().setShowAbout(true))
+    window.api.on('menu:settings-open',      () => useEditorStore.getState().openVirtualTab('settings'))
+    window.api.on('menu:shortcuts-open',     () => useEditorStore.getState().openVirtualTab('shortcuts'))
     window.api.on('plugin:add-menu-item', (...args) => {
       const [pluginName, label] = args as [string, string]
       usePluginStore.getState().addDynamicMenuItem({ pluginName, label })
@@ -250,6 +252,8 @@ export default function App() {
       window.api.off('file:externally-deleted')
       window.api.off('menu:plugin-manager')
       window.api.off('menu:about')
+      window.api.off('menu:settings-open')
+      window.api.off('menu:shortcuts-open')
       window.api.off('plugin:add-menu-item')
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -299,12 +303,7 @@ export default function App() {
       {/* QuickStrip — macOS only (separate row with app icon + quick actions) */}
       {window.api.platform === 'darwin' && (
         <QuickStrip
-          onFind={() => openFind('find')}
           onToggleSidebar={() => useUIStore.getState().setShowSidebar(!useUIStore.getState().showSidebar)}
-          onToggleTheme={() => {
-            useUIStore.getState().toggleTheme()
-            useConfigStore.getState().setProp('theme', useUIStore.getState().theme)
-          }}
         />
       )}
 
