@@ -88,7 +88,7 @@ async function main() {
   await runGh(['repo', 'view', `${owner}/${repo}`, '--json', 'nameWithOwner'])
   pass(`Release repository access verified: ${owner}/${repo}`)
 
-  const requiredMacEnv = ['APPLE_ID', 'APPLE_APP_PASSWORD', 'APPLE_TEAM_ID']
+  const requiredMacEnv = ['APPLE_ID', 'APPLE_APP_SPECIFIC_PASSWORD', 'APPLE_TEAM_ID']
   if (target === 'all' || target === 'mac') {
     const missingMacEnv = requiredMacEnv.filter((key) => !process.env[key])
     if (missingMacEnv.length > 0) {
