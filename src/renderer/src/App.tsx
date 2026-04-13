@@ -380,7 +380,10 @@ export default function App() {
                 <div className="flex flex-col h-full overflow-hidden">
                   <TabBar onClose={closeBuffer} onNewFile={newFile} />
                   <div className="flex flex-1 overflow-hidden relative">
-                    {buffers.length === 0 ? (
+                    {!activeId ? (
+                      // No active tab: show WelcomeScreen even if inactive virtual
+                      // tabs exist (e.g., a background-opened "What's New" tab on
+                      // fresh install). Otherwise we'd render an empty EditorPane.
                       <WelcomeScreen
                         onNewFile={newFile}
                         onOpenFile={handleOpenFile}
@@ -422,7 +425,7 @@ export default function App() {
         </PanelGroup>
       </div>
 
-      {showStatusBar && buffers.length > 0 && activeKind === 'file' && <StatusBar />}
+      {showStatusBar && !!activeId && activeKind === 'file' && <StatusBar />}
 
       <FindReplaceDialog />
       <PluginManagerDialog />
