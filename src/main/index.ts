@@ -107,6 +107,10 @@ ipcMain.on('session:save', (_event, session) => {
   SessionManager.getInstance().save(session)
 })
 
+// Expose the real app version (app.getVersion() reads from packaged metadata,
+// unlike the env-var-based window.api.appVersion which is unreliable in prod).
+ipcMain.handle('app:get-version', () => app.getVersion())
+
 // Bidirectional state sync: renderer → main (update native menu checkboxes)
 const toggleKeyToMenuId: Record<string, string> = {
   showToolbar: 'toggle-toolbar',
