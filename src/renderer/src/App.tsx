@@ -106,10 +106,6 @@ export default function App() {
       useUIStore.getState().addToast(args[0] as string, (args[1] as 'info' | 'warn' | 'error') ?? 'info')
     })
     window.api.on('menu:plugin-manager', () => useUIStore.getState().setShowPluginManager(true))
-    window.api.on('menu:preferences',        () => useUIStore.getState().setShowPreferences(true))
-    window.api.on('menu:shortcut-mapper',    () => useUIStore.getState().setShowShortcutMapper(true))
-    window.api.on('menu:udl-editor',         () => useUIStore.getState().setShowUDLEditor(true))
-    window.api.on('menu:style-configurator', () => useUIStore.getState().setShowStyleConfigurator(true))
     window.api.on('menu:about',              () => useUIStore.getState().setShowAbout(true))
     window.api.on('plugin:add-menu-item', (...args) => {
       const [pluginName, label] = args as [string, string]
@@ -254,10 +250,6 @@ export default function App() {
       window.api.off('file:externally-changed')
       window.api.off('file:externally-deleted')
       window.api.off('menu:plugin-manager')
-      window.api.off('menu:preferences')
-      window.api.off('menu:shortcut-mapper')
-      window.api.off('menu:udl-editor')
-      window.api.off('menu:style-configurator')
       window.api.off('menu:about')
       window.api.off('plugin:add-menu-item')
     }
