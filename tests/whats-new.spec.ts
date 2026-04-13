@@ -80,14 +80,21 @@ test('What\'s New tab title is the static string "What\'s New"', async () => {
 })
 
 // Test 8
-test('What\'s New tab body renders the "Coming soon" placeholder', async () => {
+test("What's New tab body renders v1.0.0 release notes", async () => {
   const { app, page } = await launchApp()
   try {
     await triggerHelpWhatsNew(app)
     const body = page.locator('[data-testid="whatsnew-tab"]')
     await expect(body).toBeVisible()
-    await expect(body.getByText('Coming soon')).toBeVisible()
-    await expect(body.getByRole('heading', { name: "What's New" })).toBeVisible()
+    // Both headings (h2 tab title + h3 release-list subheading) read "What's New"
+    await expect(body.getByRole('heading', { name: "What's New" })).toHaveCount(2)
+    // Release header in the body content
+    await expect(body.getByText('v1.0.0')).toBeVisible()
+    // Each of the four release-note items is present
+    await expect(body.getByText('Mac Support:')).toBeVisible()
+    await expect(body.getByText('Universal Clipboard:')).toBeVisible()
+    await expect(body.getByText('Retina Ready:')).toBeVisible()
+    await expect(body.getByText('The "Tab" Situation:')).toBeVisible()
   } finally {
     await app.close()
   }
