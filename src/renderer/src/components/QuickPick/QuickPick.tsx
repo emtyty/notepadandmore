@@ -24,8 +24,6 @@ export const QuickPick: React.FC<QuickPickProps> = ({
 }) => {
   const [query, setQuery] = useState('')
   const [highlightedIndex, setHighlightedIndex] = useState(0)
-  const [closing, setClosing] = useState(false)
-  const pendingAction = useRef<(() => void) | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
@@ -55,18 +53,11 @@ export const QuickPick: React.FC<QuickPickProps> = ({
 
   const dismiss = useCallback(
     (action?: () => void) => {
-      if (closing) return
-      pendingAction.current = action ?? null
-      setClosing(true)
+      action?.()
+      onClose()
     },
-    [closing]
+    [onClose]
   )
-
-  const handleAnimationEnd = useCallback(() => {
-    if (!closing) return
-    pendingAction.current?.()
-    onClose()
-  }, [closing, onClose])
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -95,28 +86,19 @@ export const QuickPick: React.FC<QuickPickProps> = ({
     [filtered, highlightedIndex, onSelect, dismiss]
   )
 
-  const backdropAnim = closing
-    ? 'animate-out fade-out-0 duration-100'
-    : 'animate-in fade-in-0 duration-100'
-
-  const dialogAnim = closing
-    ? 'animate-out fade-out-0 duration-100'
-    : 'animate-in fade-in-0 duration-100'
-
   return (
     <>
       {/* Backdrop */}
       <div
-        className={`fixed top-0 left-0 right-0 bottom-6 z-[9000] bg-black/30 ${backdropAnim}`}
+        className="fixed top-0 left-0 right-0 bottom-6 z-[9000] bg-black/30"
         onClick={() => dismiss()}
         data-testid="quickpick-backdrop"
       />
 
       {/* Dialog */}
       <div
-        className={`fixed z-[9001] left-1/2 -translate-x-1/2 top-[60px] w-[min(400px,90vw)] bg-popover border border-border rounded-lg shadow-2xl flex flex-col ${dialogAnim}`}
+        className="fixed z-[9001] left-1/2 -translate-x-1/2 top-[60px] w-[min(400px,90vw)] bg-popover border border-border rounded-lg shadow-2xl flex flex-col"
         onKeyDown={handleKeyDown}
-        onAnimationEnd={handleAnimationEnd}
         data-testid="quickpick"
       >
         {/* Search input */}

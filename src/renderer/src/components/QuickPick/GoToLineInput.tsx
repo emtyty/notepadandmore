@@ -14,8 +14,6 @@ export const GoToLineInput: React.FC<GoToLineInputProps> = ({
   onClose
 }) => {
   const [value, setValue] = useState('')
-  const [closing, setClosing] = useState(false)
-  const pendingAction = useRef<(() => void) | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -24,18 +22,11 @@ export const GoToLineInput: React.FC<GoToLineInputProps> = ({
 
   const dismiss = useCallback(
     (action?: () => void) => {
-      if (closing) return
-      pendingAction.current = action ?? null
-      setClosing(true)
+      action?.()
+      onClose()
     },
-    [closing]
+    [onClose]
   )
-
-  const handleAnimationEnd = useCallback(() => {
-    if (!closing) return
-    pendingAction.current?.()
-    onClose()
-  }, [closing, onClose])
 
   const handleSubmit = useCallback(() => {
     const trimmed = value.trim()
@@ -67,24 +58,15 @@ export const GoToLineInput: React.FC<GoToLineInputProps> = ({
     [handleSubmit, dismiss]
   )
 
-  const backdropAnim = closing
-    ? 'animate-out fade-out-0 duration-100'
-    : 'animate-in fade-in-0 duration-100'
-
-  const dialogAnim = closing
-    ? 'animate-out fade-out-0 duration-100'
-    : 'animate-in fade-in-0 duration-100'
-
   return (
     <>
       <div
-        className={`fixed top-0 left-0 right-0 bottom-6 z-[9000] bg-black/30 ${backdropAnim}`}
+        className="fixed top-0 left-0 right-0 bottom-6 z-[9000] bg-black/30"
         onClick={() => dismiss()}
         data-testid="gotoline-backdrop"
       />
       <div
-        className={`fixed z-[9001] left-1/2 -translate-x-1/2 top-[60px] w-[min(400px,90vw)] bg-popover border border-border rounded-lg shadow-2xl flex flex-col ${dialogAnim}`}
-        onAnimationEnd={handleAnimationEnd}
+        className="fixed z-[9001] left-1/2 -translate-x-1/2 top-[60px] w-[min(400px,90vw)] bg-popover border border-border rounded-lg shadow-2xl flex flex-col"
         data-testid="gotoline"
       >
         <div className="p-2">
