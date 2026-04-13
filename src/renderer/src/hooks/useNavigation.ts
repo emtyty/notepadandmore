@@ -1,7 +1,8 @@
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 import { useEditorStore } from '../store/editorStore'
 import { useNavigationStore, NavigationEntry } from '../store/navigationStore'
 import { editorRegistry } from '../utils/editorRegistry'
+import { isMacOS } from '../utils/platform'
 
 export type NavigationDirection = 'back' | 'forward'
 
@@ -103,4 +104,82 @@ function applyPosition(destination: NavigationEntry, attempt: number): void {
     // leaving isNavigating stuck.
   }
   nav.endNavigating()
+}
+
+/**
+ * Returns true when the browser's keyboard event target is a text input that
+ * is NOT inside Monaco. Used to let the Find dialog's input field keep normal
+ * arrow-key behavior (spec §4.4).
+ */
+function isInExternalTextInput(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false
+  const isTextInput = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement
+  if (!isTextInput) return false
+  // Monaco's internal textarea is inside `.monaco-editor`; let it through.
+  return !target.closest('.monaco-editor')
+}
+
+/**
+ * Mounts window-level keyboard and mouse-button listeners that drive the
+ * navigation pipeline. Must be called exactly once from a long-lived
+ * component (e.g. App.tsx). Cleans up on unmount.
+ *
+ * Keyboard bindings per spec §4.1:
+ *   - macOS: Ctrl+- (back), Ctrl+Shift+- (forward).
+ *   - Windows/Linux: Alt+ArrowLeft (back), Alt+ArrowRight (forward).
+ *
+ * Mouse bindings per spec §5:
+ *   - BrowserBack button (mouse button 3) → back.
+ *   - BrowserForward button (mouse button 4) → forward.
+ */
+export function useNavigationShortcuts(): void {
+  const { navigate } = useNavigation()
+
+  useEffect(() => {
+    const mac = isMacOS()
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (isInExternalTextInput(e.target)) return
+
+      let direction: NavigationDirection | null = null
+
+      if (mac) {
+        // Ctrl+-  or  Ctrl+Shift+-
+        if (e.ctrlKey && !e.metaKey && !e.altKey && e.key === '-') {
+          direction = e.shiftKey ? 'forward' : 'back'
+        }
+      } else {
+        // Alt+ArrowLeft / Alt+ArrowRight
+        if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+          if (e.key === 'ArrowLeft') direction = 'back'
+          else if (e.key === 'ArrowRight') direction = 'forward'
+        }
+      }
+
+      if (!direction) return
+      e.preventDefault()
+      e.stopPropagation()
+      navigate(direction)
+    }
+
+    const onMouseUp = (e: MouseEvent) => {
+      // button 3 = BrowserBack, button 4 = BrowserForward.
+      if (e.button === 3) {
+        e.preventDefault()
+        navigate('back')
+      } else if (e.button === 4) {
+        e.preventDefault()
+        navigate('forward')
+      }
+    }
+
+    // capture:true so we beat Monaco's internal handlers on the way down.
+    document.documentElement.addEventListener('keydown', onKeyDown, { capture: true })
+    document.documentElement.addEventListener('mouseup', onMouseUp)
+
+    return () => {
+      document.documentElement.removeEventListener('keydown', onKeyDown, { capture: true })
+      document.documentElement.removeEventListener('mouseup', onMouseUp)
+    }
+  }, [navigate])
 }

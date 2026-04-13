@@ -20,6 +20,7 @@ import { useUIStore } from './store/uiStore'
 import { usePluginStore } from './store/pluginStore'
 import { useConfigStore } from './store/configStore'
 import { useFileOps, SessionData } from './hooks/useFileOps'
+import { useNavigationShortcuts } from './hooks/useNavigation'
 import { editorRegistry } from './utils/editorRegistry'
 
 export default function App() {
@@ -27,6 +28,9 @@ export default function App() {
   const activeKind = buffers.find((b) => b.id === activeId)?.kind ?? 'file'
   const { theme, showToolbar, showStatusBar, showBottomPanel, showSidebar, openFind } = useUIStore()
   const { openFiles, newFile, saveBuffer, saveActiveAs, closeBuffer, reloadBuffer, loadBuffer, restoreSession } = useFileOps()
+  // Mount window-level keyboard (Alt+Left/Right or Ctrl+-) and mouse
+  // back/forward button listeners that drive navigation history.
+  useNavigationShortcuts()
   const editorRef = useRef<{ focus: () => void } | null>(null)
 
   const handleOpenFile = useCallback(async () => {
