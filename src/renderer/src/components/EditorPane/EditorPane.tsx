@@ -301,8 +301,11 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
 
       const nav = useNavigationStore.getState()
       if (!nav.isNavigating) {
+        // Per spec §3.5: skip the push when either the source or destination
+        // of the switch is a virtual tab. `buf` is the destination (the new
+        // activeId's buffer) and `prevBuf` is the source.
         const prevBuf = getBuffer(currentIdRef.current)
-        if (prevBuf && prevBuf.kind === 'file') {
+        if (prevBuf && prevBuf.kind === 'file' && buf.kind === 'file') {
           const pos = editor.getPosition()
           if (pos) {
             nav.pushEntry({
