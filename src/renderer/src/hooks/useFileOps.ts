@@ -48,6 +48,9 @@ declare global {
         add: (p: string) => Promise<void>
         remove: (p: string) => Promise<void>
       }
+      app: {
+        getVersion: () => Promise<string>
+      }
       on: (channel: string, cb: (...args: unknown[]) => void) => void
       off: (channel: string) => void
       send: (channel: string, ...args: unknown[]) => void

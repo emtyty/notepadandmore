@@ -57,6 +57,32 @@ export default function App() {
     })()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // What's New auto-open: after config is loaded, compare the current app
+  // version to the persisted lastSeenVersion. On mismatch (including the
+  // null/fresh-install case), open the WhatsNew tab in the BACKGROUND
+  // (no focus steal) and write the current version back immediately so
+  // the auto-open is at-most-once per (user, version). Silent on failure.
+  const configLoaded = useConfigStore((s) => s.loaded)
+  const autoOpenFiredRef = useRef(false)
+  useEffect(() => {
+    if (!configLoaded || autoOpenFiredRef.current) return
+    autoOpenFiredRef.current = true
+    void (async () => {
+      try {
+        const currentVersion = await window.api.app.getVersion()
+        const lastSeenVersion = useConfigStore.getState().lastSeenVersion
+        if (lastSeenVersion !== currentVersion) {
+          useEditorStore.getState().openVirtualTab('whatsNew', { activate: false })
+          // Write-on-fire (BR-004): persist immediately so a crash before tab
+          // close still counts as "seen" and won't re-fire on next launch.
+          useConfigStore.getState().setProp('lastSeenVersion', currentVersion)
+        }
+      } catch (err) {
+        console.warn('whats-new auto-open: version check failed', err)
+      }
+    })()
+  }, [configLoaded])
+
   // Wire up menu IPC events
   useEffect(() => {
     window.api.on('menu:file-new', () => newFile())
