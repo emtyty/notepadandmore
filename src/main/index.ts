@@ -6,6 +6,8 @@ import { registerConfigHandlers } from './ipc/configHandlers'
 import { registerPluginHandlers } from './ipc/pluginHandlers'
 import { registerSearchHandlers } from './ipc/searchHandlers'
 import { registerWatchHandlers } from './ipc/watchHandlers'
+import { registerUpdateHandlers } from './ipc/updateHandlers'
+import { UpdateManager } from './update/UpdateManager'
 import { PluginLoader } from './plugins/PluginLoader'
 import { SessionManager } from './sessions/SessionManager'
 import { loadRecents } from './recentFiles'
@@ -73,6 +75,15 @@ app.whenReady().then(() => {
   // Register handlers that need mainWindow reference
   registerSearchHandlers(mainWindow!)
   registerWatchHandlers(mainWindow!)
+
+  // Auto-update: check on startup (silent) + expose IPC for manual check/install
+  const updateManager = new UpdateManager(mainWindow!)
+  registerUpdateHandlers(updateManager)
+  if (app.isPackaged && process.env['E2E_TEST'] !== '1') {
+    setTimeout(() => {
+      void updateManager.checkForUpdates(false)
+    }, 5000)
+  }
 
   // Load plugins
   PluginLoader.getInstance().loadAll(mainWindow!)

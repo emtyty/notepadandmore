@@ -22,6 +22,7 @@ import { usePluginStore } from './store/pluginStore'
 import { useConfigStore } from './store/configStore'
 import { useFileOps, SessionData } from './hooks/useFileOps'
 import { useNavigationShortcuts } from './hooks/useNavigation'
+import { useUpdateEvents } from './hooks/useUpdateEvents'
 import { editorRegistry } from './utils/editorRegistry'
 
 export default function App() {
@@ -32,6 +33,8 @@ export default function App() {
   // Mount window-level keyboard (Alt+Left/Right or Ctrl+-) and mouse
   // back/forward button listeners that drive navigation history.
   useNavigationShortcuts()
+  // Subscribe to auto-update events from the main process and drive toasts.
+  useUpdateEvents()
   const editorRef = useRef<{ focus: () => void } | null>(null)
 
   const handleOpenFile = useCallback(async () => {
@@ -150,6 +153,7 @@ export default function App() {
     window.api.on('menu:settings-open',      () => useEditorStore.getState().openVirtualTab('settings'))
     window.api.on('menu:shortcuts-open',     () => useEditorStore.getState().openVirtualTab('shortcuts'))
     window.api.on('menu:whats-new-open',     () => useEditorStore.getState().openVirtualTab('whatsNew'))
+    window.api.on('menu:check-for-updates',  () => { void window.api.update.check() })
     window.api.on('plugin:add-menu-item', (...args) => {
       const [pluginName, label] = args as [string, string]
       usePluginStore.getState().addDynamicMenuItem({ pluginName, label })
@@ -303,6 +307,7 @@ export default function App() {
       window.api.off('menu:settings-open')
       window.api.off('menu:shortcuts-open')
       window.api.off('menu:whats-new-open')
+      window.api.off('menu:check-for-updates')
       window.api.off('plugin:add-menu-item')
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
