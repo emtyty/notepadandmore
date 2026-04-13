@@ -10,7 +10,7 @@ interface SessionFile {
   viewState: object | null
 }
 
-export type SessionVirtualKind = 'settings' | 'shortcuts'
+export type SessionVirtualKind = 'settings' | 'shortcuts' | 'whatsNew'
 
 interface SessionVirtualTab {
   kind: SessionVirtualKind
@@ -24,7 +24,7 @@ interface Session {
   workspaceFolder?: string
 }
 
-const KNOWN_VIRTUAL_KINDS: ReadonlySet<SessionVirtualKind> = new Set(['settings', 'shortcuts'])
+const KNOWN_VIRTUAL_KINDS: ReadonlySet<SessionVirtualKind> = new Set(['settings', 'shortcuts', 'whatsNew'])
 
 export class SessionManager {
   private static instance: SessionManager
