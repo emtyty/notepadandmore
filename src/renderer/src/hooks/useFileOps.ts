@@ -19,7 +19,7 @@ export interface SessionData {
     eol: string
     viewState: object | null
   }>
-  virtualTabs?: Array<{ kind: 'settings' | 'shortcuts' | 'whatsNew' }>
+  virtualTabs?: Array<{ kind: string; pluginId?: string }>
   activeIndex: number
   workspaceFolder?: string
 }
@@ -155,7 +155,12 @@ export function useFileOps() {
     // Session v3 flat order: [...virtualTabs, ...files]. Restore in that order so
     // activeIndex stays meaningful.
     const virtualTabs = session.virtualTabs ?? []
-    const virtualIds: string[] = virtualTabs.map((v) => store.openVirtualTab(v.kind))
+    const virtualIds: string[] = virtualTabs.map((v) => {
+      if (v.kind === 'pluginManager') return store.openPluginManagerTab()
+      if (v.kind === 'pluginDetail' && v.pluginId) return store.openPluginDetailTab(v.pluginId, v.pluginId)
+      // settings, shortcuts, whatsNew
+      return store.openVirtualTab(v.kind as 'settings' | 'shortcuts' | 'whatsNew')
+    })
 
     // Batch check file existence — single IPC call
     const filePaths = session.files.map((f) => f.filePath).filter(Boolean)

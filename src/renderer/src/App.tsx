@@ -4,6 +4,8 @@ import { EditorPane } from './components/EditorPane/EditorPane'
 import { SettingsTab } from './components/SettingsTab/SettingsTab'
 import { ShortcutsTab } from './components/ShortcutsTab/ShortcutsTab'
 import { WhatsNewTab } from './components/WhatsNewTab/WhatsNewTab'
+import { PluginManagerTab } from './components/PluginManagerTab/PluginManagerTab'
+import { PluginDetailTab } from './components/PluginDetailTab/PluginDetailTab'
 import { WelcomeScreen } from './components/WelcomeScreen/WelcomeScreen'
 import { TabBar } from './components/TabBar/TabBar'
 import { MenuBar } from './components/editor/MenuBar'
@@ -12,7 +14,6 @@ import { Toolbar } from './components/editor/Toolbar'
 import { StatusBar } from './components/StatusBar/StatusBar'
 import { BottomPanelContainer } from './components/Panels/BottomPanelContainer'
 import { FindReplaceDialog } from './components/Dialogs/FindReplace/FindReplaceDialog'
-import { PluginManagerDialog } from './components/Dialogs/PluginManager/PluginManagerDialog'
 import { AboutDialog } from './components/Dialogs/AboutDialog/AboutDialog'
 import { Sidebar } from './components/Sidebar/Sidebar'
 import { Toaster, toast } from './components/ui/sonner'
@@ -27,7 +28,8 @@ import { editorRegistry } from './utils/editorRegistry'
 
 export default function App() {
   const { activeId, buffers } = useEditorStore()
-  const activeKind = buffers.find((b) => b.id === activeId)?.kind ?? 'file'
+  const activeBuffer = buffers.find((b) => b.id === activeId)
+  const activeKind = activeBuffer?.kind ?? 'file'
   const { theme, showToolbar, showStatusBar, showBottomPanel, showSidebar, openFind } = useUIStore()
   const { openFiles, newFile, saveBuffer, saveActiveAs, closeBuffer, reloadBuffer, loadBuffer, restoreSession } = useFileOps()
   // Mount window-level keyboard (Alt+Left/Right or Ctrl+-) and mouse
@@ -148,12 +150,15 @@ export default function App() {
     window.api.on('ui:show-toast', (...args) => {
       useUIStore.getState().addToast(args[0] as string, (args[1] as 'info' | 'warn' | 'error') ?? 'info')
     })
-    window.api.on('menu:plugin-manager', () => useUIStore.getState().setShowPluginManager(true))
+    window.api.on('menu:plugin-manager', () => useEditorStore.getState().openPluginManagerTab())
     window.api.on('menu:about',              () => useUIStore.getState().setShowAbout(true))
     window.api.on('menu:settings-open',      () => useEditorStore.getState().openVirtualTab('settings'))
     window.api.on('menu:shortcuts-open',     () => useEditorStore.getState().openVirtualTab('shortcuts'))
     window.api.on('menu:whats-new-open',     () => useEditorStore.getState().openVirtualTab('whatsNew'))
     window.api.on('menu:check-for-updates',  () => { void window.api.update.check() })
+    window.api.on('plugin:state-changed', () => {
+      usePluginStore.getState().fetchPlugins()
+    })
     window.api.on('plugin:add-menu-item', (...args) => {
       const [pluginName, label] = args as [string, string]
       usePluginStore.getState().addDynamicMenuItem({ pluginName, label })
@@ -246,7 +251,7 @@ export default function App() {
       const uiState = useUIStore.getState()
 
       // Session v3: virtualTabs first, then files. activeIndex is a flat index into virtualTabs++files.
-      const virtualBuffers = freshState.buffers.filter((b) => b.kind === 'settings' || b.kind === 'shortcuts' || b.kind === 'whatsNew')
+      const virtualBuffers = freshState.buffers.filter((b) => b.kind !== 'file')
       const fileBuffers = freshState.buffers.filter((b) => b.kind === 'file' && b.filePath)
 
       let activeIndex = 0
@@ -271,7 +276,10 @@ export default function App() {
           // Use live viewState if available, fall back to savedViewState for ghost tabs
           viewState: b.viewState ? JSON.parse(JSON.stringify(b.viewState)) : b.savedViewState
         })),
-        virtualTabs: virtualBuffers.map((b) => ({ kind: b.kind })),
+        virtualTabs: virtualBuffers.map((b) => ({
+          kind: b.kind,
+          ...(b.kind === 'pluginDetail' && b.pluginId ? { pluginId: b.pluginId } : {})
+        })),
         activeIndex,
         workspaceFolder: uiState.workspaceFolder
       })
@@ -309,6 +317,7 @@ export default function App() {
       window.api.off('menu:whats-new-open')
       window.api.off('menu:check-for-updates')
       window.api.off('plugin:add-menu-item')
+      window.api.off('plugin:state-changed')
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -423,6 +432,14 @@ export default function App() {
                         {activeKind === 'whatsNew' && (
                           <div className="absolute inset-0 bg-background z-10"><WhatsNewTab /></div>
                         )}
+                        {activeKind === 'pluginManager' && (
+                          <div className="absolute inset-0 bg-background z-10"><PluginManagerTab /></div>
+                        )}
+                        {activeKind === 'pluginDetail' && activeBuffer?.pluginId && (
+                          <div className="absolute inset-0 bg-background z-10">
+                            <PluginDetailTab pluginId={activeBuffer.pluginId} />
+                          </div>
+                        )}
                       </>
                     )}
                   </div>
@@ -449,7 +466,6 @@ export default function App() {
       {showStatusBar && !!activeId && activeKind === 'file' && <StatusBar />}
 
       <FindReplaceDialog />
-      <PluginManagerDialog />
       <AboutDialog />
       <Toaster position="bottom-right" richColors closeButton />
       <SonnerBridge />

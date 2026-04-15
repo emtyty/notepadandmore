@@ -1,5 +1,5 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react'
-import { X, Plus, ChevronLeft, ChevronRight, Settings as SettingsIcon, Keyboard, Sparkles } from 'lucide-react'
+import { X, Plus, ChevronLeft, ChevronRight, Settings as SettingsIcon, Keyboard, Sparkles, Puzzle } from 'lucide-react'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -150,6 +150,7 @@ export const TabBar: React.FC<TabBarProps> = ({ onClose, onNewFile }) => {
                 {buf.kind === 'settings' && <SettingsIcon size={18} className="shrink-0 opacity-80" />}
                 {buf.kind === 'shortcuts' && <Keyboard size={18} className="shrink-0 opacity-80" />}
                 {buf.kind === 'whatsNew' && <Sparkles size={18} className="shrink-0 opacity-80" />}
+                {(buf.kind === 'pluginManager' || buf.kind === 'pluginDetail') && <Puzzle size={18} className="shrink-0 opacity-80" />}
 
                 {/* Tab title */}
                 <span className={cn('truncate', buf.missing && 'line-through opacity-50')}>

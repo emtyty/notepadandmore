@@ -1,11 +1,12 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useUIStore } from '../../store/uiStore'
 import { useConfigStore, AppConfig } from '../../store/configStore'
+import { usePluginStore, PluginSettingField } from '../../store/pluginStore'
 import { cn } from '../../lib/utils'
 
-type PrefTab = 'general' | 'editor' | 'appearance' | 'newDoc' | 'backup' | 'completion'
+type PrefTab = 'general' | 'editor' | 'appearance' | 'newDoc' | 'backup' | 'completion' | 'extensions'
 
-const TABS: { id: PrefTab; label: string }[] = [
+const STATIC_TABS: { id: PrefTab; label: string }[] = [
   { id: 'general',    label: 'General' },
   { id: 'editor',     label: 'Editor' },
   { id: 'appearance', label: 'Appearance' },
@@ -32,7 +33,21 @@ const inputCls = "bg-input border border-border rounded px-2 py-1 text-sm text-f
 
 export function SettingsTab() {
   const config = useConfigStore()
+  const { plugins, pluginSettings, pluginConfigs, fetchPluginSettings, setPluginConfig } = usePluginStore()
   const [activeTab, setActiveTab] = useState<PrefTab>('general')
+
+  // Fetch plugin settings schemas on mount
+  useEffect(() => {
+    fetchPluginSettings()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Build dynamic tabs — add Extensions only if any enabled plugin has settings
+  const enabledPluginNames = new Set(plugins.filter((p) => p.enabled).map((p) => p.name))
+  const activePluginSettings = Object.entries(pluginSettings).filter(([name]) => enabledPluginNames.has(name))
+  const hasExtensions = activePluginSettings.length > 0
+  const TABS = hasExtensions
+    ? [...STATIC_TABS, { id: 'extensions' as PrefTab, label: 'Extensions' }]
+    : STATIC_TABS
 
   const set = <K extends keyof AppConfig>(key: K, val: AppConfig[K]) => config.setProp(key, val)
 
@@ -164,6 +179,28 @@ export function SettingsTab() {
               <CheckRow label="Word-based suggestions" checked={config.wordBasedSuggestions} onChange={(v) => set('wordBasedSuggestions', v)} />
             </div>
           )}
+
+          {activeTab === 'extensions' && (
+            <div className="flex flex-col gap-6 max-w-[520px]">
+              {activePluginSettings.map(([pluginName, schema]) => (
+                <div key={pluginName}>
+                  <h3 className="text-sm font-semibold text-foreground mb-3 pb-1 border-b border-border">
+                    {pluginName}
+                  </h3>
+                  <div className="flex flex-col gap-3">
+                    {schema.fields.map((field) => (
+                      <PluginSettingRow
+                        key={`${pluginName}-${field.key}`}
+                        field={field}
+                        value={pluginConfigs[pluginName]?.[field.key] ?? field.default}
+                        onChange={(val) => setPluginConfig(pluginName, field.key, val)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -185,5 +222,57 @@ function CheckRow({ label, checked, onChange }: { label: string; checked: boolea
       <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="accent-primary" />
       <span>{label}</span>
     </label>
+  )
+}
+
+function PluginSettingRow({ field, value, onChange }: { field: PluginSettingField; value: unknown; onChange: (val: unknown) => void }) {
+  if (field.type === 'boolean') {
+    return (
+      <div>
+        <CheckRow
+          label={field.label}
+          checked={value as boolean ?? field.default as boolean}
+          onChange={(v) => onChange(v)}
+        />
+        {field.description && <p className="text-xs text-muted-foreground mt-0.5 ml-5">{field.description}</p>}
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <Row label={field.label}>
+        {field.type === 'string' && (
+          <input
+            type="text"
+            className={cn(inputCls, 'flex-1')}
+            value={(value as string) ?? (field.default as string) ?? ''}
+            onChange={(e) => onChange(e.target.value)}
+          />
+        )}
+        {field.type === 'number' && (
+          <input
+            type="number"
+            className={cn(inputCls, 'w-[100px]')}
+            min={field.min}
+            max={field.max}
+            value={(value as number) ?? (field.default as number) ?? 0}
+            onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+          />
+        )}
+        {field.type === 'select' && (
+          <select
+            className={cn(inputCls, 'max-w-[200px]')}
+            value={String(value ?? field.default ?? '')}
+            onChange={(e) => onChange(e.target.value)}
+          >
+            {field.options?.map((opt) => (
+              <option key={String(opt.value)} value={String(opt.value)}>{opt.label}</option>
+            ))}
+          </select>
+        )}
+      </Row>
+      {field.description && <p className="text-xs text-muted-foreground mt-0.5 ml-[136px]">{field.description}</p>}
+    </div>
   )
 }

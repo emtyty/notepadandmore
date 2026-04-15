@@ -23,7 +23,6 @@ export function SideNav() {
     setSidebarPanel,
     setShowSidebar,
     openFind,
-    setShowPluginManager,
   } = useUIStore()
 
   const handleNav = (id: string) => {
@@ -36,7 +35,7 @@ export function SideNav() {
       return
     }
     if (id === 'plugins') {
-      setShowPluginManager(true)
+      useEditorStore.getState().openPluginManagerTab()
       return
     }
     if (PANEL_IDS.has(id)) {

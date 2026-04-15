@@ -2,20 +2,55 @@ import { app, BrowserWindow, ipcMain } from 'electron'
 import * as fs from 'fs'
 import * as path from 'path'
 
+export interface PluginSettingField {
+  key: string
+  label: string
+  type: 'string' | 'number' | 'boolean' | 'select'
+  default: unknown
+  description?: string
+  options?: Array<{ label: string; value: string | number }>
+  min?: number
+  max?: number
+}
+
+export interface PluginSettingsSchema {
+  fields: PluginSettingField[]
+}
+
 export interface PluginInfo {
   name: string
   version: string
   description?: string
   author?: string
+  homepage?: string
+  license?: string
   dirPath: string
   entryPath: string
   enabled: boolean
   error?: string
+  hasReadme: boolean
+  hasChangelog: boolean
+  hasIcon: boolean
+  hasSettings: boolean
+}
+
+export interface PluginDetail {
+  name: string
+  version: string
+  description?: string
+  author?: string
+  homepage?: string
+  license?: string
+  readme: string | null
+  changelog: string | null
+  iconDataUrl: string | null
 }
 
 export class PluginLoader {
   private static instance: PluginLoader
   private plugins: Map<string, PluginInfo> = new Map()
+  private pluginModules: Map<string, { activate?: Function; deactivate?: Function }> = new Map()
+  private pluginSettingsSchemas: Map<string, PluginSettingsSchema> = new Map()
   private win: BrowserWindow | null = null
 
   static getInstance(): PluginLoader {
@@ -23,10 +58,13 @@ export class PluginLoader {
     return PluginLoader.instance
   }
 
-  private get pluginsDir(): string {
+  get pluginsDir(): string {
     return path.join(app.getPath('userData'), 'plugins')
   }
 
+  private get pluginConfigDir(): string {
+    return path.join(app.getPath('userData'), 'config', 'plugin-settings')
+  }
 
   loadAll(win: BrowserWindow): void {
     this.win = win
@@ -48,7 +86,7 @@ export class PluginLoader {
 
     if (!fs.existsSync(pkgPath) || !fs.existsSync(entryPath)) return
 
-    let pkg: { name?: string; version?: string; description?: string; author?: string }
+    let pkg: Record<string, unknown>
     try {
       pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'))
     } catch {
@@ -56,13 +94,19 @@ export class PluginLoader {
     }
 
     const info: PluginInfo = {
-      name: pkg.name || path.basename(dirPath),
-      version: pkg.version || '0.0.0',
-      description: pkg.description,
+      name: (pkg.name as string) || path.basename(dirPath),
+      version: (pkg.version as string) || '0.0.0',
+      description: pkg.description as string | undefined,
       author: typeof pkg.author === 'string' ? pkg.author : undefined,
+      homepage: pkg.homepage as string | undefined,
+      license: pkg.license as string | undefined,
       dirPath,
       entryPath,
-      enabled: true
+      enabled: true,
+      hasReadme: fs.existsSync(path.join(dirPath, 'README.md')),
+      hasChangelog: fs.existsSync(path.join(dirPath, 'CHANGELOG.md')),
+      hasIcon: fs.existsSync(path.join(dirPath, 'icon.png')),
+      hasSettings: false
     }
 
     try {
@@ -76,9 +120,15 @@ export class PluginLoader {
         return
       }
 
+      // Store module reference for deactivate/reload
+      this.pluginModules.set(info.name, plugin)
+
       // Build the plugin API object
       const api = this.buildAPI(info.name)
       plugin.activate(api)
+
+      // Check if plugin contributed settings
+      info.hasSettings = this.pluginSettingsSchemas.has(info.name)
 
       this.plugins.set(info.name, info)
       console.log(`[PluginLoader] Loaded: ${info.name} v${info.version}`)
@@ -120,6 +170,17 @@ export class PluginLoader {
         readFile: (filePath: string) => fs.promises.readFile(filePath, 'utf8'),
         writeFile: (filePath: string, content: string) => fs.promises.writeFile(filePath, content, 'utf8'),
         exists: (filePath: string) => Promise.resolve(fs.existsSync(filePath))
+      },
+      settings: {
+        contributeSettings: (schema: PluginSettingsSchema) => {
+          this.pluginSettingsSchemas.set(pluginName, schema)
+        },
+        get: (key: string): unknown => {
+          return this.getPluginConfigValue(pluginName, key)
+        },
+        set: (key: string, value: unknown): void => {
+          this.setPluginConfigValue(pluginName, key, value)
+        }
       }
     }
   }
@@ -132,8 +193,175 @@ export class PluginLoader {
     })
   }
 
+  // ── Granular lifecycle ──
+
+  enablePlugin(pluginName: string): PluginInfo {
+    const info = this.plugins.get(pluginName)
+    if (!info) throw new Error(`Plugin "${pluginName}" not found`)
+    if (info.enabled && !info.error) return info
+
+    // Reload from disk
+    this.loadPlugin(info.dirPath)
+    const updated = this.plugins.get(pluginName)!
+    this.notifyRenderer(updated)
+    return updated
+  }
+
+  disablePlugin(pluginName: string): PluginInfo {
+    const info = this.plugins.get(pluginName)
+    if (!info) throw new Error(`Plugin "${pluginName}" not found`)
+    if (!info.enabled) return info
+
+    // Call deactivate if available
+    const mod = this.pluginModules.get(pluginName)
+    if (mod && typeof mod.deactivate === 'function') {
+      try { mod.deactivate() } catch (err) {
+        console.warn(`[PluginLoader] deactivate() failed for ${pluginName}:`, err)
+      }
+    }
+
+    // Clear require cache so a future enable gets fresh code
+    try { delete require.cache[require.resolve(info.entryPath)] } catch { /* ignore */ }
+
+    this.pluginModules.delete(pluginName)
+    this.pluginSettingsSchemas.delete(pluginName)
+    info.enabled = false
+    info.error = undefined
+    info.hasSettings = false
+    this.plugins.set(pluginName, info)
+
+    this.notifyRenderer(info)
+    return info
+  }
+
+  reloadPlugin(pluginName: string): PluginInfo {
+    this.disablePlugin(pluginName)
+    return this.enablePlugin(pluginName)
+  }
+
+  installPlugin(sourcePath: string): PluginInfo {
+    const pkgPath = path.join(sourcePath, 'package.json')
+    if (!fs.existsSync(pkgPath)) {
+      throw new Error('Selected folder does not contain a package.json')
+    }
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'))
+    const pluginName = pkg.name || path.basename(sourcePath)
+    const targetPath = path.join(this.pluginsDir, pluginName)
+
+    // Ensure plugins dir exists
+    if (!fs.existsSync(this.pluginsDir)) {
+      fs.mkdirSync(this.pluginsDir, { recursive: true })
+    }
+
+    // Copy plugin folder
+    fs.cpSync(sourcePath, targetPath, { recursive: true })
+
+    // Load the plugin
+    this.loadPlugin(targetPath)
+
+    const info = this.plugins.get(pluginName)
+    if (!info) throw new Error(`Failed to load plugin "${pluginName}" after install`)
+
+    this.notifyRenderer(info)
+    return info
+  }
+
+  uninstallPlugin(pluginName: string): void {
+    const info = this.plugins.get(pluginName)
+    if (!info) throw new Error(`Plugin "${pluginName}" not found`)
+
+    // Disable first (deactivate + cache clear)
+    if (info.enabled) {
+      try { this.disablePlugin(pluginName) } catch { /* may already be disabled */ }
+    }
+
+    // Remove from disk
+    fs.rmSync(info.dirPath, { recursive: true, force: true })
+
+    // Remove from maps
+    this.plugins.delete(pluginName)
+    this.pluginModules.delete(pluginName)
+    this.pluginSettingsSchemas.delete(pluginName)
+
+    this.notifyRenderer({ ...info, enabled: false })
+  }
+
+  // ── Detail / metadata ──
+
+  getPluginDetail(pluginName: string): PluginDetail | null {
+    const info = this.plugins.get(pluginName)
+    if (!info) return null
+
+    let readme: string | null = null
+    const readmePath = path.join(info.dirPath, 'README.md')
+    if (fs.existsSync(readmePath)) {
+      try { readme = fs.readFileSync(readmePath, 'utf8') } catch { /* ignore */ }
+    }
+
+    let changelog: string | null = null
+    const changelogPath = path.join(info.dirPath, 'CHANGELOG.md')
+    if (fs.existsSync(changelogPath)) {
+      try { changelog = fs.readFileSync(changelogPath, 'utf8') } catch { /* ignore */ }
+    }
+
+    let iconDataUrl: string | null = null
+    const iconPath = path.join(info.dirPath, 'icon.png')
+    if (fs.existsSync(iconPath)) {
+      try {
+        const buf = fs.readFileSync(iconPath)
+        iconDataUrl = `data:image/png;base64,${buf.toString('base64')}`
+      } catch { /* ignore */ }
+    }
+
+    return {
+      name: info.name,
+      version: info.version,
+      description: info.description,
+      author: info.author,
+      homepage: info.homepage,
+      license: info.license,
+      readme,
+      changelog,
+      iconDataUrl
+    }
+  }
+
+  // ── Settings ──
+
+  getSettingsSchemas(): Record<string, PluginSettingsSchema> {
+    return Object.fromEntries(this.pluginSettingsSchemas)
+  }
+
+  getPluginConfigValue(pluginName: string, key: string): unknown {
+    const configPath = path.join(this.pluginConfigDir, `${pluginName}.json`)
+    if (!fs.existsSync(configPath)) return undefined
+    try {
+      const config = JSON.parse(fs.readFileSync(configPath, 'utf8'))
+      return config[key]
+    } catch {
+      return undefined
+    }
+  }
+
+  setPluginConfigValue(pluginName: string, key: string, value: unknown): void {
+    if (!fs.existsSync(this.pluginConfigDir)) {
+      fs.mkdirSync(this.pluginConfigDir, { recursive: true })
+    }
+    const configPath = path.join(this.pluginConfigDir, `${pluginName}.json`)
+    let config: Record<string, unknown> = {}
+    if (fs.existsSync(configPath)) {
+      try { config = JSON.parse(fs.readFileSync(configPath, 'utf8')) } catch { /* fresh */ }
+    }
+    config[key] = value
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8')
+  }
+
+  // ── Existing bulk methods ──
+
   reloadAll(): PluginInfo[] {
     this.plugins.clear()
+    this.pluginModules.clear()
+    this.pluginSettingsSchemas.clear()
     if (this.win) this.loadAll(this.win)
     return this.getPluginList()
   }
@@ -144,5 +372,11 @@ export class PluginLoader {
 
   dispatchAPICall(pluginName: string, method: string, args: unknown[]): void {
     console.log(`[PluginLoader] API call from ${pluginName}: ${method}`, args)
+  }
+
+  private notifyRenderer(info: PluginInfo): void {
+    if (this.win && !this.win.isDestroyed()) {
+      this.win.webContents.send('plugin:state-changed', info)
+    }
   }
 }

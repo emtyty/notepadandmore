@@ -346,7 +346,7 @@ export function buildMenu(win: BrowserWindow, recentFiles: string[] = []): void 
       submenu: [
         {
           label: 'Plugin Manager...',
-          enabled: false,
+          enabled: true,
           click: () => win.webContents.send('menu:plugin-manager')
         },
         { type: 'separator' }

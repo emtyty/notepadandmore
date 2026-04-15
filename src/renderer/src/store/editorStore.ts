@@ -3,7 +3,7 @@ import * as monaco from 'monaco-editor'
 
 export type EOLType = 'CRLF' | 'LF' | 'CR'
 
-export type BufferKind = 'file' | 'settings' | 'shortcuts' | 'whatsNew'
+export type BufferKind = 'file' | 'settings' | 'shortcuts' | 'whatsNew' | 'pluginManager' | 'pluginDetail'
 
 export interface Buffer {
   id: string
@@ -23,6 +23,7 @@ export interface Buffer {
   loaded: boolean              // false = ghost buffer (metadata only, no content/model)
   missing: boolean             // true = file no longer exists on disk
   isLargeFile: boolean         // true = file exceeds large file threshold (disables expensive features)
+  pluginId: string | null      // set only when kind === 'pluginDetail'; the plugin's unique name
 }
 
 interface EditorState {
@@ -32,8 +33,8 @@ interface EditorState {
   splitActiveId: string | null
 
   // Actions
-  addBuffer: (buf: Omit<Buffer, 'id' | 'model' | 'kind'> & { kind?: BufferKind }) => string
-  addGhostBuffer: (buf: Omit<Buffer, 'id' | 'model' | 'kind'> & { kind?: BufferKind }) => string
+  addBuffer: (buf: Omit<Buffer, 'id' | 'model' | 'kind' | 'pluginId'> & { kind?: BufferKind; pluginId?: string | null }) => string
+  addGhostBuffer: (buf: Omit<Buffer, 'id' | 'model' | 'kind' | 'pluginId'> & { kind?: BufferKind; pluginId?: string | null }) => string
   hydrateBuffer: (id: string, patch: { content: string; encoding: string; eol: EOLType; mtime: number }) => void
   removeBuffer: (id: string) => void
   updateBuffer: (id: string, patch: Partial<Buffer>) => void
@@ -47,6 +48,9 @@ interface EditorState {
     kind: 'settings' | 'shortcuts' | 'whatsNew',
     options?: { activate?: boolean }
   ) => string
+  openPluginManagerTab: () => string
+  openPluginDetailTab: (pluginId: string, pluginName: string) => string
+  closePluginDetailTab: (pluginId: string) => void
 }
 
 let _idCounter = 0
@@ -66,7 +70,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     const lang = buf.isLargeFile ? 'plaintext' : (buf.language || 'plaintext')
     const model = monaco.editor.createModel(buf.content, lang)
     set((s) => ({
-      buffers: [...s.buffers, { ...buf, kind: buf.kind ?? 'file', id, model, loaded: true, missing: false, savedViewState: buf.savedViewState ?? null }],
+      buffers: [...s.buffers, { ...buf, kind: buf.kind ?? 'file', id, model, loaded: true, missing: false, savedViewState: buf.savedViewState ?? null, pluginId: buf.pluginId ?? null }],
       activeId: s.activeId ?? id
     }))
     return id
@@ -75,7 +79,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   addGhostBuffer: (buf) => {
     const id = newId()
     set((s) => ({
-      buffers: [...s.buffers, { ...buf, kind: buf.kind ?? 'file', id, model: null }],
+      buffers: [...s.buffers, { ...buf, kind: buf.kind ?? 'file', id, model: null, pluginId: buf.pluginId ?? null }],
       activeId: s.activeId ?? id
     }))
     return id
@@ -146,6 +150,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         {
           id,
           kind,
+          pluginId: null,
           filePath: null,
           title,
           content: '',
@@ -166,5 +171,82 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       ...(activate ? { activeId: id } : {})
     }))
     return id
+  },
+
+  openPluginManagerTab: () => {
+    const existing = get().buffers.find((b) => b.kind === 'pluginManager')
+    if (existing) {
+      set({ activeId: existing.id })
+      return existing.id
+    }
+    const id = newId()
+    set((s) => ({
+      buffers: [
+        ...s.buffers,
+        {
+          id,
+          kind: 'pluginManager' as const,
+          pluginId: null,
+          filePath: null,
+          title: 'Extensions',
+          content: '',
+          isDirty: false,
+          encoding: 'UTF-8',
+          eol: 'LF',
+          language: 'plaintext',
+          mtime: 0,
+          viewState: null,
+          savedViewState: null,
+          model: null,
+          bookmarks: [],
+          loaded: true,
+          missing: false,
+          isLargeFile: false
+        }
+      ],
+      activeId: id
+    }))
+    return id
+  },
+
+  openPluginDetailTab: (pluginId, pluginName) => {
+    const existing = get().buffers.find((b) => b.kind === 'pluginDetail' && b.pluginId === pluginId)
+    if (existing) {
+      set({ activeId: existing.id })
+      return existing.id
+    }
+    const id = newId()
+    set((s) => ({
+      buffers: [
+        ...s.buffers,
+        {
+          id,
+          kind: 'pluginDetail' as const,
+          pluginId,
+          filePath: null,
+          title: pluginName,
+          content: '',
+          isDirty: false,
+          encoding: 'UTF-8',
+          eol: 'LF',
+          language: 'plaintext',
+          mtime: 0,
+          viewState: null,
+          savedViewState: null,
+          model: null,
+          bookmarks: [],
+          loaded: true,
+          missing: false,
+          isLargeFile: false
+        }
+      ],
+      activeId: id
+    }))
+    return id
+  },
+
+  closePluginDetailTab: (pluginId) => {
+    const buf = get().buffers.find((b) => b.kind === 'pluginDetail' && b.pluginId === pluginId)
+    if (buf) get().removeBuffer(buf.id)
   }
 }))

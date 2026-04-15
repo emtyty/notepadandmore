@@ -10,10 +10,11 @@ interface SessionFile {
   viewState: object | null
 }
 
-export type SessionVirtualKind = 'settings' | 'shortcuts' | 'whatsNew'
+export type SessionVirtualKind = 'settings' | 'shortcuts' | 'whatsNew' | 'pluginManager' | 'pluginDetail'
 
 interface SessionVirtualTab {
   kind: SessionVirtualKind
+  pluginId?: string           // set only for 'pluginDetail'
 }
 
 interface Session {
@@ -24,7 +25,7 @@ interface Session {
   workspaceFolder?: string
 }
 
-const KNOWN_VIRTUAL_KINDS: ReadonlySet<SessionVirtualKind> = new Set(['settings', 'shortcuts', 'whatsNew'])
+const KNOWN_VIRTUAL_KINDS: ReadonlySet<SessionVirtualKind> = new Set(['settings', 'shortcuts', 'whatsNew', 'pluginManager', 'pluginDetail'])
 
 export class SessionManager {
   private static instance: SessionManager
@@ -102,11 +103,16 @@ export class SessionManager {
       if (Array.isArray(rawVirtual)) {
         virtualTabs = rawVirtual
           .filter((v): v is Record<string, unknown> => !!v && typeof v === 'object')
-          .map((v) => v.kind)
-          .filter((k): k is SessionVirtualKind => typeof k === 'string' && KNOWN_VIRTUAL_KINDS.has(k as SessionVirtualKind))
-          .map((kind) => ({ kind }))
-        if (virtualTabs.length !== rawVirtual.length) {
-          console.warn('[SessionManager] Skipped', rawVirtual.length - virtualTabs.length, 'invalid virtualTabs entries')
+          .filter((v) => typeof v.kind === 'string' && KNOWN_VIRTUAL_KINDS.has(v.kind as SessionVirtualKind))
+          .map((v) => {
+            const kind = v.kind as SessionVirtualKind
+            if (kind === 'pluginDetail' && typeof v.pluginId === 'string') {
+              return { kind, pluginId: v.pluginId }
+            }
+            return { kind }
+          })
+        if (virtualTabs.length !== (rawVirtual as unknown[]).length) {
+          console.warn('[SessionManager] Skipped', (rawVirtual as unknown[]).length - virtualTabs.length, 'invalid virtualTabs entries')
         }
       } else if (rawVirtual != null) {
         console.warn('[SessionManager] virtualTabs is not an array — ignoring')

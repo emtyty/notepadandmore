@@ -31,7 +31,6 @@ interface UIState {
   showFindReplace: boolean
   findReplaceMode: 'find' | 'replace' | 'findInFiles'
   findInitialTerm: string
-  showPluginManager: boolean
   showAbout: boolean
   showBottomPanel: boolean
   activeBottomPanel: BottomPanelId
@@ -55,7 +54,6 @@ interface UIState {
   setWorkspaceFolder: (path: string | null) => void
   openFind: (mode?: 'find' | 'replace' | 'findInFiles', initialTerm?: string) => void
   closeFind: () => void
-  setShowPluginManager: (v: boolean) => void
   setShowAbout: (v: boolean) => void
   setShowBottomPanel: (v: boolean) => void
   setActiveBottomPanel: (p: BottomPanelId) => void
@@ -80,7 +78,6 @@ export const useUIStore = create<UIState>((set, get) => ({
   showFindReplace: false,
   findReplaceMode: 'find',
   findInitialTerm: '',
-  showPluginManager: false,
   showAbout: false,
   showBottomPanel: false,
   activeBottomPanel: 'findResults',
@@ -130,7 +127,6 @@ export const useUIStore = create<UIState>((set, get) => ({
   setWorkspaceFolder: (path) => set({ workspaceFolder: path }),
   openFind: (mode = 'find', initialTerm = '') => set({ showFindReplace: true, findReplaceMode: mode, findInitialTerm: initialTerm }),
   closeFind: () => set({ showFindReplace: false }),
-  setShowPluginManager: (v) => set({ showPluginManager: v }),
   setShowAbout: (v) => set({ showAbout: v }),
   setShowBottomPanel: (v) => set({ showBottomPanel: v }),
   setActiveBottomPanel: (p) => set({ activeBottomPanel: p }),

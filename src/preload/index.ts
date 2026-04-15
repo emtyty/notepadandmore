@@ -42,6 +42,13 @@ const api = {
   // Plugin operations
   plugin: {
     list: () => ipcRenderer.invoke('plugin:list'),
+    detail: (name: string) => ipcRenderer.invoke('plugin:detail', name),
+    enable: (name: string) => ipcRenderer.invoke('plugin:enable', name),
+    disable: (name: string) => ipcRenderer.invoke('plugin:disable', name),
+    reloadOne: (name: string) => ipcRenderer.invoke('plugin:reload-one', name),
+    install: () => ipcRenderer.invoke('plugin:install'),
+    uninstall: (name: string) => ipcRenderer.invoke('plugin:uninstall', name),
+    settingsSchemas: () => ipcRenderer.invoke('plugin:settings-schemas'),
     reload: () => ipcRenderer.invoke('plugin:reload')
   },
 
@@ -87,7 +94,7 @@ const api = {
       'tab:next', 'tab:prev',
       'macro:start-record', 'macro:stop-record', 'macro:playback',
       'session:restore', 'app:before-close',
-      'plugin:add-menu-item', 'plugin:insert-text',
+      'plugin:add-menu-item', 'plugin:insert-text', 'plugin:state-changed',
       'plugin:editor-get-text', 'plugin:editor-get-selection', 'plugin:editor-get-path',
       'file:externally-changed', 'file:externally-deleted',
       'search:chunk', 'search:progress', 'search:done',
@@ -115,7 +122,7 @@ const api = {
       'tab:next', 'tab:prev',
       'macro:start-record', 'macro:stop-record', 'macro:playback',
       'session:restore', 'app:before-close',
-      'plugin:add-menu-item', 'plugin:insert-text',
+      'plugin:add-menu-item', 'plugin:insert-text', 'plugin:state-changed',
       'plugin:editor-get-text', 'plugin:editor-get-selection', 'plugin:editor-get-path',
       'file:externally-changed', 'file:externally-deleted',
       'search:chunk', 'search:progress', 'search:done',
