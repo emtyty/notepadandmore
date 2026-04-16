@@ -185,7 +185,7 @@ export function MenuBar({
       { label: 'Saved Macros', disabled: true },
     ],
     Plugins: [
-      { label: 'Plugin Manager...', disabled: true },
+      { label: 'Plugin Manager...', disabled: false },
     ],
     Window: [
       { label: 'Minimize', action: () => window.dispatchEvent(new CustomEvent('window:minimize')) },
