@@ -67,7 +67,7 @@ export function PluginManagerTab() {
           data-testid="plugin-install-btn"
         >
           <FolderOpen size={14} />
-          Install from Folder...
+          Install Plugin...
         </button>
       </div>
 

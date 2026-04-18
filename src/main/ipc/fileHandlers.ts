@@ -5,38 +5,46 @@ import * as chardet from 'chardet'
 import * as iconv from 'iconv-lite'
 import { addRecent, loadRecents } from '../recentFiles'
 import { updateRecentFiles } from '../menu'
+import { markSelfSaved } from './watchHandlers'
 
 export function registerFileHandlers(): void {
-  // Read file with encoding detection
+  // Read file with encoding detection. Returns the raw byte sample so the renderer
+  // can run Magika with the WebGL-accelerated TF.js backend (much faster than main's
+  // pure-JS CPU backend).
   ipcMain.handle('file:read', async (_event, filePath: string) => {
     try {
       const raw = await fs.promises.readFile(filePath)
-      // Sample-based encoding detection: only scan first 64KB (sufficient for accuracy)
       const sample = raw.subarray(0, Math.min(raw.length, 65536))
       const encoding = chardet.detect(sample) || 'UTF-8'
       const content = iconv.decode(raw, encoding)
       const stats = await fs.promises.stat(filePath)
       const eol = content.includes('\r\n') ? 'CRLF' : content.includes('\r') ? 'CR' : 'LF'
-      return { content, encoding, eol, mtime: stats.mtimeMs, error: null }
+      // Send the Magika sample as plain bytes (up to 16KB is enough for detection).
+      const magikaSample = new Uint8Array(raw.buffer, raw.byteOffset, Math.min(raw.length, 16384))
+      return { content, encoding, eol, mtime: stats.mtimeMs, magikaSample, error: null }
     } catch (err: any) {
-      return { content: '', encoding: 'UTF-8', eol: 'LF', mtime: 0, error: err.message }
+      return { content: '', encoding: 'UTF-8', eol: 'LF', mtime: 0, magikaSample: new Uint8Array(0), error: err.message }
     }
   })
 
-  // Write file
+  // Write file and return the written bytes sample so the renderer can
+  // re-run Magika to update syntax highlighting if the content now matches
+  // a different format (e.g. untitled.txt saved with JSON content).
   ipcMain.handle('file:write', async (_event, filePath: string, content: string, encoding = 'UTF-8', eol = 'LF') => {
     try {
       let normalized = content
-      // Normalize EOL
       normalized = normalized.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
       if (eol === 'CRLF') normalized = normalized.replace(/\n/g, '\r\n')
       else if (eol === 'CR') normalized = normalized.replace(/\n/g, '\r')
 
       const buf = iconv.encode(normalized, encoding)
+      // Tell the file watcher to ignore the change event our own write will trigger
+      markSelfSaved(filePath)
       fs.writeFileSync(filePath, buf)
-      return { error: null }
+      const magikaSample = new Uint8Array(buf.buffer, buf.byteOffset, Math.min(buf.length, 16384))
+      return { error: null, magikaSample }
     } catch (err: any) {
-      return { error: err.message }
+      return { error: err.message, magikaSample: new Uint8Array(0) }
     }
   })
 
@@ -171,8 +179,11 @@ export function registerFileHandlers(): void {
       properties: ['openFile', 'multiSelections'],
       filters: [
         { name: 'All Files', extensions: ['*'] },
-        { name: 'Text Files', extensions: ['txt', 'md', 'log'] },
-        { name: 'Source Code', extensions: ['js', 'ts', 'jsx', 'tsx', 'py', 'cpp', 'c', 'h', 'java', 'cs', 'go', 'rs'] }
+        { name: 'Text Files', extensions: ['txt', 'md', 'log', 'rtf'] },
+        { name: 'Data Files', extensions: ['json', 'csv', 'tsv', 'xml', 'yaml', 'yml', 'toml', 'ini', 'conf', 'env'] },
+        { name: 'Web Files', extensions: ['html', 'htm', 'css', 'scss', 'sass', 'less', 'svg'] },
+        { name: 'Source Code', extensions: ['js', 'mjs', 'cjs', 'ts', 'jsx', 'tsx', 'py', 'cpp', 'c', 'h', 'hpp', 'java', 'cs', 'go', 'rs', 'rb', 'php', 'swift', 'kt', 'sh', 'bash', 'ps1', 'sql', 'lua', 'dart', 'r'] },
+        { name: 'Markdown & Docs', extensions: ['md', 'markdown', 'rst', 'adoc'] }
       ]
     })
     if (result.canceled || result.filePaths.length === 0) return null

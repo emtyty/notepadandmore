@@ -6,6 +6,7 @@ import { ShortcutsTab } from './components/ShortcutsTab/ShortcutsTab'
 import { WhatsNewTab } from './components/WhatsNewTab/WhatsNewTab'
 import { PluginManagerTab } from './components/PluginManagerTab/PluginManagerTab'
 import { PluginDetailTab } from './components/PluginDetailTab/PluginDetailTab'
+import { CsvViewerOverlay } from './components/CsvViewer/CsvViewerOverlay'
 import { WelcomeScreen } from './components/WelcomeScreen/WelcomeScreen'
 import { TabBar } from './components/TabBar/TabBar'
 import { MenuBar } from './components/editor/MenuBar'
@@ -30,7 +31,7 @@ export default function App() {
   const { activeId, buffers } = useEditorStore()
   const activeBuffer = buffers.find((b) => b.id === activeId)
   const activeKind = activeBuffer?.kind ?? 'file'
-  const { theme, showToolbar, showStatusBar, showBottomPanel, showSidebar, openFind } = useUIStore()
+  const { theme, showToolbar, showStatusBar, showBottomPanel, showSidebar, openFind, csvViewerOpen, csvViewerText, csvViewerFileName } = useUIStore()
   const { openFiles, newFile, saveBuffer, saveActiveAs, closeBuffer, reloadBuffer, loadBuffer, restoreSession } = useFileOps()
   // Mount window-level keyboard (Alt+Left/Right or Ctrl+-) and mouse
   // back/forward button listeners that drive navigation history.
@@ -151,6 +152,10 @@ export default function App() {
       useUIStore.getState().addToast(args[0] as string, (args[1] as 'info' | 'warn' | 'error') ?? 'info')
     })
     window.api.on('menu:plugin-manager', () => useEditorStore.getState().openPluginManagerTab())
+    window.api.on('plugin:open-csv-viewer', (...args) => {
+      const { csvText, fileName } = args[0] as { csvText: string; fileName: string }
+      useUIStore.getState().openCsvViewer(csvText, fileName)
+    })
     window.api.on('menu:about',              () => useUIStore.getState().setShowAbout(true))
     window.api.on('menu:settings-open',      () => useEditorStore.getState().openVirtualTab('settings'))
     window.api.on('menu:shortcuts-open',     () => useEditorStore.getState().openVirtualTab('shortcuts'))
@@ -311,6 +316,7 @@ export default function App() {
       window.api.off('file:externally-changed')
       window.api.off('file:externally-deleted')
       window.api.off('menu:plugin-manager')
+      window.api.off('plugin:open-csv-viewer')
       window.api.off('menu:about')
       window.api.off('menu:settings-open')
       window.api.off('menu:shortcuts-open')
@@ -467,6 +473,7 @@ export default function App() {
 
       <FindReplaceDialog />
       <AboutDialog />
+      {csvViewerOpen && <CsvViewerOverlay csvText={csvViewerText} fileName={csvViewerFileName} />}
       <Toaster position="bottom-right" richColors closeButton />
       <SonnerBridge />
     </div>

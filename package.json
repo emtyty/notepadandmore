@@ -69,7 +69,9 @@
     "iconv-lite": "^0.6.3",
     "input-otp": "^1.4.2",
     "lucide-react": "^1.7.0",
+    "magika": "^1.0.0",
     "monaco-editor": "^0.52.2",
+    "papaparse": "^5.5.3",
     "react": "^18.3.1",
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.3.1",
@@ -86,6 +88,7 @@
   "devDependencies": {
     "@playwright/test": "^1.58.2",
     "@types/node": "^22.10.5",
+    "@types/papaparse": "^5.5.2",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.3.4",

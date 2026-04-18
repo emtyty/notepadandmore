@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
 import * as fs from 'fs'
 import * as path from 'path'
+import { addPluginMenuItem, removePluginMenuItem } from '../menu'
 
 export interface PluginSettingField {
   key: string
@@ -51,10 +52,22 @@ export class PluginLoader {
   private plugins: Map<string, PluginInfo> = new Map()
   private pluginModules: Map<string, { activate?: Function; deactivate?: Function }> = new Map()
   private pluginSettingsSchemas: Map<string, PluginSettingsSchema> = new Map()
+  private menuCallbacks: Map<string, () => void> = new Map()
   private win: BrowserWindow | null = null
 
   static getInstance(): PluginLoader {
-    if (!PluginLoader.instance) PluginLoader.instance = new PluginLoader()
+    if (!PluginLoader.instance) {
+      PluginLoader.instance = new PluginLoader()
+      // Single global listener for renderer-triggered plugin menu clicks
+      ipcMain.on('plugin:invoke-menu-click', (_e, pluginName: string, label: string) => {
+        const cb = PluginLoader.instance.menuCallbacks.get(`${pluginName}::${label}`)
+        if (cb) {
+          try { cb() } catch (err) {
+            console.error(`[PluginLoader] callback error for ${pluginName}:${label}:`, err)
+          }
+        }
+      })
+    }
     return PluginLoader.instance
   }
 
@@ -153,12 +166,20 @@ export class PluginLoader {
         openFile: (filePath: string) => win?.webContents.send('menu:file-open', [filePath])
       },
       ui: {
-        addMenuItem: (item: { label: string; callback: () => void }) => {
-          win?.webContents.send('plugin:add-menu-item', pluginName, item.label)
-          ipcMain.on(`plugin:menu-click:${pluginName}:${item.label}`, item.callback)
+        addMenuItem: (item: { label: string; accelerator?: string; callback: () => void }) => {
+          if (win) addPluginMenuItem(win, pluginName, [item])
+          win?.webContents.send('plugin:add-menu-item', pluginName, item.label, item.accelerator)
+          // Register the callback in a lookup so the renderer-side custom menu can invoke it
+          this.menuCallbacks.set(`${pluginName}::${item.label}`, item.callback)
         },
         showMessage: (msg: string, level = 'info') => {
           win?.webContents.send('ui:show-toast', msg, level)
+        },
+        openCsvViewer: (csvText: string, options?: { fileName?: string }) => {
+          win?.webContents.send('plugin:open-csv-viewer', {
+            csvText,
+            fileName: options?.fileName ?? ''
+          })
         }
       },
       events: {
@@ -225,6 +246,7 @@ export class PluginLoader {
 
     this.pluginModules.delete(pluginName)
     this.pluginSettingsSchemas.delete(pluginName)
+    if (this.win) removePluginMenuItem(this.win, pluginName)
     info.enabled = false
     info.error = undefined
     info.hasSettings = false

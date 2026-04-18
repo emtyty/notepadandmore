@@ -38,6 +38,9 @@ interface UIState {
   isRecording: boolean
   macroSteps: MacroStep[]
   hasMacro: boolean
+  csvViewerOpen: boolean
+  csvViewerText: string
+  csvViewerFileName: string
 
   setTheme: (t: Theme) => void
   toggleTheme: () => void
@@ -61,6 +64,8 @@ interface UIState {
   removeToast: (id: string) => void
   startRecording: () => void
   stopRecording: (steps: MacroStep[]) => void
+  openCsvViewer: (csvText: string, fileName: string) => void
+  closeCsvViewer: () => void
 }
 
 export const useUIStore = create<UIState>((set, get) => ({
@@ -85,6 +90,9 @@ export const useUIStore = create<UIState>((set, get) => ({
   isRecording: false,
   macroSteps: [],
   hasMacro: false,
+  csvViewerOpen: false,
+  csvViewerText: '',
+  csvViewerFileName: '',
 
   setTheme: (t) => set({ theme: t }),
   toggleTheme: () => set((s) => ({ theme: s.theme === 'dark' ? 'light' : 'dark' })),
@@ -138,5 +146,7 @@ export const useUIStore = create<UIState>((set, get) => ({
   },
   removeToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
   startRecording: () => set({ isRecording: true, macroSteps: [] }),
-  stopRecording: (steps) => set({ isRecording: false, macroSteps: steps, hasMacro: steps.length > 0 })
+  stopRecording: (steps) => set({ isRecording: false, macroSteps: steps, hasMacro: steps.length > 0 }),
+  openCsvViewer: (csvText, fileName) => set({ csvViewerOpen: true, csvViewerText: csvText, csvViewerFileName: fileName }),
+  closeCsvViewer: () => set({ csvViewerOpen: false, csvViewerText: '', csvViewerFileName: '' })
 }))

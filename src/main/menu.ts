@@ -1,6 +1,17 @@
 import { Menu, MenuItem, BrowserWindow, app, dialog } from 'electron'
 
+interface PluginMenuEntry {
+  pluginName: string
+  items: Array<{ label: string; accelerator?: string; callback: () => void }>
+}
+
+const pluginMenuRegistry: Map<string, PluginMenuEntry> = new Map()
+let currentWin: BrowserWindow | null = null
+let currentRecentFiles: string[] = []
+
 export function buildMenu(win: BrowserWindow, recentFiles: string[] = []): void {
+  currentWin = win
+  currentRecentFiles = recentFiles
   const isMac = process.platform === 'darwin'
 
   const template: Electron.MenuItemConstructorOptions[] = [
@@ -52,8 +63,11 @@ export function buildMenu(win: BrowserWindow, recentFiles: string[] = []): void 
               properties: ['openFile', 'multiSelections'],
               filters: [
                 { name: 'All Files', extensions: ['*'] },
-                { name: 'Text Files', extensions: ['txt', 'md', 'log'] },
-                { name: 'Source Code', extensions: ['js', 'ts', 'jsx', 'tsx', 'py', 'cpp', 'c', 'h', 'java', 'cs', 'go', 'rs'] }
+                { name: 'Text Files', extensions: ['txt', 'md', 'log', 'rtf'] },
+                { name: 'Data Files', extensions: ['json', 'csv', 'tsv', 'xml', 'yaml', 'yml', 'toml', 'ini', 'conf', 'env'] },
+                { name: 'Web Files', extensions: ['html', 'htm', 'css', 'scss', 'sass', 'less', 'svg'] },
+                { name: 'Source Code', extensions: ['js', 'mjs', 'cjs', 'ts', 'jsx', 'tsx', 'py', 'cpp', 'c', 'h', 'hpp', 'java', 'cs', 'go', 'rs', 'rb', 'php', 'swift', 'kt', 'sh', 'bash', 'ps1', 'sql', 'lua', 'dart', 'r'] },
+                { name: 'Markdown & Docs', extensions: ['md', 'markdown', 'rst', 'adoc'] }
               ]
             })
             if (!result.canceled) {
@@ -349,8 +363,15 @@ export function buildMenu(win: BrowserWindow, recentFiles: string[] = []): void 
           enabled: true,
           click: () => win.webContents.send('menu:plugin-manager')
         },
-        { type: 'separator' }
-        // Plugin menu items added dynamically by PluginLoader
+        { type: 'separator' as const },
+        ...Array.from(pluginMenuRegistry.values()).map((entry) => ({
+          label: entry.pluginName,
+          submenu: entry.items.map((item) => ({
+            label: item.label,
+            ...(item.accelerator ? { accelerator: item.accelerator } : {}),
+            click: item.callback
+          }))
+        }))
       ]
     },
 
@@ -395,6 +416,7 @@ export function buildMenu(win: BrowserWindow, recentFiles: string[] = []): void 
         { type: 'separator' },
         {
           label: 'Toggle Developer Tools',
+          accelerator: 'F12',
           click: () => win.webContents.toggleDevTools()
         },
         // Windows-only hidden accelerator for Settings (Ctrl+,). On macOS the
@@ -425,22 +447,16 @@ export function updateRecentFiles(win: BrowserWindow, files: string[]): void {
 export function addPluginMenuItem(
   win: BrowserWindow,
   pluginName: string,
-  items: Array<{ label: string; callback: () => void }>
+  items: Array<{ label: string; accelerator?: string; callback: () => void }>
 ): void {
-  const menu = Menu.getApplicationMenu()
-  if (!menu) return
-  const pluginsMenu = menu.getMenuItemById('plugins-menu')
-  if (!pluginsMenu?.submenu) return
+  pluginMenuRegistry.set(pluginName, { pluginName, items })
+  // Only rebuild if the menu has already been built once; during initial plugin load,
+  // buildMenu is called once at the end and will pick up registered items.
+  if (currentWin) buildMenu(win, currentRecentFiles)
+}
 
-  const pluginSubmenu = items.map((item) => ({
-    label: item.label,
-    click: item.callback
-  }))
-
-  pluginsMenu.submenu.append(
-    new MenuItem({
-      label: pluginName,
-      submenu: Menu.buildFromTemplate(pluginSubmenu)
-    })
-  )
+export function removePluginMenuItem(win: BrowserWindow, pluginName: string): void {
+  if (pluginMenuRegistry.delete(pluginName) && currentWin) {
+    buildMenu(win, currentRecentFiles)
+  }
 }

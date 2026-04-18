@@ -96,6 +96,7 @@ const api = {
       'session:restore', 'app:before-close',
       'plugin:add-menu-item', 'plugin:insert-text', 'plugin:state-changed',
       'plugin:editor-get-text', 'plugin:editor-get-selection', 'plugin:editor-get-path',
+      'plugin:open-csv-viewer',
       'file:externally-changed', 'file:externally-deleted',
       'search:chunk', 'search:progress', 'search:done',
       'menu:check-for-updates',
@@ -124,6 +125,7 @@ const api = {
       'session:restore', 'app:before-close',
       'plugin:add-menu-item', 'plugin:insert-text', 'plugin:state-changed',
       'plugin:editor-get-text', 'plugin:editor-get-selection', 'plugin:editor-get-path',
+      'plugin:open-csv-viewer',
       'file:externally-changed', 'file:externally-deleted',
       'search:chunk', 'search:progress', 'search:done',
       'menu:check-for-updates',
@@ -143,6 +145,8 @@ const api = {
       'plugin:editor-get-text:reply',
       'plugin:editor-get-selection:reply',
       'plugin:editor-get-path:reply',
+      'plugin:invoke-menu-click',
+      'dev:toggle-devtools',
       'session:save',
       'ui:state-changed'
     ]

@@ -2,6 +2,24 @@ import { useCallback } from 'react'
 import { useEditorStore, EOLType } from '../store/editorStore'
 import { useUIStore } from '../store/uiStore'
 import { detectLanguage } from '../utils/languageDetect'
+import { detectLanguageFromBytes } from '../utils/magikaDetect'
+
+/** Run Magika in the background and update the buffer's language if it found a better one. */
+async function refineLanguageAsync(bufferId: string, sample: Uint8Array, extensionLanguage: string): Promise<void> {
+  console.log('[refineLanguageAsync] start, bufferId:', bufferId, 'extLang:', extensionLanguage, 'sampleLen:', sample.byteLength)
+  const detected = await detectLanguageFromBytes(sample)
+  console.log('[refineLanguageAsync] detected:', detected)
+  if (!detected || detected === extensionLanguage) return
+  const store = useEditorStore.getState()
+  const buf = store.getBuffer(bufferId)
+  if (!buf || buf.language === detected) return
+  console.log('[refineLanguageAsync] applying', detected, 'to', buf.title)
+  store.updateBuffer(bufferId, { language: detected })
+  if (buf.model) {
+    const monaco = await import('monaco-editor')
+    monaco.editor.setModelLanguage(buf.model, detected)
+  }
+}
 
 function basename(p: string): string {
   return p.replace(/\\/g, '/').split('/').pop() ?? p
@@ -28,8 +46,8 @@ declare global {
   interface Window {
     api: {
       file: {
-        read: (p: string) => Promise<{ content: string; encoding: string; eol: string; mtime: number; error: string | null }>
-        write: (p: string, content: string, enc?: string, eol?: string) => Promise<{ error: string | null }>
+        read: (p: string) => Promise<{ content: string; encoding: string; eol: string; mtime: number; magikaSample: Uint8Array; error: string | null }>
+        write: (p: string, content: string, enc?: string, eol?: string) => Promise<{ error: string | null; magikaSample: Uint8Array }>
         saveDialog: (defaultPath?: string) => Promise<{ canceled: boolean; filePath?: string }>
         checkMtime: (p: string, mtime: number) => Promise<{ changed: boolean; mtime: number }>
         reveal: (p: string) => Promise<void>
@@ -88,6 +106,8 @@ export function useFileOps() {
         continue
       }
 
+      // Fast extension-based language for immediate highlighting;
+      // Magika refines it in the background (WebGL-accelerated TF.js in renderer).
       const language = detectLanguage(fp)
       const id = addBuffer({
         filePath: fp,
@@ -108,6 +128,9 @@ export function useFileOps() {
       useEditorStore.getState().setActive(id)
       window.api.file.addRecent(fp)
       window.api.watch.add(fp)
+      if (result.magikaSample?.byteLength) {
+        void refineLanguageAsync(id, result.magikaSample, language)
+      }
     }
   }, [buffers, addBuffer, addToast])
 
@@ -267,6 +290,9 @@ export function useFileOps() {
       content
     })
     window.api.file.addRecent(filePath)
+    if (result.magikaSample?.byteLength) {
+      void refineLanguageAsync(id, result.magikaSample, buf.language)
+    }
     return true
   }, [updateBuffer, addToast])
 
@@ -291,6 +317,9 @@ export function useFileOps() {
       content
     })
     window.api.file.addRecent(res.filePath)
+    if (result.magikaSample?.byteLength) {
+      void refineLanguageAsync(buf.id, result.magikaSample, buf.language)
+    }
     return true
   }, [getActive, updateBuffer, addToast])
 

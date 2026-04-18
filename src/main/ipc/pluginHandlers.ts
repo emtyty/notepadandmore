@@ -1,6 +1,7 @@
-import { ipcMain, BrowserWindow, dialog } from 'electron'
+import { ipcMain, BrowserWindow, dialog, app } from 'electron'
 import * as fs from 'fs'
 import * as path from 'path'
+import AdmZip from 'adm-zip'
 import { PluginLoader } from '../plugins/PluginLoader'
 
 export function registerPluginHandlers(): void {
@@ -43,17 +44,41 @@ export function registerPluginHandlers(): void {
     if (!win) return null
 
     const result = await dialog.showOpenDialog(win, {
-      properties: ['openDirectory'],
-      title: 'Select Plugin Folder'
+      properties: ['openFile', 'openDirectory'],
+      title: 'Select Plugin (folder or .zip)',
+      filters: [
+        { name: 'Plugin Package', extensions: ['zip'] },
+        { name: 'All Files', extensions: ['*'] }
+      ]
     })
     if (result.canceled || result.filePaths.length === 0) return null
 
-    const sourcePath = result.filePaths[0]
+    const picked = result.filePaths[0]
+    const stat = fs.statSync(picked)
+    let sourcePath = picked
+
+    // If the user picked a .zip, extract it to a temp dir and treat that as the source folder.
+    if (!stat.isDirectory()) {
+      if (!picked.toLowerCase().endsWith('.zip')) {
+        throw new Error('Plugin must be a folder or a .zip archive')
+      }
+      const tempRoot = path.join(app.getPath('temp'), `novapad-plugin-${Date.now()}`)
+      fs.mkdirSync(tempRoot, { recursive: true })
+      const zip = new AdmZip(picked)
+      zip.extractAllTo(tempRoot, true)
+      // If the zip wrapped a single top-level folder, drop into it; otherwise use tempRoot directly.
+      const entries = fs.readdirSync(tempRoot)
+      if (entries.length === 1 && fs.statSync(path.join(tempRoot, entries[0])).isDirectory()) {
+        sourcePath = path.join(tempRoot, entries[0])
+      } else {
+        sourcePath = tempRoot
+      }
+    }
 
     // Validate: must have package.json
     const pkgPath = path.join(sourcePath, 'package.json')
     if (!fs.existsSync(pkgPath)) {
-      throw new Error('Selected folder does not contain a package.json')
+      throw new Error('Plugin does not contain a package.json')
     }
 
     const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'))
@@ -71,7 +96,6 @@ export function registerPluginHandlers(): void {
       })
       if (confirm.response !== 0) return null
 
-      // Disable existing plugin before overwrite
       try { loader.disablePlugin(pluginName) } catch { /* may not be loaded */ }
     }
 

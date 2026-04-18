@@ -69,9 +69,6 @@ app.whenReady().then(() => {
 
   createWindow()
 
-  // Build native menu after window is created (with persisted recent files)
-  buildMenu(mainWindow!, loadRecents())
-
   // Register handlers that need mainWindow reference
   registerSearchHandlers(mainWindow!)
   registerWatchHandlers(mainWindow!)
@@ -85,8 +82,13 @@ app.whenReady().then(() => {
     }, 5000)
   }
 
-  // Load plugins
+  // Load plugins BEFORE buildMenu so plugin menu items are included in the initial build.
+  // Plugins register menu items via addPluginMenuItem which populates a registry; since
+  // currentWin is still null at this point, no rebuild is triggered during loading.
   PluginLoader.getInstance().loadAll(mainWindow!)
+
+  // Build native menu after plugins have registered their menu items
+  buildMenu(mainWindow!, loadRecents())
 
   // Restore last session (skip in E2E mode for clean test state)
   if (process.env['E2E_TEST'] !== '1') {
@@ -121,6 +123,12 @@ ipcMain.on('session:save', (_event, session) => {
 // Expose the real app version (app.getVersion() reads from packaged metadata,
 // unlike the env-var-based window.api.appVersion which is unreliable in prod).
 ipcMain.handle('app:get-version', () => app.getVersion())
+
+// Toggle DevTools from the custom in-app menu (native menu is hidden by autoHideMenuBar).
+ipcMain.on('dev:toggle-devtools', () => {
+  const win = BrowserWindow.getFocusedWindow() ?? mainWindow
+  win?.webContents.toggleDevTools()
+})
 
 // Bidirectional state sync: renderer → main (update native menu checkboxes)
 const toggleKeyToMenuId: Record<string, string> = {

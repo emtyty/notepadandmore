@@ -7,6 +7,8 @@ import {
   RotateCcw, ChevronRight,
 } from 'lucide-react'
 import { useUIStore } from '../../store/uiStore'
+import { useEditorStore } from '../../store/editorStore'
+import { usePluginStore } from '../../store/pluginStore'
 import { isMacOS, shortcutMod, shortcutAlt } from '../../utils/platform'
 import { SettingsMenu } from './SettingsMenu'
 import { NavButtons } from './NavButtons'
@@ -59,6 +61,24 @@ export function MenuBar({
     setShowToolbar, setShowStatusBar, setShowSidebar,
     setWordWrap, setRenderWhitespace, setIndentationGuides, setColumnSelectMode,
   } = useUIStore()
+  const dynamicMenuItems = usePluginStore((s) => s.dynamicMenuItems)
+
+  // Group dynamic menu items by plugin name into submenus so the custom menu
+  // mirrors the native Plugins submenu (plugin name → its items).
+  const dynamicPluginMenu: MenuItem[] = (() => {
+    const byPlugin = new Map<string, MenuItem[]>()
+    for (const { pluginName, label } of dynamicMenuItems) {
+      if (!byPlugin.has(pluginName)) byPlugin.set(pluginName, [])
+      byPlugin.get(pluginName)!.push({
+        label,
+        action: () => window.api.send('plugin:invoke-menu-click', pluginName, label),
+      })
+    }
+    return Array.from(byPlugin.entries()).map(([pluginName, items]) => ({
+      label: pluginName,
+      submenu: items,
+    }))
+  })()
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -185,7 +205,13 @@ export function MenuBar({
       { label: 'Saved Macros', disabled: true },
     ],
     Plugins: [
-      { label: 'Plugin Manager...', disabled: false },
+      {
+        label: 'Plugin Manager...',
+        action: () => useEditorStore.getState().openPluginManagerTab()
+      },
+      ...(dynamicPluginMenu.length > 0
+        ? [{ separator: true, label: '' } as MenuItem, ...dynamicPluginMenu]
+        : []),
     ],
     Window: [
       { label: 'Minimize', action: () => window.dispatchEvent(new CustomEvent('window:minimize')) },
@@ -199,7 +225,7 @@ export function MenuBar({
       { separator: true, label: '' },
       { label: 'Check for Updates...', action: () => { void window.api.update.check() } },
       { separator: true, label: '' },
-      { label: 'Open DevTools', shortcut: 'F12', action: () => window.dispatchEvent(new CustomEvent('dev:toggle-devtools')) },
+      { label: 'Open DevTools', shortcut: 'F12', action: () => window.api.send('dev:toggle-devtools') },
     ],
   }
 

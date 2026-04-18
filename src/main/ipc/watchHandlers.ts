@@ -3,6 +3,16 @@ import chokidar, { FSWatcher } from 'chokidar'
 
 const watchers = new Map<string, FSWatcher>()
 
+// File paths we've just saved ourselves. The watcher fires a 'change' event
+// when we write to disk — we don't want to show "externally changed" for our
+// own saves. file:write populates this set; the watcher drains it.
+const suppressNextChange = new Set<string>()
+
+/** Called by file:write to ignore the next change event for the saved path. */
+export function markSelfSaved(filePath: string): void {
+  suppressNextChange.add(filePath)
+}
+
 export function registerWatchHandlers(win: BrowserWindow): void {
   ipcMain.handle('watch:add', (_event, filePath: string) => {
     if (watchers.has(filePath)) return
@@ -13,6 +23,7 @@ export function registerWatchHandlers(win: BrowserWindow): void {
       awaitWriteFinish: { stabilityThreshold: 300, pollInterval: 100 }
     })
     watcher.on('change', () => {
+      if (suppressNextChange.delete(filePath)) return
       win.webContents.send('file:externally-changed', filePath)
     })
     watcher.on('unlink', () => {
