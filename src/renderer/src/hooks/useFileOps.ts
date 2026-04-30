@@ -2,24 +2,8 @@ import { useCallback } from 'react'
 import { useEditorStore, EOLType } from '../store/editorStore'
 import { useUIStore } from '../store/uiStore'
 import { detectLanguage } from '../utils/languageDetect'
-import { detectLanguageFromBytes } from '../utils/magikaDetect'
-
-/** Run Magika in the background and update the buffer's language if it found a better one. */
-async function refineLanguageAsync(bufferId: string, sample: Uint8Array, extensionLanguage: string): Promise<void> {
-  console.log('[refineLanguageAsync] start, bufferId:', bufferId, 'extLang:', extensionLanguage, 'sampleLen:', sample.byteLength)
-  const detected = await detectLanguageFromBytes(sample)
-  console.log('[refineLanguageAsync] detected:', detected)
-  if (!detected || detected === extensionLanguage) return
-  const store = useEditorStore.getState()
-  const buf = store.getBuffer(bufferId)
-  if (!buf || buf.language === detected) return
-  console.log('[refineLanguageAsync] applying', detected, 'to', buf.title)
-  store.updateBuffer(bufferId, { language: detected })
-  if (buf.model) {
-    const monaco = await import('monaco-editor')
-    monaco.editor.setModelLanguage(buf.model, detected)
-  }
-}
+import { refineLanguageAsync } from '../utils/refineLanguage'
+import { languageToExtension } from '../utils/languageToExtension'
 
 function basename(p: string): string {
   return p.replace(/\\/g, '/').split('/').pop() ?? p
@@ -48,7 +32,7 @@ declare global {
       file: {
         read: (p: string) => Promise<{ content: string; encoding: string; eol: string; mtime: number; magikaSample: Uint8Array; error: string | null }>
         write: (p: string, content: string, enc?: string, eol?: string) => Promise<{ error: string | null; magikaSample: Uint8Array }>
-        saveDialog: (defaultPath?: string) => Promise<{ canceled: boolean; filePath?: string }>
+        saveDialog: (defaultPath?: string, suggestedExt?: string | null) => Promise<{ canceled: boolean; filePath?: string }>
         checkMtime: (p: string, mtime: number) => Promise<{ changed: boolean; mtime: number }>
         reveal: (p: string) => Promise<void>
         addRecent: (p: string) => void
@@ -271,7 +255,8 @@ export function useFileOps() {
 
     let filePath = buf.filePath
     if (!filePath) {
-      const res = await window.api.file.saveDialog(buf.title)
+      const suggestedExt = languageToExtension(buf.language)
+      const res = await window.api.file.saveDialog(buf.title, suggestedExt)
       if (res.canceled || !res.filePath) return false
       filePath = res.filePath
     }
@@ -300,7 +285,8 @@ export function useFileOps() {
     const buf = getActive()
     if (!buf) return false
 
-    const res = await window.api.file.saveDialog(buf.filePath ?? buf.title)
+    const suggestedExt = languageToExtension(buf.language)
+    const res = await window.api.file.saveDialog(buf.filePath ?? buf.title, suggestedExt)
     if (res.canceled || !res.filePath) return false
 
     const content = buf.model?.getValue() ?? buf.content

@@ -11,7 +11,8 @@ const api = {
     read: (filePath: string) => ipcRenderer.invoke('file:read', filePath),
     write: (filePath: string, content: string, encoding?: string, eol?: string) =>
       ipcRenderer.invoke('file:write', filePath, content, encoding, eol),
-    saveDialog: (defaultPath?: string) => ipcRenderer.invoke('file:save-dialog', defaultPath),
+    saveDialog: (defaultPath?: string, suggestedExt?: string | null) =>
+      ipcRenderer.invoke('file:save-dialog', defaultPath, suggestedExt),
     openDialog: () => ipcRenderer.invoke('file:open-dialog'),
     openDirDialog: () => ipcRenderer.invoke('file:open-dir-dialog'),
     checkMtime: (filePath: string, mtime: number) => ipcRenderer.invoke('file:check-mtime', filePath, mtime),

@@ -59,16 +59,15 @@ export function buildMenu(win: BrowserWindow, recentFiles: string[] = []): void 
           label: 'Open...',
           accelerator: 'CmdOrCtrl+O',
           click: async () => {
+            // Single "All Files" filter only — Windows persists the user's
+            // last-used filter selection across dialog opens (an OS behavior
+            // Electron can't override), so listing extra filters causes the
+            // dialog to remember e.g. "Text Files" and reopen with it.
+            // Keeping a single filter forces the dialog to always show every
+            // file type by default.
             const result = await dialog.showOpenDialog(win, {
               properties: ['openFile', 'multiSelections'],
-              filters: [
-                { name: 'All Files', extensions: ['*'] },
-                { name: 'Text Files', extensions: ['txt', 'md', 'log', 'rtf'] },
-                { name: 'Data Files', extensions: ['json', 'csv', 'tsv', 'xml', 'yaml', 'yml', 'toml', 'ini', 'conf', 'env'] },
-                { name: 'Web Files', extensions: ['html', 'htm', 'css', 'scss', 'sass', 'less', 'svg'] },
-                { name: 'Source Code', extensions: ['js', 'mjs', 'cjs', 'ts', 'jsx', 'tsx', 'py', 'cpp', 'c', 'h', 'hpp', 'java', 'cs', 'go', 'rs', 'rb', 'php', 'swift', 'kt', 'sh', 'bash', 'ps1', 'sql', 'lua', 'dart', 'r'] },
-                { name: 'Markdown & Docs', extensions: ['md', 'markdown', 'rst', 'adoc'] }
-              ]
+              filters: [{ name: 'All Files', extensions: ['*'] }]
             })
             if (!result.canceled) {
               win.webContents.send('menu:file-open', result.filePaths)
@@ -179,6 +178,11 @@ export function buildMenu(win: BrowserWindow, recentFiles: string[] = []): void 
         {
           label: 'Trim Trailing Whitespace',
           click: () => win.webContents.send('editor:command', 'trimTrailingWhitespace')
+        },
+        {
+          label: 'Beautify JSON',
+          accelerator: 'CmdOrCtrl+Alt+Shift+M',
+          click: () => win.webContents.send('editor:command', 'beautifyJson')
         },
         {
           label: 'Indent Selection',

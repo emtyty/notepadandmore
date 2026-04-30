@@ -48,16 +48,37 @@ export function registerFileHandlers(): void {
     }
   })
 
-  // Save dialog
-  ipcMain.handle('file:save-dialog', async (_event, defaultPath?: string) => {
+  // Save dialog. When a suggestedExt is provided (e.g. "json" because the
+  // active buffer was detected as JSON), we put a matching filter first so the
+  // OS dialog defaults to that file type, AND we append the extension to the
+  // defaultPath if it doesn't already have one. This drives the "Save dialog
+  // pre-fills the right extension based on autodetect" UX.
+  ipcMain.handle('file:save-dialog', async (_event, defaultPath?: string, suggestedExt?: string | null) => {
     const win = BrowserWindow.getFocusedWindow()
     if (!win) return { canceled: true, filePath: null }
+
+    let resolvedDefault = defaultPath
+    if (suggestedExt && resolvedDefault) {
+      const base = path.basename(resolvedDefault)
+      // Append the suggested extension only when the file has no extension yet
+      // (e.g. "new 1"). Don't rename existing extensions in Save As — that
+      // would surprise the user.
+      if (!base.includes('.')) {
+        resolvedDefault = resolvedDefault + '.' + suggestedExt
+      }
+    }
+
+    const filters: Electron.FileFilter[] = []
+    if (suggestedExt) {
+      const display = suggestedExt.toUpperCase()
+      filters.push({ name: `${display} Files`, extensions: [suggestedExt] })
+    }
+    filters.push({ name: 'All Files', extensions: ['*'] })
+    filters.push({ name: 'Text Files', extensions: ['txt'] })
+
     const result = await dialog.showSaveDialog(win, {
-      defaultPath,
-      filters: [
-        { name: 'All Files', extensions: ['*'] },
-        { name: 'Text Files', extensions: ['txt'] }
-      ]
+      defaultPath: resolvedDefault,
+      filters
     })
     return result
   })
@@ -175,16 +196,14 @@ export function registerFileHandlers(): void {
   ipcMain.handle('file:open-dialog', async () => {
     const win = BrowserWindow.getFocusedWindow()
     if (!win) return null
+    // Single "All Files" filter only — Windows persists the user's last-used
+    // filter selection across dialog opens (an OS behavior Electron can't
+    // override), so listing extra filters causes the dialog to remember
+    // e.g. "Text Files" and reopen with it. Keeping a single filter forces
+    // the dialog to always show every file type by default.
     const result = await dialog.showOpenDialog(win, {
       properties: ['openFile', 'multiSelections'],
-      filters: [
-        { name: 'All Files', extensions: ['*'] },
-        { name: 'Text Files', extensions: ['txt', 'md', 'log', 'rtf'] },
-        { name: 'Data Files', extensions: ['json', 'csv', 'tsv', 'xml', 'yaml', 'yml', 'toml', 'ini', 'conf', 'env'] },
-        { name: 'Web Files', extensions: ['html', 'htm', 'css', 'scss', 'sass', 'less', 'svg'] },
-        { name: 'Source Code', extensions: ['js', 'mjs', 'cjs', 'ts', 'jsx', 'tsx', 'py', 'cpp', 'c', 'h', 'hpp', 'java', 'cs', 'go', 'rs', 'rb', 'php', 'swift', 'kt', 'sh', 'bash', 'ps1', 'sql', 'lua', 'dart', 'r'] },
-        { name: 'Markdown & Docs', extensions: ['md', 'markdown', 'rst', 'adoc'] }
-      ]
+      filters: [{ name: 'All Files', extensions: ['*'] }]
     })
     if (result.canceled || result.filePaths.length === 0) return null
     return result.filePaths

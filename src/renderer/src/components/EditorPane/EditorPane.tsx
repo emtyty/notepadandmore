@@ -8,6 +8,7 @@ import { editorRegistry } from '../../utils/editorRegistry'
 import { useBookmarks } from '../../hooks/useBookmarks'
 import { useMacroRecorder } from '../../hooks/useMacroRecorder'
 import { useFileOps } from '../../hooks/useFileOps'
+import { refineLanguageAsync, sampleFromString } from '../../utils/refineLanguage'
 import { EditorContextMenu } from './EditorContextMenu'
 
 /** Same-buffer cursor moves below this line-delta do not push a navigation entry (spec BR-005). */
@@ -136,6 +137,31 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
         useUIStore.getState().setColumnSelectMode(!current, true)
         break
       }
+      case 'beautifyJson': {
+        const id = currentIdRef.current
+        const model = editor.getModel()
+        if (!id || !model) break
+        const cfg = useConfigStore.getState()
+        const indent = cfg.insertSpaces ? cfg.tabSize : '\t'
+        // Format the current selection if non-empty, otherwise the whole doc.
+        const sel = editor.getSelection()
+        const hasSelection = sel && !sel.isEmpty()
+        const range = hasSelection ? sel : model.getFullModelRange()
+        const text = model.getValueInRange(range)
+        try {
+          const parsed = JSON.parse(text)
+          const formatted = JSON.stringify(parsed, null, indent as string | number)
+          editor.executeEdits('beautifyJson', [
+            { range, text: formatted, forceMoveMarkers: true }
+          ])
+          // Confirmed valid JSON — keep the language in sync.
+          monaco.editor.setModelLanguage(model, 'json')
+          useEditorStore.getState().updateBuffer(id, { language: 'json' })
+        } catch {
+          useUIStore.getState().addToast('Not valid JSON — cannot beautify.', 'warn')
+        }
+        break
+      }
     }
   }, [toggleBookmark, nextBookmark, prevBookmark, clearBookmarks, recordStep])
 
@@ -196,6 +222,28 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
     })
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyH, () => {
       useUIStore.getState().openFind('replace', getSelectionText())
+    })
+    // JSON beautify — Ctrl+Alt+Shift+M (Cmd on macOS). Reformats minified
+    // JSON into pretty-printed form. Routed through the editor:command event
+    // bus so the always-current dispatchCommand handles it (avoids the stale
+    // closure that addCommand would otherwise capture from this init effect).
+    editor.addCommand(
+      monaco.KeyMod.CtrlCmd | monaco.KeyMod.Alt | monaco.KeyMod.Shift | monaco.KeyCode.KeyM,
+      () => window.dispatchEvent(new CustomEvent('editor:command', { detail: 'beautifyJson' }))
+    )
+
+    // Re-run language autodetect whenever the user pastes content. Together
+    // with on-load and on-save detection, this keeps syntax highlighting in
+    // sync as content evolves (e.g. paste minified JSON into "new 1" — Magika
+    // re-classifies it as json so the JSON beautify shortcut works on it).
+    editor.onDidPaste(() => {
+      const id = currentIdRef.current
+      if (!id) return
+      const buf = useEditorStore.getState().getBuffer(id)
+      if (!buf) return
+      const text = editor.getModel()?.getValue() ?? ''
+      if (!text) return
+      void refineLanguageAsync(id, sampleFromString(text), buf.language)
     })
 
     // Track content changes -> mark dirty

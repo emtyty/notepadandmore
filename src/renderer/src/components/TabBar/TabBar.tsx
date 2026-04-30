@@ -97,8 +97,21 @@ export const TabBar: React.FC<TabBarProps> = ({ onClose, onNewFile }) => {
 
   if (buffers.length === 0) return null
 
+  // Double-clicking the empty area of the tab bar (anywhere not on a tab)
+  // creates a new document, mirroring common browser/IDE UX.
+  const handleBarDoubleClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement
+    if (target.closest('[data-tab-id]')) return
+    if (target.closest('button')) return
+    onNewFile?.()
+  }
+
   return (
-    <div className="h-9 bg-tab-inactive border-b border-border flex items-stretch select-none shrink-0 relative" data-testid="tabbar">
+    <div
+      className="h-9 bg-tab-inactive border-b border-border flex items-stretch select-none shrink-0 relative"
+      data-testid="tabbar"
+      onDoubleClick={handleBarDoubleClick}
+    >
       {/* Left scroll arrow */}
       {canScrollLeft && (
         <button
