@@ -1,5 +1,6 @@
 import { app, shell, BrowserWindow, ipcMain, Menu } from 'electron'
 import { join } from 'path'
+import * as fs from 'fs'
 import { buildMenu } from './menu'
 import { registerFileHandlers } from './ipc/fileHandlers'
 import { registerConfigHandlers } from './ipc/configHandlers'
@@ -16,6 +17,74 @@ let mainWindow: BrowserWindow | null = null
 
 /** True when quit was initiated (Cmd+Q / Quit); false for macOS red close button only. */
 let isQuitting = false
+
+/**
+ * Files queued to open as soon as the renderer is ready. Populated by:
+ *  - process.argv on cold launch (Windows + Linux "Open with" routes args here)
+ *  - app 'open-file' event before window exists (macOS Finder "Open With")
+ * Drained once on did-finish-load.
+ */
+const pendingOpenFiles: string[] = []
+
+/** Filter argv (or the args from a second-instance event) down to real file paths. */
+function filePathsFromArgv(argv: string[]): string[] {
+  // argv[0] is the exe; on packaged builds, the rest is whatever the OS passed.
+  // Be conservative: only forward args that point at an actual file on disk so
+  // we don't mistake CLI flags or chromium switches for file paths.
+  const out: string[] = []
+  for (const arg of argv.slice(1)) {
+    if (!arg || arg.startsWith('-')) continue
+    try {
+      const s = fs.statSync(arg)
+      if (s.isFile()) out.push(arg)
+    } catch {
+      // arg isn't a path — skip silently.
+    }
+  }
+  return out
+}
+
+/** Send queued files to the renderer (or queue them if it isn't ready yet). */
+function dispatchOpenFiles(files: string[]): void {
+  if (files.length === 0) return
+  if (mainWindow && !mainWindow.webContents.isLoading()) {
+    mainWindow.webContents.send('menu:file-open', files)
+  } else {
+    pendingOpenFiles.push(...files)
+  }
+}
+
+// Single-instance lock: when the user launches NovaPad a second time (e.g.
+// double-clicks another .json after the app is already running), Windows
+// spawns a new exe process. We want to forward those args to the existing
+// instance instead of launching a separate window.
+//
+// Skip in E2E mode — Playwright launches one Electron instance per test
+// sequentially, and OS lock release timing can race the next launch.
+if (process.env['E2E_TEST'] !== '1') {
+  const gotInstanceLock = app.requestSingleInstanceLock()
+  if (!gotInstanceLock) {
+    app.quit()
+  } else {
+    app.on('second-instance', (_event, argv) => {
+      const files = filePathsFromArgv(argv)
+      if (mainWindow) {
+        if (mainWindow.isMinimized()) mainWindow.restore()
+        if (!mainWindow.isVisible()) mainWindow.show()
+        mainWindow.focus()
+      }
+      dispatchOpenFiles(files)
+    })
+  }
+}
+
+// macOS routes "Open With → NovaPad" through this event instead of argv.
+// It can fire BEFORE app.whenReady, so we just queue and let did-finish-load
+// drain pendingOpenFiles when the renderer is ready.
+app.on('open-file', (event, filePath) => {
+  event.preventDefault()
+  if (filePath) dispatchOpenFiles([filePath])
+})
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -36,6 +105,16 @@ function createWindow(): void {
 
   mainWindow.on('ready-to-show', () => {
     mainWindow!.show()
+  })
+
+  // Drain queued open-file requests once the renderer is ready to receive
+  // 'menu:file-open'. Ordering note: did-finish-load fires AFTER session
+  // restore IPC, so files opened via Open With end up alongside (not in
+  // place of) the user's previous session.
+  mainWindow.webContents.on('did-finish-load', () => {
+    if (pendingOpenFiles.length === 0) return
+    const files = pendingOpenFiles.splice(0, pendingOpenFiles.length)
+    mainWindow!.webContents.send('menu:file-open', files)
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -60,6 +139,14 @@ function createWindow(): void {
 app.whenReady().then(() => {
   if (process.platform === 'win32') {
     app.setAppUserModelId('com.notepadandmore.app')
+  }
+
+  // Cold-launch arg handling: when Windows/Linux "Open with NovaPad" fires
+  // for the *first* instance, the file path lands in process.argv. Queue it
+  // now so did-finish-load forwards it to the renderer.
+  if (process.env['E2E_TEST'] !== '1') {
+    const initialFiles = filePathsFromArgv(process.argv)
+    if (initialFiles.length) pendingOpenFiles.push(...initialFiles)
   }
 
   // Register IPC handlers (no window dependency)

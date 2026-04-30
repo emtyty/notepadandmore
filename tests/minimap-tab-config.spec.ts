@@ -4,11 +4,17 @@ import { test as base, expect } from './fixtures'
 import { _electron as electron, ElectronApplication } from 'playwright'
 import path from 'path'
 
+function makeEnv(): NodeJS.ProcessEnv {
+  const env = { ...process.env, E2E_TEST: '1', NODE_ENV: 'test' }
+  delete env.ELECTRON_RUN_AS_NODE
+  return env
+}
+
 const test = base.extend<{ electronApp: ElectronApplication }>({
   electronApp: async ({}, use) => {
     const app = await electron.launch({
       args: [path.resolve(__dirname, '../out/main/index.js')],
-      env: { ...process.env, E2E_TEST: '1', NODE_ENV: 'test' },
+      env: makeEnv(),
       timeout: 15_000,
     })
     await use(app)
@@ -17,6 +23,11 @@ const test = base.extend<{ electronApp: ElectronApplication }>({
   page: async ({ electronApp }, use) => {
     const page = await electronApp.firstWindow()
     await page.waitForSelector('[data-testid="app"]', { timeout: 10_000 })
+    // E2E mode skips session restore — seed an initial buffer.
+    await electronApp.evaluate(({ BrowserWindow }) => {
+      const win = BrowserWindow.getAllWindows()[0]
+      if (win) win.webContents.send('menu:file-new')
+    })
     await page.waitForSelector('.monaco-editor textarea', { timeout: 10_000 })
     await page.waitForSelector('[data-testid="tabbar"] [data-tab-title]', { timeout: 5_000 })
     await use(page)
@@ -43,9 +54,9 @@ async function readConfigJson(electronApp: ElectronApplication): Promise<string 
 }
 
 test.describe('Minimap, tab filler, config theme', () => {
-  test('clicking tab bar filler opens a new untitled tab', async ({ page }) => {
+  test('double-clicking tab bar filler opens a new untitled tab', async ({ page }) => {
     await expect(page.locator('[data-tab-title="new 1"]')).toBeVisible()
-    await page.locator('[data-testid="tabbar-filler"]').click()
+    await page.locator('[data-testid="tabbar-filler"]').dblclick()
     await expect(page.locator('[data-tab-title="new 2"]')).toBeVisible()
   })
 

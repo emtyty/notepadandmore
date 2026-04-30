@@ -12,6 +12,7 @@ out/
 dist/
 build/*
 !build/entitlements.mac.plist
+!build/installer.nsh
 *.tsbuildinfo
 
 # ── Electron builder artifacts ───────────────────────────────────────────────────

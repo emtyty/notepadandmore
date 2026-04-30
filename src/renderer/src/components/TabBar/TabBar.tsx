@@ -201,6 +201,13 @@ export const TabBar: React.FC<TabBarProps> = ({ onClose, onNewFile }) => {
           </ContextMenu>
           )
         })}
+        {/* Filler eats the rest of the row so double-click anywhere past the
+            last tab still hits the bar's onDoubleClick handler — gives tests
+            a stable selector and gives users a bigger dbl-click target. */}
+        <div
+          data-testid="tabbar-filler"
+          className="flex-1 min-w-[24px]"
+        />
       </div>
 
       {/* Right scroll arrow */}

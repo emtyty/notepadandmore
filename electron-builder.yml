@@ -9,6 +9,204 @@ directories:
 files:
   - out/**/*
 
+# File associations register NovaPad as a handler for these extensions, which
+# adds the app to Windows' "Open with" menu and macOS' "Open With" menu.
+# CFBundleTypeRole=Editor advertises NovaPad as an *editor* (the macOS UI
+# surfaces this as "Open With → NovaPad" / Finder uses it for "Edit With").
+fileAssociations:
+  - ext: txt
+    name: Plain Text
+    description: Plain Text Document
+    role: Editor
+  - ext: md
+    name: Markdown
+    description: Markdown Document
+    role: Editor
+  - ext: log
+    name: Log File
+    description: Log File
+    role: Editor
+  - ext: json
+    name: JSON
+    description: JSON Document
+    role: Editor
+  - ext: jsonc
+    name: JSON with Comments
+    description: JSON Document
+    role: Editor
+  - ext: xml
+    name: XML
+    description: XML Document
+    role: Editor
+  - ext: yaml
+    name: YAML
+    description: YAML Document
+    role: Editor
+  - ext: yml
+    name: YAML
+    description: YAML Document
+    role: Editor
+  - ext: toml
+    name: TOML
+    description: TOML Document
+    role: Editor
+  - ext: ini
+    name: INI
+    description: INI Configuration
+    role: Editor
+  - ext: csv
+    name: CSV
+    description: Comma-Separated Values
+    role: Editor
+  - ext: tsv
+    name: TSV
+    description: Tab-Separated Values
+    role: Editor
+  - ext: js
+    name: JavaScript
+    description: JavaScript Source
+    role: Editor
+  - ext: mjs
+    name: JavaScript Module
+    description: JavaScript Module
+    role: Editor
+  - ext: cjs
+    name: CommonJS Module
+    description: CommonJS Module
+    role: Editor
+  - ext: ts
+    name: TypeScript
+    description: TypeScript Source
+    role: Editor
+  - ext: tsx
+    name: TypeScript JSX
+    description: TypeScript JSX Source
+    role: Editor
+  - ext: jsx
+    name: JavaScript JSX
+    description: JavaScript JSX Source
+    role: Editor
+  - ext: html
+    name: HTML
+    description: HTML Document
+    role: Editor
+  - ext: htm
+    name: HTML
+    description: HTML Document
+    role: Editor
+  - ext: css
+    name: CSS
+    description: Cascading Style Sheet
+    role: Editor
+  - ext: scss
+    name: SCSS
+    description: SCSS Stylesheet
+    role: Editor
+  - ext: less
+    name: Less
+    description: Less Stylesheet
+    role: Editor
+  - ext: py
+    name: Python
+    description: Python Source
+    role: Editor
+  - ext: rb
+    name: Ruby
+    description: Ruby Source
+    role: Editor
+  - ext: php
+    name: PHP
+    description: PHP Source
+    role: Editor
+  - ext: java
+    name: Java
+    description: Java Source
+    role: Editor
+  - ext: cs
+    name: C#
+    description: C# Source
+    role: Editor
+  - ext: c
+    name: C
+    description: C Source
+    role: Editor
+  - ext: h
+    name: C Header
+    description: C Header
+    role: Editor
+  - ext: cpp
+    name: C++
+    description: C++ Source
+    role: Editor
+  - ext: hpp
+    name: C++ Header
+    description: C++ Header
+    role: Editor
+  - ext: go
+    name: Go
+    description: Go Source
+    role: Editor
+  - ext: rs
+    name: Rust
+    description: Rust Source
+    role: Editor
+  - ext: swift
+    name: Swift
+    description: Swift Source
+    role: Editor
+  - ext: kt
+    name: Kotlin
+    description: Kotlin Source
+    role: Editor
+  - ext: dart
+    name: Dart
+    description: Dart Source
+    role: Editor
+  - ext: lua
+    name: Lua
+    description: Lua Source
+    role: Editor
+  - ext: r
+    name: R
+    description: R Source
+    role: Editor
+  - ext: sh
+    name: Shell Script
+    description: Shell Script
+    role: Editor
+  - ext: bash
+    name: Bash Script
+    description: Bash Script
+    role: Editor
+  - ext: ps1
+    name: PowerShell
+    description: PowerShell Script
+    role: Editor
+  - ext: bat
+    name: Batch File
+    description: Windows Batch File
+    role: Editor
+  - ext: sql
+    name: SQL
+    description: SQL Script
+    role: Editor
+  - ext: env
+    name: Environment File
+    description: Environment Variables
+    role: Editor
+  - ext: conf
+    name: Config File
+    description: Configuration File
+    role: Editor
+  - ext: cfg
+    name: Config File
+    description: Configuration File
+    role: Editor
+  - ext: rst
+    name: reStructuredText
+    description: reStructuredText Document
+    role: Editor
+
 win:
   target:
     - target: nsis
@@ -23,18 +221,52 @@ mac:
       arch: [universal]
   artifactName: "${productName}-${version}-mac.${ext}"
   icon: resources/icons/mac/icon.icns
-  category: public.app-category.graphics-design
+  category: public.app-category.developer-tools
   darkModeSupport: true
   hardenedRuntime: true
   gatekeeperAssess: false
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
+  # Generic UTI handler entries: appear in macOS "Open With" submenu for any
+  # text-shaped file that isn't covered by the explicit fileAssociations
+  # extensions above (e.g. files with no extension). LSHandlerRank=Alternate
+  # means we won't steal the OS default — we just join the chooser list.
+  extendInfo:
+    CFBundleDocumentTypes:
+      - CFBundleTypeName: Text Document
+        CFBundleTypeRole: Editor
+        LSHandlerRank: Alternate
+        LSItemContentTypes:
+          - public.text
+          - public.plain-text
+          - public.utf8-plain-text
+          - public.utf16-plain-text
+          - public.source-code
+          - public.script
+          - public.shell-script
+          - public.python-script
+          - public.ruby-script
+          - public.php-script
+          - public.perl-script
+          - public.json
+          - public.xml
+          - public.yaml
+          - public.html
+          - public.css
+          - public.javascript
 
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
+  # perMachine=false runs the installer as the current user (no UAC). Per-user
+  # installs keep the file-association registry entries under HKCU\Software\
+  # Classes — Windows' "Open with → NovaPad" lookup works without admin.
+  perMachine: false
+  # menuCategory lets Windows group our context-menu entries into a submenu
+  # ("NovaPad → Open with NovaPad / Edit with NovaPad") on Windows 10/11.
+  menuCategory: NovaPad
 
 dmg:
   artifactName: "${productName}.${ext}"
