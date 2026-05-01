@@ -180,9 +180,9 @@ export function buildMenu(win: BrowserWindow, recentFiles: string[] = []): void 
           click: () => win.webContents.send('editor:command', 'trimTrailingWhitespace')
         },
         {
-          label: 'Beautify JSON',
+          label: 'Beautify (JSON / SQL / XML)',
           accelerator: 'CmdOrCtrl+Alt+Shift+M',
-          click: () => win.webContents.send('editor:command', 'beautifyJson')
+          click: () => win.webContents.send('editor:command', 'beautify')
         },
         {
           label: 'Indent Selection',

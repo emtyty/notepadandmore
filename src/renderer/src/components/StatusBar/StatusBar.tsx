@@ -84,8 +84,14 @@ export const StatusBar: React.FC = () => {
       className="h-7 bg-statusbar text-statusbar-foreground flex items-center px-2 text-base select-none shrink-0"
       data-testid="statusbar"
     >
-      {/* Spacer */}
-      <div className="flex-1" />
+      {/* Left section: full file path */}
+      <span
+        data-testid="statusbar-filepath"
+        className="flex-1 min-w-0 truncate opacity-80 px-1.5"
+        title={buf?.filePath ?? ''}
+      >
+        {buf?.filePath ?? ''}
+      </span>
 
       {/* Right section */}
       <div className="flex items-center gap-1">

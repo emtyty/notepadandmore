@@ -8,7 +8,7 @@ A lightweight, fast, and modern text editor for Windows and macOS. Built on Elec
 
 - **Monaco-powered editor** — same engine as VS Code, with syntax highlighting for ~70 languages, IntelliSense, bracket-pair colorization, and folding.
 - **Auto language detection** — extension-based on load, then refined by [Magika](https://github.com/google/magika) on load, on save, and on paste, so highlighting tracks the actual content (paste minified JSON into a `.txt` and it becomes JSON automatically).
-- **JSON beautify** — `Ctrl+Alt+Shift+M` (`Cmd+Alt+Shift+M` on macOS) reformats minified JSON. Works on selection if any, otherwise the whole document.
+- **Beautify (JSON / SQL / XML)** — `Ctrl+Alt+Shift+M` (`Cmd+Alt+Shift+M` on macOS) pretty-prints the current selection (or whole document) as JSON, SQL, or XML. Format is auto-detected from the buffer language and content.
 - **Tab UX**
   - Double-click the tab bar to open a new untitled document.
   - Drag-to-reorder, middle-click to close, right-click for context actions.
@@ -65,7 +65,7 @@ npm run test:e2e:report   # open the HTML report from the last run
 | `Ctrl/Cmd + W` | Close tab |
 | `Ctrl/Cmd + F` / `Ctrl/Cmd + H` | Find / Replace |
 | `Ctrl/Cmd + Shift + F` | Find in Files |
-| `Ctrl/Cmd + Alt + Shift + M` | Beautify JSON |
+| `Ctrl/Cmd + Alt + Shift + M` | Beautify (JSON / SQL / XML) |
 | `Ctrl/Cmd + /` | Toggle line comment |
 | `Ctrl/Cmd + D` | Duplicate line |
 | `Alt + Up/Down` | Move line up/down |

@@ -138,7 +138,7 @@ export function MenuBar({
       { label: 'Toggle Block Comment', shortcut: `${mod}+Shift+/`, action: editorCmd('toggleBlockComment') },
       { separator: true, label: '' },
       { label: 'Trim Trailing Whitespace', action: editorCmd('trimTrailingWhitespace') },
-      { label: 'Beautify JSON', shortcut: `${mod}+${alt}+Shift+M`, action: editorCmd('beautifyJson') },
+      { label: 'Beautify (JSON / SQL / XML)', shortcut: `${mod}+${alt}+Shift+M`, action: editorCmd('beautify') },
       { label: 'Indent Selection', shortcut: 'Tab', action: editorCmd('indentSelection') },
       { label: 'Outdent Selection', shortcut: 'Shift+Tab', action: editorCmd('outdentSelection') },
     ],

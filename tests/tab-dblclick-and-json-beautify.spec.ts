@@ -113,9 +113,34 @@ test.describe('JSON beautify (Ctrl+Alt+Shift+M)', () => {
   })
 
   test('shows a warning toast when content is not valid JSON', async ({ page, electronApp }) => {
-    await pasteIntoEditor(page, electronApp, 'this is not json {{{')
+    // Starts with `{` so the format is detected as JSON, but the JSON parser
+    // will reject it — surfacing the format-specific "Not valid JSON" toast.
+    await pasteIntoEditor(page, electronApp, '{"broken": ')
     await page.keyboard.press('Control+Alt+Shift+M')
     await expect(page.getByText(/Not valid JSON/i)).toBeVisible({ timeout: 3_000 })
+  })
+
+  test('reformats a single-line SQL query', async ({ page, electronApp }) => {
+    const oneLine = 'SELECT a, b FROM users WHERE id = 1 AND active = true'
+    await pasteIntoEditor(page, electronApp, oneLine)
+    await page.keyboard.press('Control+Alt+Shift+M')
+
+    const result = await getEditorText(page)
+    expect(result.split('\n').length).toBeGreaterThan(1)
+    expect(result).toMatch(/^SELECT\b/m)
+    expect(result).toMatch(/^FROM\b/m)
+    expect(result).toMatch(/^WHERE\b/m)
+  })
+
+  test('reformats a single-line XML document', async ({ page, electronApp }) => {
+    const oneLine = '<root><a>1</a><b><c>2</c></b></root>'
+    await pasteIntoEditor(page, electronApp, oneLine)
+    await page.keyboard.press('Control+Alt+Shift+M')
+
+    const result = await getEditorText(page)
+    expect(result.split('\n').length).toBeGreaterThan(1)
+    expect(result).toMatch(/^<root>/m)
+    expect(result).toMatch(/^<\/root>/m)
   })
 })
 
