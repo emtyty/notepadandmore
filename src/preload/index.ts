@@ -65,6 +65,17 @@ const api = {
     remove: (filePath: string) => ipcRenderer.invoke('watch:remove', filePath)
   },
 
+  // Backup operations (snapshot of dirty/untitled buffers)
+  backup: {
+    write: (filename: string, content: string) =>
+      ipcRenderer.invoke('backup:write', filename, content),
+    read: (filename: string) => ipcRenderer.invoke('backup:read', filename),
+    delete: (filename: string) => ipcRenderer.invoke('backup:delete', filename),
+    getDir: () => ipcRenderer.invoke('backup:get-dir'),
+    list: () => ipcRenderer.invoke('backup:list'),
+    cleanup: (keep: string[]) => ipcRenderer.invoke('backup:cleanup', keep)
+  },
+
   // App-level metadata
   app: {
     /** Reliable app version from app.getVersion() (preferred over the legacy appVersion constant). */

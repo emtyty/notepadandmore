@@ -168,6 +168,36 @@ export function SettingsTab() {
                   <input type="text" className={cn(inputCls, 'flex-1')} value={config.backupDir} onChange={(e) => set('backupDir', e.target.value)} placeholder="Leave empty for default" />
                 </Row>
               )}
+              <div className="border-t border-border pt-3 mt-1" />
+              <CheckRow
+                label="Remember unsaved changes on exit (Notepad++ snapshot)"
+                checked={config.rememberUnsavedOnExit}
+                onChange={(v) => set('rememberUnsavedOnExit', v)}
+              />
+              {config.rememberUnsavedOnExit && (
+                <Row label="Snapshot interval">
+                  <input
+                    type="number"
+                    min={1}
+                    max={600}
+                    step={1}
+                    className={cn(inputCls, 'w-[72px]')}
+                    value={Math.max(1, Math.round(config.snapshotIntervalMs / 1000))}
+                    onChange={(e) =>
+                      set(
+                        'snapshotIntervalMs',
+                        Math.max(1, parseInt(e.target.value) || 7) * 1000
+                      )
+                    }
+                  />
+                  <span className="text-sm text-muted-foreground ml-1">seconds</span>
+                </Row>
+              )}
+              <p className="text-xs text-muted-foreground -mt-1">
+                Closes the app without prompting for unsaved changes; restores
+                untitled and dirty files on next launch from{' '}
+                <code className="text-foreground/80">{'%APPDATA%\\<app>\\backup\\'}</code>.
+              </p>
             </div>
           )}
 

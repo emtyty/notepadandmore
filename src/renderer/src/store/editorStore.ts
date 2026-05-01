@@ -24,6 +24,8 @@ export interface Buffer {
   missing: boolean             // true = file no longer exists on disk
   isLargeFile: boolean         // true = file exceeds large file threshold (disables expensive features)
   pluginId: string | null      // set only when kind === 'pluginDetail'; the plugin's unique name
+  /** Backup filename (relative to userData/backup/) while the buffer is dirty; null when clean. */
+  backupPath: string | null
 }
 
 interface EditorState {
@@ -33,8 +35,8 @@ interface EditorState {
   splitActiveId: string | null
 
   // Actions
-  addBuffer: (buf: Omit<Buffer, 'id' | 'model' | 'kind' | 'pluginId'> & { kind?: BufferKind; pluginId?: string | null }) => string
-  addGhostBuffer: (buf: Omit<Buffer, 'id' | 'model' | 'kind' | 'pluginId'> & { kind?: BufferKind; pluginId?: string | null }) => string
+  addBuffer: (buf: Omit<Buffer, 'id' | 'model' | 'kind' | 'pluginId' | 'backupPath'> & { kind?: BufferKind; pluginId?: string | null; backupPath?: string | null }) => string
+  addGhostBuffer: (buf: Omit<Buffer, 'id' | 'model' | 'kind' | 'pluginId' | 'backupPath'> & { kind?: BufferKind; pluginId?: string | null; backupPath?: string | null }) => string
   hydrateBuffer: (id: string, patch: { content: string; encoding: string; eol: EOLType; mtime: number }) => void
   removeBuffer: (id: string) => void
   updateBuffer: (id: string, patch: Partial<Buffer>) => void
@@ -70,7 +72,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     const lang = buf.isLargeFile ? 'plaintext' : (buf.language || 'plaintext')
     const model = monaco.editor.createModel(buf.content, lang)
     set((s) => ({
-      buffers: [...s.buffers, { ...buf, kind: buf.kind ?? 'file', id, model, loaded: true, missing: false, savedViewState: buf.savedViewState ?? null, pluginId: buf.pluginId ?? null }],
+      buffers: [...s.buffers, { ...buf, kind: buf.kind ?? 'file', id, model, loaded: true, missing: false, savedViewState: buf.savedViewState ?? null, pluginId: buf.pluginId ?? null, backupPath: buf.backupPath ?? null }],
       activeId: s.activeId ?? id
     }))
     return id
@@ -79,7 +81,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   addGhostBuffer: (buf) => {
     const id = newId()
     set((s) => ({
-      buffers: [...s.buffers, { ...buf, kind: buf.kind ?? 'file', id, model: null, pluginId: buf.pluginId ?? null }],
+      buffers: [...s.buffers, { ...buf, kind: buf.kind ?? 'file', id, model: null, pluginId: buf.pluginId ?? null, backupPath: buf.backupPath ?? null }],
       activeId: s.activeId ?? id
     }))
     return id
@@ -165,7 +167,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
           bookmarks: [],
           loaded: true,
           missing: false,
-          isLargeFile: false
+          isLargeFile: false,
+          backupPath: null
         }
       ],
       ...(activate ? { activeId: id } : {})
@@ -201,7 +204,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
           bookmarks: [],
           loaded: true,
           missing: false,
-          isLargeFile: false
+          isLargeFile: false,
+          backupPath: null
         }
       ],
       activeId: id
@@ -237,7 +241,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
           bookmarks: [],
           loaded: true,
           missing: false,
-          isLargeFile: false
+          isLargeFile: false,
+          backupPath: null
         }
       ],
       activeId: id

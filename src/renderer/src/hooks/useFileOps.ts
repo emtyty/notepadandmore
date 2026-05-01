@@ -4,6 +4,7 @@ import { useUIStore } from '../store/uiStore'
 import { detectLanguage } from '../utils/languageDetect'
 import { refineLanguageAsync } from '../utils/refineLanguage'
 import { languageToExtension } from '../utils/languageToExtension'
+import { backupApi } from '../utils/backupApi'
 
 function basename(p: string): string {
   return p.replace(/\\/g, '/').split('/').pop() ?? p
@@ -15,11 +16,15 @@ const LARGE_FILE_THRESHOLD = 10 * 1024 * 1024 // 10 MB
 export interface SessionData {
   version: number
   files: Array<{
-    filePath: string
+    filePath: string | null
+    title?: string | null
     language: string
     encoding: string
     eol: string
     viewState: object | null
+    backupPath?: string | null
+    originalMtime?: number
+    isDirty?: boolean
   }>
   virtualTabs?: Array<{ kind: string; pluginId?: string }>
   activeIndex: number
@@ -159,8 +164,8 @@ export function useFileOps() {
   const restoreSession = useCallback(async (session: SessionData) => {
     const store = useEditorStore.getState()
 
-    // Session v3 flat order: [...virtualTabs, ...files]. Restore in that order so
-    // activeIndex stays meaningful.
+    // Session v3+ flat order: [...virtualTabs, ...files]. Restore in that order
+    // so activeIndex stays meaningful.
     const virtualTabs = session.virtualTabs ?? []
     const virtualIds: string[] = virtualTabs.map((v) => {
       if (v.kind === 'pluginManager') return store.openPluginManagerTab()
@@ -169,14 +174,96 @@ export function useFileOps() {
       return store.openVirtualTab(v.kind as 'settings' | 'shortcuts' | 'whatsNew')
     })
 
-    // Batch check file existence — single IPC call
-    const filePaths = session.files.map((f) => f.filePath).filter(Boolean)
-    const stats = filePaths.length > 0 ? await window.api.file.statBatch(filePaths) : []
+    // Batch check on-disk existence for entries that have a filePath. We use
+    // this both for ghost-buffer "missing" flagging and to detect
+    // backup-vs-disk mtime drift on snapshot-restored entries.
+    const filePathsForStat = session.files
+      .map((f) => f.filePath)
+      .filter((p): p is string => !!p)
+    const stats = filePathsForStat.length > 0
+      ? await window.api.file.statBatch(filePathsForStat)
+      : []
     const existsMap = new Map(stats.map((s) => [s.filePath, s.exists]))
 
-    // Phase 1: Create ghost buffers for all files (no content, no Monaco model)
     const fileIds: string[] = []
+    const ghostFileIds: string[] = []
+    let externallyChangedCount = 0
+
     for (const file of session.files) {
+      // --- Snapshot-restore path: load contents from the backup file. ---
+      if (file.backupPath) {
+        const content = await backupApi().read(file.backupPath)
+        if (content === null) {
+          // Backup vanished (user nuked %APPDATA%\notepad-and-more\backup\?).
+          // Fall back to ghost-loading the original if we have one.
+          if (file.filePath) {
+            const exists = existsMap.get(file.filePath) ?? false
+            const id = store.addGhostBuffer({
+              filePath: file.filePath,
+              title: basename(file.filePath),
+              content: '',
+              isDirty: false,
+              encoding: file.encoding || 'UTF-8',
+              eol: (file.eol as EOLType) || 'LF',
+              language: file.language || detectLanguage(file.filePath),
+              mtime: 0,
+              viewState: null,
+              savedViewState: file.viewState ?? null,
+              bookmarks: [],
+              loaded: false,
+              missing: !exists,
+              isLargeFile: false
+            })
+            fileIds.push(id)
+            ghostFileIds.push(id)
+          }
+          // Untitled with missing backup is unrecoverable — drop it.
+          continue
+        }
+
+        const title = file.filePath ? basename(file.filePath) : (file.title ?? 'untitled')
+        const language =
+          file.language ||
+          (file.filePath ? detectLanguage(file.filePath) : 'plaintext')
+
+        const id = store.addBuffer({
+          filePath: file.filePath,
+          title,
+          content,
+          isDirty: true,
+          encoding: file.encoding || 'UTF-8',
+          eol: (file.eol as EOLType) || 'LF',
+          language,
+          mtime: file.originalMtime ?? 0,
+          viewState: null,
+          savedViewState: file.viewState ?? null,
+          bookmarks: [],
+          loaded: true,
+          missing: false,
+          isLargeFile: false,
+          backupPath: file.backupPath
+        })
+        fileIds.push(id)
+
+        if (file.filePath) {
+          window.api.watch.add(file.filePath)
+          // External-change detection: if the on-disk file moved past the mtime
+          // we recorded at session-save, the user (or another process) edited
+          // it between sessions. Surface a warning toast — keep the backup
+          // contents in the buffer; the user can reload manually.
+          const stat = stats.find((s) => s.filePath === file.filePath)
+          if (
+            stat?.exists &&
+            file.originalMtime &&
+            stat.mtime > file.originalMtime + 1
+          ) {
+            externallyChangedCount++
+          }
+        }
+        continue
+      }
+
+      // --- Normal ghost path (existing v1..v3 behavior). ---
       if (!file.filePath) continue
       const exists = existsMap.get(file.filePath) ?? false
       const id = store.addGhostBuffer({
@@ -196,23 +283,29 @@ export function useFileOps() {
         isLargeFile: false
       })
       fileIds.push(id)
+      ghostFileIds.push(id)
     }
 
     const allIds = [...virtualIds, ...fileIds]
     if (allIds.length === 0) return
 
-    // Set active tab (tab bar renders immediately)
-    // EditorPane will detect the ghost buffer and trigger loadBuffer on mount
+    // Set active tab
     const activeIdx = Math.min(Math.max(0, session.activeIndex), allIds.length - 1)
     useEditorStore.getState().setActive(allIds[activeIdx])
 
-    // Phase 3: Background preload non-active file tabs (neighbors first)
-    // Active tab is loaded by EditorPane; skip it in the preload queue
-    const activeIsFile = activeIdx >= virtualIds.length
-    const activeFileIdx = activeIsFile ? activeIdx - virtualIds.length : -1
-    const preloadIds = fileIds.filter((_, i) => i !== activeFileIdx)
-    schedulePreload(preloadIds, 0, loadBuffer)
-  }, [loadBuffer])
+    if (externallyChangedCount > 0) {
+      addToast(
+        externallyChangedCount === 1
+          ? 'A restored file changed on disk while the app was closed — your unsaved version is shown.'
+          : `${externallyChangedCount} restored files changed on disk while the app was closed — your unsaved versions are shown.`,
+        'warn'
+      )
+    }
+
+    // Background preload only the *ghost* file tabs — backup-restored ones
+    // are already fully loaded and don't need re-reading from disk.
+    schedulePreload(ghostFileIds, 0, loadBuffer)
+  }, [loadBuffer, addToast])
 
   const newFile = useCallback(() => {
     const currentBuffers = useEditorStore.getState().buffers

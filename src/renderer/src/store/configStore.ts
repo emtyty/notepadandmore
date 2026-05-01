@@ -37,6 +37,10 @@ export interface AppConfig {
   autoSaveIntervalMs: number
   backupEnabled: boolean
   backupDir: string
+  /** Notepad++-style snapshot: keep dirty/untitled buffers across restarts via backup files. */
+  rememberUnsavedOnExit: boolean
+  /** Snapshot timer interval for the remember-unsaved feature. Min 1000ms. */
+  snapshotIntervalMs: number
 
   // What's New
   /** App version string the user was last shown the auto-open for; null = never seen. */
@@ -69,6 +73,8 @@ export const CONFIG_DEFAULTS: AppConfig = {
   autoSaveIntervalMs: 60000,
   backupEnabled: false,
   backupDir: '',
+  rememberUnsavedOnExit: false,
+  snapshotIntervalMs: 7000,
   lastSeenVersion: null
 }
 

@@ -25,6 +25,9 @@ import { useConfigStore } from './store/configStore'
 import { useFileOps, SessionData } from './hooks/useFileOps'
 import { useNavigationShortcuts } from './hooks/useNavigation'
 import { useUpdateEvents } from './hooks/useUpdateEvents'
+import { useBackupSnapshot } from './hooks/useBackupSnapshot'
+import { mintBackupFilename } from './utils/backupNaming'
+import { backupApi } from './utils/backupApi'
 import { editorRegistry } from './utils/editorRegistry'
 
 export default function App() {
@@ -38,6 +41,8 @@ export default function App() {
   useNavigationShortcuts()
   // Subscribe to auto-update events from the main process and drive toasts.
   useUpdateEvents()
+  // Notepad++-style periodic backup of dirty buffers (gated by config).
+  useBackupSnapshot()
   const editorRef = useRef<{ focus: () => void } | null>(null)
 
   const handleOpenFile = useCallback(async () => {
@@ -232,10 +237,14 @@ export default function App() {
       setReadyForAutoOpen(true)
     })
 
-    // Before close: check for unsaved buffers, flush config, then save session
+    // Before close: check for unsaved buffers, flush config, then save session.
+    // When `rememberUnsavedOnExit` is on, the prompt is suppressed and dirty
+    // buffers are flushed to backup files instead — they'll be restored on
+    // next launch.
     window.api.on('app:before-close', async () => {
+      const remember = useConfigStore.getState().rememberUnsavedOnExit
       const dirty = useEditorStore.getState().buffers.filter((b) => b.isDirty)
-      if (dirty.length > 0) {
+      if (dirty.length > 0 && !remember) {
         const names = dirty.map((b) => b.title).join(', ')
         if (!confirm(`Unsaved changes in: ${names}\n\nClose without saving?`)) {
           window.api.send('app:close-cancelled')
@@ -243,6 +252,27 @@ export default function App() {
         }
       }
       await useConfigStore.getState().save()
+
+      // Final flush: write the latest contents of every dirty file-buffer to
+      // its backup before we serialize the session. Skipping this would risk
+      // session.json referencing a stale backup if the user typed in the gap
+      // since the last snapshot tick.
+      if (remember) {
+        for (const buf of useEditorStore.getState().buffers) {
+          if (buf.kind !== 'file' || !buf.isDirty) continue
+          const content = buf.model?.getValue() ?? buf.content
+          let filename = buf.backupPath
+          if (!filename) {
+            filename = mintBackupFilename(buf.title)
+            useEditorStore.getState().updateBuffer(buf.id, { backupPath: filename })
+          }
+          try {
+            await backupApi().write(filename, content)
+          } catch {
+            // best-effort — if disk is full the next launch just won't restore
+          }
+        }
+      }
 
       // Capture current editor's viewState before building session payload
       const editor = editorRegistry.get()
@@ -256,8 +286,14 @@ export default function App() {
       const uiState = useUIStore.getState()
 
       // Session v3: virtualTabs first, then files. activeIndex is a flat index into virtualTabs++files.
+      // When `rememberUnsavedOnExit` is on, untitled buffers (no filePath) are kept too as long as
+      // they have a backupPath that the snapshot timer has been writing to.
       const virtualBuffers = freshState.buffers.filter((b) => b.kind !== 'file')
-      const fileBuffers = freshState.buffers.filter((b) => b.kind === 'file' && b.filePath)
+      const fileBuffers = freshState.buffers.filter((b) => {
+        if (b.kind !== 'file') return false
+        if (b.filePath) return true
+        return remember && !!b.backupPath
+      })
 
       let activeIndex = 0
       const active = freshState.buffers.find((b) => b.id === freshState.activeId)
@@ -272,14 +308,19 @@ export default function App() {
       }
 
       window.api.send('session:save', {
-        version: 3,
+        version: 4,
         files: fileBuffers.map((b) => ({
           filePath: b.filePath,
+          // For untitled buffers, persist the title so restore can re-open with the same name.
+          title: b.filePath ? null : b.title,
           language: b.language,
           encoding: b.encoding,
           eol: b.eol,
           // Use live viewState if available, fall back to savedViewState for ghost tabs
-          viewState: b.viewState ? JSON.parse(JSON.stringify(b.viewState)) : b.savedViewState
+          viewState: b.viewState ? JSON.parse(JSON.stringify(b.viewState)) : b.savedViewState,
+          backupPath: remember ? b.backupPath : null,
+          originalMtime: b.mtime || 0,
+          isDirty: b.isDirty
         })),
         virtualTabs: virtualBuffers.map((b) => ({
           kind: b.kind,
