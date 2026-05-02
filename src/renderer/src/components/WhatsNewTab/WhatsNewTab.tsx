@@ -45,10 +45,13 @@ export function WhatsNewTab() {
           <h3 className="text-base font-semibold text-foreground mt-8 mb-3">What's New</h3>
           <ul className="space-y-4">
             <li className="text-base text-foreground leading-relaxed">
-              <span className="font-semibold">Slimmer installer:</span> The Windows installer
-              dropped from <span className="font-mono text-sm">254&nbsp;MB</span> to
-              <span className="font-mono text-sm"> 93&nbsp;MB</span> (-63%). Your bandwidth
-              and your SSD both said thanks.
+              <span className="font-semibold">Slimmer installer:</span> A round of
+              bundle-excludes (TensorFlow, Monaco, Magika, and friends) shrank both
+              builds — the Windows NSIS dropped from
+              <span className="font-mono text-sm"> 254&nbsp;MB</span> to
+              <span className="font-mono text-sm"> 93&nbsp;MB</span> (-63%), and the
+              macOS dmg slimmed down by the same cuts. Your bandwidth and your SSD
+              both said thanks.
             </li>
             <li className="text-base text-foreground leading-relaxed">
               <span className="font-semibold">Notepad++-style snapshot &amp; restore:</span>{' '}
@@ -57,8 +60,9 @@ export function WhatsNewTab() {
             </li>
             <li className="text-base text-foreground leading-relaxed">
               <span className="font-semibold">File associations &amp; Open&nbsp;With:</span>{' '}
-              Register the app as a handler for common text formats, with proper Windows
-              "Open with" / "Edit with" integration.
+              Register the app as a handler for common text formats. Windows "Open with /
+              Edit with" and macOS "Open With → NovaPad" both surface NovaPad in the OS
+              file menu.
             </li>
             <li className="text-base text-foreground leading-relaxed">
               <span className="font-semibold">Auto-update:</span> Built on electron-updater —
