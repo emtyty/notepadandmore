@@ -1,6 +1,6 @@
 {
   "name": "NovaPad",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "A lightweight, fast, and modern text editor for Windows, macOS.",
   "main": "out/main/index.js",
   "author": "",
@@ -65,7 +65,7 @@
     "cmdk": "^1.1.1",
     "electron-updater": "^6.8.3",
     "embla-carousel-react": "^8.6.0",
-    "fast-xml-parser": "^4.5.1",
+    "fast-xml-parser": "^5.7.2",
     "iconv-lite": "^0.6.3",
     "input-otp": "^1.4.2",
     "lucide-react": "^1.7.0",
@@ -85,6 +85,9 @@
     "zod": "^3.25.76",
     "zustand": "^5.0.3"
   },
+  "overrides": {
+    "tar": "^7.5.13"
+  },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
     "@types/node": "^22.10.5",
@@ -96,7 +99,9 @@
     "electron": "^41.2.0",
     "electron-builder": "^26.8.1",
     "electron-vite": "^5.0.0",
+    "gif-encoder-2": "^1.0.5",
     "playwright": "^1.58.2",
+    "pngjs": "^7.0.0",
     "postcss": "^8.5.9",
     "tailwindcss": "^3.4.19",
     "typescript": "^5.7.3",
