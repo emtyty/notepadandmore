@@ -80,7 +80,7 @@ test('What\'s New tab title is the static string "What\'s New"', async () => {
 })
 
 // Test 8
-test("What's New tab body renders v1.0.0 release notes", async () => {
+test("What's New tab body renders the current release notes", async () => {
   const { app, page } = await launchApp()
   try {
     await triggerHelpWhatsNew(app)
@@ -88,13 +88,14 @@ test("What's New tab body renders v1.0.0 release notes", async () => {
     await expect(body).toBeVisible()
     // Both headings (h2 tab title + h3 release-list subheading) read "What's New"
     await expect(body.getByRole('heading', { name: "What's New" })).toHaveCount(2)
-    // Release header in the body content
-    await expect(body.getByText('v1.0.0')).toBeVisible()
-    // Each of the four release-note items is present
-    await expect(body.getByText('Mac Support:')).toBeVisible()
-    await expect(body.getByText('Universal Clipboard:')).toBeVisible()
-    await expect(body.getByText('Retina Ready:')).toBeVisible()
-    await expect(body.getByText('The "Tab" Situation:')).toBeVisible()
+    // Release header reflects the live app version (rendered as "vX.Y.Z")
+    const appVersion = await app.evaluate(({ app }) => app.getVersion())
+    await expect(body.getByText(`v${appVersion}`)).toBeVisible()
+    // A few stable release-note item labels are present
+    await expect(body.getByText('Slimmer installer:')).toBeVisible()
+    await expect(body.getByText('Auto-update:', { exact: false })).toBeVisible()
+    await expect(body.getByText('Plugin Manager, redesigned:')).toBeVisible()
+    await expect(body.getByText('TableLens CSV viewer:')).toBeVisible()
   } finally {
     await app.close()
   }
