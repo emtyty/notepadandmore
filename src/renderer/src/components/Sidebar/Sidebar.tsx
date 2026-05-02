@@ -3,27 +3,27 @@ import { X } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip'
 import { useUIStore } from '../../store/uiStore'
 import { FileBrowserPanel } from '../FileBrowser/FileBrowserPanel'
-import { ProjectPanel } from '../ProjectPanel/ProjectPanel'
-import { DocumentMapPanel } from '../DocumentMap/DocumentMapPanel'
-import { FunctionListPanel } from '../FunctionList/FunctionListPanel'
 
-type SidebarPanelId = 'files' | 'project' | 'docmap' | 'functions'
+// Must match UIState['sidebarPanel'] in store/uiStore.ts.
+// 'search' and 'plugins' are reachable from SideNav but those handlers open
+// the Find dialog / Plugin Manager tab instead of switching the sidebar, so
+// in practice the sidebar only ever renders the 'files' panel. The other
+// keys are kept here as defensive fallbacks.
+type SidebarPanelId = 'files' | 'search' | 'plugins'
 
 const PANEL_TITLES: Record<SidebarPanelId, string> = {
-  files:     'File Browser',
-  project:   'Project',
-  docmap:    'Document Map',
-  functions: 'Symbols',
+  files:   'File Browser',
+  search:  'Search',
+  plugins: 'Plugins',
 }
 
 export function Sidebar() {
   const { sidebarPanel, setShowSidebar } = useUIStore()
 
   const panels: Record<SidebarPanelId, React.ReactNode> = {
-    files:     <FileBrowserPanel />,
-    project:   <ProjectPanel />,
-    docmap:    <DocumentMapPanel />,
-    functions: <FunctionListPanel />,
+    files:   <FileBrowserPanel />,
+    search:  <FileBrowserPanel />,
+    plugins: <FileBrowserPanel />,
   }
 
   return (

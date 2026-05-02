@@ -1,0 +1,115 @@
+// Mirror of the preload `api` shape exposed via contextBridge.
+// Keep in sync with src/preload/index.ts — this file is a renderer-side
+// type contract because tsconfig.web.json does not include the preload
+// source directly.
+
+interface ElectronAPI {
+  platform: string
+  appVersion: string
+
+  file: {
+    read: (filePath: string) => Promise<{
+      content: string
+      encoding: string
+      eol: string
+      mtime: number
+      magikaSample: Uint8Array
+      error: string | null
+    }>
+    write: (
+      filePath: string,
+      content: string,
+      encoding?: string,
+      eol?: string
+    ) => Promise<{ error: string | null; magikaSample: Uint8Array }>
+    saveDialog: (
+      defaultPath?: string,
+      suggestedExt?: string | null
+    ) => Promise<{ canceled: boolean; filePath?: string }>
+    openDialog: () => Promise<string[] | null>
+    openDirDialog: () => Promise<string | null>
+    checkMtime: (
+      filePath: string,
+      mtime: number
+    ) => Promise<{ changed: boolean; mtime: number }>
+    stat: (
+      filePath: string
+    ) => Promise<{ exists: boolean; size: number; mtime: number; isDir: boolean }>
+    statBatch: (
+      filePaths: string[]
+    ) => Promise<Array<{ filePath: string; exists: boolean; mtime: number }>>
+    listDir: (
+      dirPath: string
+    ) => Promise<Array<{ name: string; path: string; isDir: boolean }>>
+    create: (filePath: string) => Promise<{ error: string | null }>
+    delete: (filePath: string) => Promise<{ error: string | null }>
+    rename: (oldPath: string, newPath: string) => Promise<{ error: string | null }>
+    reveal: (filePath: string) => Promise<void>
+    addRecent: (filePath: string) => void
+    mkdir: (dirPath: string) => Promise<{ error: string | null }>
+    getRecents: () => Promise<string[]>
+  }
+
+  config: {
+    getDir: () => Promise<string>
+    read: (name: string) => Promise<unknown>
+    write: (name: string, data: object) => Promise<void>
+    readRaw: (name: string) => Promise<string | null>
+    writeRaw: (name: string, content: string) => Promise<void>
+    listUDL: () => Promise<string[]>
+    readUDL: (filename: string) => Promise<unknown>
+    writeUDL: (filename: string, data: object) => Promise<void>
+  }
+
+  plugin: {
+    list: () => Promise<unknown>
+    detail: (name: string) => Promise<unknown>
+    enable: (name: string) => Promise<unknown>
+    disable: (name: string) => Promise<unknown>
+    reloadOne: (name: string) => Promise<unknown>
+    install: () => Promise<unknown>
+    uninstall: (name: string) => Promise<unknown>
+    settingsSchemas: () => Promise<unknown>
+    reload: () => Promise<unknown>
+  }
+
+  search: {
+    start: (opts: object) => Promise<unknown>
+    cancel: (searchId: string) => Promise<unknown>
+  }
+
+  watch: {
+    add: (filePath: string) => Promise<void>
+    remove: (filePath: string) => Promise<void>
+  }
+
+  backup: {
+    write: (filename: string, content: string) => Promise<unknown>
+    read: (filename: string) => Promise<string | null>
+    delete: (filename: string) => Promise<unknown>
+    getDir: () => Promise<string>
+    list: () => Promise<string[]>
+    cleanup: (keep: string[]) => Promise<unknown>
+  }
+
+  app: {
+    getVersion: () => Promise<string>
+  }
+
+  update: {
+    check: () => Promise<void>
+    install: () => Promise<void>
+  }
+
+  on: (channel: string, callback: (...args: unknown[]) => void) => void
+  off: (channel: string) => void
+  send: (channel: string, ...args: unknown[]) => void
+}
+
+declare global {
+  interface Window {
+    api: ElectronAPI
+  }
+}
+
+export {}

@@ -113,8 +113,11 @@ export const usePluginStore = create<PluginState>((set, get) => ({
   },
 
   fetchPluginSettings: async () => {
-    const schemas = await window.api.plugin.settingsSchemas()
-    set({ pluginSettings: schemas as Record<string, PluginSettingsSchema> })
+    const schemas = (await window.api.plugin.settingsSchemas()) as Record<
+      string,
+      PluginSettingsSchema
+    >
+    set({ pluginSettings: schemas })
 
     // Load config for each plugin that has settings
     for (const name of Object.keys(schemas)) {

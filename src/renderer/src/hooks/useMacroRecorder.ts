@@ -14,7 +14,12 @@ export function useMacroRecorder() {
   const start = useCallback(
     (editor: monaco.editor.IStandaloneCodeEditor) => {
       stepsRef.current = []
-      disposableRef.current = editor.onDidType((text) => {
+      // Capture each user-typed change. We record only single-range, non-empty
+      // insertions so paste / multi-cursor / delete don't pollute the macro.
+      disposableRef.current = editor.onDidChangeModelContent((e) => {
+        if (e.isFlush || e.changes.length !== 1) return
+        const { text, rangeLength } = e.changes[0]
+        if (rangeLength !== 0 || text.length === 0) return
         stepsRef.current.push({ type: 'type', value: text })
       })
       startRecording()

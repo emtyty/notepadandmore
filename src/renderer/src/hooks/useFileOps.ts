@@ -31,40 +31,6 @@ export interface SessionData {
   workspaceFolder?: string
 }
 
-declare global {
-  interface Window {
-    api: {
-      file: {
-        read: (p: string) => Promise<{ content: string; encoding: string; eol: string; mtime: number; magikaSample: Uint8Array; error: string | null }>
-        write: (p: string, content: string, enc?: string, eol?: string) => Promise<{ error: string | null; magikaSample: Uint8Array }>
-        saveDialog: (defaultPath?: string, suggestedExt?: string | null) => Promise<{ canceled: boolean; filePath?: string }>
-        checkMtime: (p: string, mtime: number) => Promise<{ changed: boolean; mtime: number }>
-        reveal: (p: string) => Promise<void>
-        addRecent: (p: string) => void
-        stat: (p: string) => Promise<{ exists: boolean; size: number; mtime: number; isDir: boolean }>
-        statBatch: (paths: string[]) => Promise<Array<{ filePath: string; exists: boolean; mtime: number }>>
-        listDir: (p: string) => Promise<Array<{ name: string; path: string; isDir: boolean }>>
-        create: (p: string) => Promise<{ error: string | null }>
-        delete: (p: string) => Promise<{ error: string | null }>
-        rename: (oldPath: string, newPath: string) => Promise<{ error: string | null }>
-        mkdir: (p: string) => Promise<{ error: string | null }>
-        openDirDialog: () => Promise<string | null>
-        getRecents: () => Promise<string[]>
-      }
-      watch: {
-        add: (p: string) => Promise<void>
-        remove: (p: string) => Promise<void>
-      }
-      app: {
-        getVersion: () => Promise<string>
-      }
-      on: (channel: string, cb: (...args: unknown[]) => void) => void
-      off: (channel: string) => void
-      send: (channel: string, ...args: unknown[]) => void
-      platform: string
-    }
-  }
-}
 
 /** Set of buffer IDs currently being loaded (prevents double-load on rapid clicks) */
 const loadingSet = new Set<string>()
