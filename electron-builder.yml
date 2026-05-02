@@ -2,12 +2,48 @@ appId: com.novapad.app
 productName: NovaPad
 copyright: Copyright © 2026 NovaPad
 
+# LZMA-max NSIS payload + en-US-only Electron locales. Drops ~50 unused .pak
+# files (~12 MB raw, ~3 MB compressed) and gives the installer another 5-10 %
+# off via maximum LZMA compression at slower build time.
+compression: maximum
+electronLanguages:
+  - en-US
+
 directories:
   buildResources: resources
   output: dist
 
 files:
   - out/**/*
+  # Vite/Rollup bundles all renderer imports into out/renderer/assets/index-*.js,
+  # and main bundles fast-xml-parser via the electron-vite externalize-exclude.
+  # electron-builder still copies every prod-dep tree into app.asar by default,
+  # which adds ~430 MB of dead weight (270+ from @tensorflow alone, transitive
+  # of magika). Strip the renderer-only and bundled-only packages here.
+  - "!**/node_modules/@tensorflow/**"
+  - "!**/node_modules/@monaco-editor/**"
+  - "!**/node_modules/monaco-editor/**"
+  - "!**/node_modules/magika/**"
+  - "!**/node_modules/lucide-react/**"
+  - "!**/node_modules/@fontsource/**"
+  - "!**/node_modules/react/**"
+  - "!**/node_modules/react-dom/**"
+  - "!**/node_modules/scheduler/**"
+  - "!**/node_modules/@radix-ui/**"
+  - "!**/node_modules/@floating-ui/**"
+  - "!**/node_modules/@tanstack/**"
+  - "!**/node_modules/react-resizable-panels/**"
+  - "!**/node_modules/sonner/**"
+  - "!**/node_modules/clsx/**"
+  - "!**/node_modules/tailwind-merge/**"
+  - "!**/node_modules/class-variance-authority/**"
+  - "!**/node_modules/tailwindcss-animate/**"
+  - "!**/node_modules/zustand/**"
+  - "!**/node_modules/papaparse/**"
+  # NOTE: do NOT exclude js-yaml — electron-updater uses it to parse the
+  # release manifest. core-js similarly may be a polyfill peer for main deps;
+  # tiny enough that keeping them is safer than risking another runtime
+  # require failure.
 
 # File associations register NovaPad as a handler for these extensions, which
 # adds the app to Windows' "Open with" menu and macOS' "Open With" menu.

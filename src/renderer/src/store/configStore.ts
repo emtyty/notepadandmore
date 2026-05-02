@@ -69,11 +69,11 @@ export const CONFIG_DEFAULTS: AppConfig = {
   defaultEol: 'LF',
   defaultEncoding: 'UTF-8',
   defaultLanguage: 'plaintext',
-  autoSaveEnabled: false,
+  autoSaveEnabled: true,
   autoSaveIntervalMs: 60000,
-  backupEnabled: false,
+  backupEnabled: true,
   backupDir: '',
-  rememberUnsavedOnExit: false,
+  rememberUnsavedOnExit: true,
   snapshotIntervalMs: 7000,
   lastSeenVersion: null
 }
