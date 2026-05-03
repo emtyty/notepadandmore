@@ -211,6 +211,7 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
         verticalScrollbarSize: 10,
         horizontalScrollbarSize: 10
       },
+      mouseWheelZoom: true,
       padding: { top: 4 }
     })
 
