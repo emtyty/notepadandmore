@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useUIStore } from '../../../store/uiStore'
 
 export function AboutDialog() {
   const { showAbout, setShowAbout } = useUIStore()
+  const [version, setVersion] = useState<string>('')
 
   useEffect(() => {
     if (!showAbout) return
@@ -13,9 +14,12 @@ export function AboutDialog() {
     return () => window.removeEventListener('keydown', onKey)
   }, [showAbout, setShowAbout])
 
-  if (!showAbout) return null
+  useEffect(() => {
+    if (!showAbout) return
+    window.api.app.getVersion().then(setVersion).catch(() => setVersion(window.api.appVersion))
+  }, [showAbout])
 
-  const version = (window.api as { appVersion?: string }).appVersion ?? '1.0.0'
+  if (!showAbout) return null
 
   return (
     <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/50" onClick={() => setShowAbout(false)}>
@@ -33,7 +37,7 @@ export function AboutDialog() {
         </div>
         <div className="px-6 py-4 text-center">
           <div className="text-lg font-semibold text-foreground">NovaPad</div>
-          <div className="text-base text-muted-foreground mt-1">Version {version}</div>
+          <div className="text-base text-muted-foreground mt-1">{version ? `Version ${version}` : ' '}</div>
           <p className="text-base text-muted-foreground mt-3 leading-relaxed">
             A cross-platform text editor with full Notepad++ feature parity,
             built on Electron + React + Monaco Editor.
