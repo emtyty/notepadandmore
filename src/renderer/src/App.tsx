@@ -23,6 +23,7 @@ import { useUIStore } from './store/uiStore'
 import { usePluginStore } from './store/pluginStore'
 import { useConfigStore } from './store/configStore'
 import { useFileOps, SessionData } from './hooks/useFileOps'
+import { useFileDrop } from './hooks/useFileDrop'
 import { useNavigationShortcuts } from './hooks/useNavigation'
 import { useUpdateEvents } from './hooks/useUpdateEvents'
 import { useBackupSnapshot } from './hooks/useBackupSnapshot'
@@ -43,6 +44,9 @@ export default function App() {
   useUpdateEvents()
   // Notepad++-style periodic backup of dirty buffers (gated by config).
   useBackupSnapshot()
+  // VSCode-style drop: drag a file or folder from Finder/Explorer onto the
+  // window to open it (or set workspace).
+  const { dragActive } = useFileDrop(openFiles)
   const editorRef = useRef<{ focus: () => void } | null>(null)
 
   const handleOpenFile = useCallback(async () => {
@@ -515,8 +519,23 @@ export default function App() {
       <FindReplaceDialog />
       <AboutDialog />
       {csvViewerOpen && <CsvViewerOverlay csvText={csvViewerText} fileName={csvViewerFileName} />}
+      {dragActive && <DropOverlay />}
       <Toaster position="bottom-right" richColors closeButton />
       <SonnerBridge />
+    </div>
+  )
+}
+
+/** Full-window overlay shown while a file/folder is being dragged over the app. */
+function DropOverlay(): React.ReactElement {
+  return (
+    <div
+      data-testid="drop-overlay"
+      className="pointer-events-none fixed inset-0 z-[1000] flex items-center justify-center bg-primary/10 backdrop-blur-sm border-4 border-dashed border-primary/60"
+    >
+      <div className="rounded-lg bg-background/90 px-6 py-4 text-base font-medium shadow-lg">
+        Drop files or folder to open
+      </div>
     </div>
   )
 }

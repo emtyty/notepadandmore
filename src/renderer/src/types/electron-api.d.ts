@@ -48,6 +48,7 @@ interface ElectronAPI {
     addRecent: (filePath: string) => void
     mkdir: (dirPath: string) => Promise<{ error: string | null }>
     getRecents: () => Promise<string[]>
+    pathForFile: (file: File) => string
   }
 
   config: {

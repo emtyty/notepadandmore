@@ -19,39 +19,53 @@ let mainWindow: BrowserWindow | null = null
 /** True when quit was initiated (Cmd+Q / Quit); false for macOS red close button only. */
 let isQuitting = false
 
+type OpenItem = { kind: 'file' | 'folder'; path: string }
+
 /**
- * Files queued to open as soon as the renderer is ready. Populated by:
+ * Items queued to open as soon as the renderer is ready. Populated by:
  *  - process.argv on cold launch (Windows + Linux "Open with" routes args here)
  *  - app 'open-file' event before window exists (macOS Finder "Open With")
+ *  - second-instance event (Windows: dropped file/folder onto running exe)
  * Drained once on did-finish-load.
  */
-const pendingOpenFiles: string[] = []
+const pendingOpenItems: OpenItem[] = []
 
-/** Filter argv (or the args from a second-instance event) down to real file paths. */
-function filePathsFromArgv(argv: string[]): string[] {
-  // argv[0] is the exe; on packaged builds, the rest is whatever the OS passed.
-  // Be conservative: only forward args that point at an actual file on disk so
-  // we don't mistake CLI flags or chromium switches for file paths.
-  const out: string[] = []
-  for (const arg of argv.slice(1)) {
-    if (!arg || arg.startsWith('-')) continue
+/** Stat each arg; keep only real files and directories. CLI flags and bogus paths are dropped. */
+function classifyPaths(paths: string[]): OpenItem[] {
+  const out: OpenItem[] = []
+  for (const p of paths) {
+    if (!p || p.startsWith('-')) continue
     try {
-      const s = fs.statSync(arg)
-      if (s.isFile()) out.push(arg)
+      const s = fs.statSync(p)
+      if (s.isFile()) out.push({ kind: 'file', path: p })
+      else if (s.isDirectory()) out.push({ kind: 'folder', path: p })
     } catch {
-      // arg isn't a path — skip silently.
+      // Not a path on disk — skip silently.
     }
   }
   return out
 }
 
-/** Send queued files to the renderer (or queue them if it isn't ready yet). */
-function dispatchOpenFiles(files: string[]): void {
-  if (files.length === 0) return
-  if (mainWindow && !mainWindow.webContents.isLoading()) {
-    mainWindow.webContents.send('menu:file-open', files)
-  } else {
-    pendingOpenFiles.push(...files)
+/** Send queued items to the renderer (or queue them if it isn't ready yet). */
+function dispatchOpenItems(items: OpenItem[]): void {
+  if (items.length === 0) return
+  if (!mainWindow || mainWindow.webContents.isLoading()) {
+    pendingOpenItems.push(...items)
+    return
+  }
+  const files = items.filter((i) => i.kind === 'file').map((i) => i.path)
+  const folders = items.filter((i) => i.kind === 'folder').map((i) => i.path)
+  if (files.length) mainWindow.webContents.send('menu:file-open', files)
+  if (folders.length) {
+    // Single-folder workspace model — open the first, warn about extras.
+    mainWindow.webContents.send('menu:folder-open', folders[0])
+    if (folders.length > 1) {
+      mainWindow.webContents.send(
+        'ui:show-toast',
+        'Only one folder can be opened at a time. Opened the first.',
+        'warn'
+      )
+    }
   }
 }
 
@@ -68,13 +82,13 @@ if (process.env['E2E_TEST'] !== '1') {
     app.quit()
   } else {
     app.on('second-instance', (_event, argv) => {
-      const files = filePathsFromArgv(argv)
+      const items = classifyPaths(argv.slice(1))
       if (mainWindow) {
         if (mainWindow.isMinimized()) mainWindow.restore()
         if (!mainWindow.isVisible()) mainWindow.show()
         mainWindow.focus()
       }
-      dispatchOpenFiles(files)
+      dispatchOpenItems(items)
     })
   }
 }
@@ -84,7 +98,7 @@ if (process.env['E2E_TEST'] !== '1') {
 // drain pendingOpenFiles when the renderer is ready.
 app.on('open-file', (event, filePath) => {
   event.preventDefault()
-  if (filePath) dispatchOpenFiles([filePath])
+  if (filePath) dispatchOpenItems(classifyPaths([filePath]))
 })
 
 function createWindow(): void {
@@ -108,14 +122,14 @@ function createWindow(): void {
     mainWindow!.show()
   })
 
-  // Drain queued open-file requests once the renderer is ready to receive
-  // 'menu:file-open'. Ordering note: did-finish-load fires AFTER session
-  // restore IPC, so files opened via Open With end up alongside (not in
-  // place of) the user's previous session.
+  // Drain queued open-file/open-folder requests once the renderer is ready.
+  // Ordering note: did-finish-load fires AFTER session restore IPC, so files
+  // opened via Open With end up alongside (not in place of) the previous
+  // session. Folders dropped on the icon will replace the restored workspace.
   mainWindow.webContents.on('did-finish-load', () => {
-    if (pendingOpenFiles.length === 0) return
-    const files = pendingOpenFiles.splice(0, pendingOpenFiles.length)
-    mainWindow!.webContents.send('menu:file-open', files)
+    if (pendingOpenItems.length === 0) return
+    const items = pendingOpenItems.splice(0, pendingOpenItems.length)
+    dispatchOpenItems(items)
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -142,12 +156,12 @@ app.whenReady().then(() => {
     app.setAppUserModelId('com.notepadandmore.app')
   }
 
-  // Cold-launch arg handling: when Windows/Linux "Open with NovaPad" fires
-  // for the *first* instance, the file path lands in process.argv. Queue it
-  // now so did-finish-load forwards it to the renderer.
+  // Cold-launch arg handling: when Windows/Linux "Open with NovaPad" (file or
+  // folder) fires for the *first* instance, the path lands in process.argv.
+  // Queue now so did-finish-load forwards it to the renderer.
   if (process.env['E2E_TEST'] !== '1') {
-    const initialFiles = filePathsFromArgv(process.argv)
-    if (initialFiles.length) pendingOpenFiles.push(...initialFiles)
+    const initialItems = classifyPaths(process.argv.slice(1))
+    if (initialItems.length) pendingOpenItems.push(...initialItems)
   }
 
   // Register IPC handlers (no window dependency)

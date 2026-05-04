@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, webUtils } from 'electron'
 
 // Expose safe IPC API to renderer via window.api
 const api = {
@@ -25,7 +25,11 @@ const api = {
     reveal: (filePath: string) => ipcRenderer.invoke('file:reveal', filePath),
     addRecent: (filePath: string) => ipcRenderer.send('file:add-recent', filePath),
     mkdir: (dirPath: string) => ipcRenderer.invoke('file:mkdir', dirPath),
-    getRecents: () => ipcRenderer.invoke('file:get-recents')
+    getRecents: () => ipcRenderer.invoke('file:get-recents'),
+    // Resolve the absolute disk path of a File object obtained from a
+    // drag-and-drop or <input type=file> in the renderer. Replaces the legacy
+    // `File.path` property (removed in Electron 32+ when contextIsolation=true).
+    pathForFile: (file: File): string => webUtils.getPathForFile(file)
   },
 
   // Config operations
