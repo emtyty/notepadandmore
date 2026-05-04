@@ -270,7 +270,9 @@ export function useFileOps() {
 
     // Background preload only the *ghost* file tabs — backup-restored ones
     // are already fully loaded and don't need re-reading from disk.
-    schedulePreload(ghostFileIds, 0, loadBuffer)
+    // Active tab is prioritized so the open document is ready first; the rest
+    // load right-to-left through the tab list.
+    schedulePreload(ghostFileIds, allIds[activeIdx], loadBuffer)
   }, [loadBuffer, addToast])
 
   const newFile = useCallback(() => {
@@ -392,18 +394,22 @@ export function useFileOps() {
   return { openFiles, newFile, saveBuffer, saveActiveAs, closeBuffer, reloadBuffer, loadBuffer, restoreSession }
 }
 
-/** Background preload: load neighbor tabs first, then outward, with small delay between each */
+/**
+ * Background preload: active tab first (so the open document is ready), then
+ * walk the remaining ghost tabs right-to-left. Each load is followed by a small
+ * delay so the renderer can paint between IPC + Monaco model creations.
+ */
 function schedulePreload(
   ids: string[],
-  activeIdx: number,
+  activeId: string | undefined,
   loadBufferFn: (id: string) => Promise<boolean>
 ): void {
   if (preloadTimer) clearTimeout(preloadTimer)
 
   const queue: string[] = []
-  for (let offset = 1; offset < ids.length; offset++) {
-    if (activeIdx + offset < ids.length) queue.push(ids[activeIdx + offset])
-    if (activeIdx - offset >= 0) queue.push(ids[activeIdx - offset])
+  if (activeId && ids.includes(activeId)) queue.push(activeId)
+  for (let i = ids.length - 1; i >= 0; i--) {
+    if (ids[i] !== activeId) queue.push(ids[i])
   }
 
   let i = 0
@@ -413,12 +419,16 @@ function schedulePreload(
     const buf = useEditorStore.getState().getBuffer(id)
     if (buf && !buf.loaded && !buf.missing) {
       loadBufferFn(id).then(() => {
-        preloadTimer = setTimeout(loadNext, 50)
+        preloadTimer = setTimeout(loadNext, 10)
       })
     } else {
       preloadTimer = setTimeout(loadNext, 0)
     }
   }
-  // Start preloading after UI settles
-  preloadTimer = setTimeout(loadNext, 500)
+  // Brief delay so the active tab's first paint completes before we start
+  // hammering IPC + Monaco model creation for the rest. With the active tab
+  // queued first (and EditorPane loading it eagerly on mount), 100 ms is
+  // enough buffer; the old 500 ms was to dodge contention with a separate
+  // active-tab load that's no longer separate.
+  preloadTimer = setTimeout(loadNext, 100)
 }
