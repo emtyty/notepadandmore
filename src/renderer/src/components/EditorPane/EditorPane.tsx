@@ -15,6 +15,38 @@ import { EditorContextMenu } from './EditorContextMenu'
 /** Same-buffer cursor moves below this line-delta do not push a navigation entry (spec BR-005). */
 const NAV_LINE_THRESHOLD = 10
 
+/**
+ * Inject the CSS for the Begin/End-Select anchor marker once. The marker
+ * combines a glyph-margin icon, an overview-ruler tick, and a thin vertical
+ * bar at the exact column (rendered via a zero-width ::before pseudo-element
+ * so it doesn't shift the surrounding text).
+ */
+let _anchorStylesInjected = false
+function injectAnchorStyles(): void {
+  if (_anchorStylesInjected) return
+  _anchorStylesInjected = true
+  const style = document.createElement('style')
+  style.textContent = `
+    .nmp-anchor-glyph::before {
+      content: '◆';
+      color: #f59e0b;
+      font-size: 11px;
+      line-height: 1;
+    }
+    .nmp-anchor-bar::before {
+      content: '';
+      display: inline-block;
+      width: 0;
+      height: 1.2em;
+      border-left: 2px solid #f59e0b;
+      margin-right: -2px;
+      vertical-align: text-bottom;
+      pointer-events: none;
+    }
+  `
+  document.head.appendChild(style)
+}
+
 interface EditorPaneProps {
   activeId?: string | null
 }
@@ -30,6 +62,13 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
   const currentIdRef = useRef<string | null>(null)
   /** Last cursor line recorded into the navigation history for the active buffer. */
   const lastRecordedLineRef = useRef<number>(1)
+  /**
+   * Pending Begin/End-Select anchor (Notepad++ port). First invoke saves the
+   * caret as a zero-width Monaco decoration — letting Monaco track it across
+   * edits — and the second invoke turns the anchor→caret range into a
+   * stream or column (rectangular) selection.
+   */
+  const beginEndAnchorRef = useRef<{ decorationId: string; isColumn: boolean; modelUri: string } | null>(null)
   const [loading, setLoading] = useState(false)
   const [loadingSize, setLoadingSize] = useState<number | null>(null)
   const [missingFile, setMissingFile] = useState<string | null>(null)
@@ -136,6 +175,79 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
         const current = editor.getOption(monaco.editor.EditorOption.columnSelection)
         editor.updateOptions({ columnSelection: !current })
         useUIStore.getState().setColumnSelectMode(!current, true)
+        break
+      }
+      case 'beginEndSelect':
+      case 'beginEndSelectColumn': {
+        const isColumn = command === 'beginEndSelectColumn'
+        const model = editor.getModel()
+        const pos = editor.getPosition()
+        if (!model || !pos) break
+
+        const modelUri = model.uri.toString()
+        const pending = beginEndAnchorRef.current
+        const samePending = pending && pending.modelUri === modelUri
+
+        if (!samePending) {
+          // Different buffer (or none) — clear any stale anchor first
+          if (pending) {
+            const prevModel = monaco.editor.getModel(monaco.Uri.parse(pending.modelUri))
+            prevModel?.deltaDecorations([pending.decorationId], [])
+          }
+          // First invoke: drop a zero-width tracked decoration at the caret
+          // (visible: glyph icon + column-precise bar + overview-ruler tick).
+          injectAnchorStyles()
+          const ids = model.deltaDecorations([], [{
+            range: new monaco.Range(pos.lineNumber, pos.column, pos.lineNumber, pos.column),
+            options: {
+              description: 'begin-end-select-anchor',
+              stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
+              glyphMarginClassName: 'nmp-anchor-glyph',
+              glyphMarginHoverMessage: {
+                value: isColumn
+                  ? 'Begin Select anchor (column mode) — invoke again to complete'
+                  : 'Begin Select anchor — invoke again to complete'
+              },
+              beforeContentClassName: 'nmp-anchor-bar',
+              overviewRuler: {
+                color: '#f59e0b',
+                position: monaco.editor.OverviewRulerLane.Center
+              }
+            }
+          }])
+          beginEndAnchorRef.current = { decorationId: ids[0], isColumn, modelUri }
+          useUIStore.getState().addToast(
+            isColumn
+              ? 'Begin Select set (column mode) — invoke again to complete'
+              : 'Begin Select set — invoke again to complete',
+            'info'
+          )
+        } else {
+          // Second invoke: read tracked anchor (already drift-corrected by Monaco)
+          const anchorRange = model.getDecorationRange(pending.decorationId)
+          const wasColumn = pending.isColumn
+          model.deltaDecorations([pending.decorationId], [])
+          beginEndAnchorRef.current = null
+
+          if (!anchorRange) break
+          const aLine = anchorRange.startLineNumber
+          const aCol = anchorRange.startColumn
+
+          if (wasColumn) {
+            // Build a rectangular selection: one Selection per line spanning [aCol..pos.column]
+            const startLine = Math.min(aLine, pos.lineNumber)
+            const endLine = Math.max(aLine, pos.lineNumber)
+            const selections: monaco.Selection[] = []
+            for (let line = startLine; line <= endLine; line++) {
+              selections.push(new monaco.Selection(line, aCol, line, pos.column))
+            }
+            editor.setSelections(selections)
+          } else {
+            editor.setSelection(new monaco.Selection(aLine, aCol, pos.lineNumber, pos.column))
+          }
+          editor.focus()
+          useUIStore.getState().addToast('Selection completed', 'info')
+        }
         break
       }
       case 'beautify': {
@@ -353,6 +465,15 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
     // navigation is in flight — its own setActive call shouldn't pollute the
     // history it's trying to traverse.
     if (currentIdRef.current && currentIdRef.current !== activeId) {
+      // Clear any pending Begin/End-Select anchor — it belongs to the buffer
+      // we're leaving, so it shouldn't apply once we land on a different model.
+      const pending = beginEndAnchorRef.current
+      if (pending) {
+        const prevModel = monaco.editor.getModel(monaco.Uri.parse(pending.modelUri))
+        prevModel?.deltaDecorations([pending.decorationId], [])
+        beginEndAnchorRef.current = null
+      }
+
       const vs = editor.saveViewState()
       updateBuffer(currentIdRef.current, { viewState: vs })
 
@@ -458,26 +579,31 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
   }, [activeId, activeBufLoaded, getBuffer, updateBuffer, restoreDecorations, loadBuffer])
 
   // Handle editor commands from menu (IPC from native menu + CustomEvent from custom MenuBar/context menu)
+  // Run once: window.api.on has no per-listener removal, so re-registering on every
+  // dispatchCommand identity change leaked listeners — one keypress fired N times,
+  // which broke state-toggling commands like Begin/End Select.
+  const dispatchCommandRef = useRef(dispatchCommand)
+  useEffect(() => { dispatchCommandRef.current = dispatchCommand }, [dispatchCommand])
   useEffect(() => {
     const ipcHandler = (...args: unknown[]) => {
-      dispatchCommand(args[0] as string)
+      dispatchCommandRef.current(args[0] as string)
     }
     const customHandler = (e: Event) => {
-      dispatchCommand((e as CustomEvent<string>).detail)
+      dispatchCommandRef.current((e as CustomEvent<string>).detail)
     }
     window.api.on('editor:command', ipcHandler)
     window.addEventListener('editor:command', customHandler)
     return () => window.removeEventListener('editor:command', customHandler)
-  }, [dispatchCommand])
+  }, [])
 
   // Handle macro:replay-command from macro playback (avoids IPC round-trip)
   useEffect(() => {
     const handler = (e: Event) => {
-      dispatchCommand((e as CustomEvent<string>).detail)
+      dispatchCommandRef.current((e as CustomEvent<string>).detail)
     }
     window.addEventListener('macro:replay-command', handler)
     return () => window.removeEventListener('macro:replay-command', handler)
-  }, [dispatchCommand])
+  }, [])
 
   // Handle macro IPC events
   useEffect(() => {

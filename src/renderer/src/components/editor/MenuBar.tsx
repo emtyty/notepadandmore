@@ -114,6 +114,8 @@ export function MenuBar({
       { label: 'Paste', icon: <Clipboard size={18} />, shortcut: `${mod}+V`, action: () => document.execCommand('paste') },
       { separator: true, label: '' },
       { label: 'Select All', icon: <SquareDashedMousePointer size={18} />, shortcut: `${mod}+A`, action: () => document.execCommand('selectAll') },
+      { label: 'Begin/End Select', shortcut: `${mod}+Shift+B`, disabled: true, action: editorCmd('beginEndSelect') },
+      { label: 'Begin/End Select in Column Mode', shortcut: `${mod}+Shift+${alt}+B`, disabled: true, action: editorCmd('beginEndSelectColumn') },
       { separator: true, label: '' },
       {
         label: 'Line Operations', submenu: [

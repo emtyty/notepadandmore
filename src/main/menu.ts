@@ -142,6 +142,18 @@ export function buildMenu(win: BrowserWindow, recentFiles: string[] = []): void 
         { role: 'copy' as const },
         { role: 'paste' as const },
         { role: 'selectAll' as const },
+        {
+          label: 'Begin/End Select',
+          accelerator: 'CmdOrCtrl+Shift+B',
+          enabled: false,
+          click: () => win.webContents.send('editor:command', 'beginEndSelect')
+        },
+        {
+          label: 'Begin/End Select in Column Mode',
+          accelerator: 'CmdOrCtrl+Shift+Alt+B',
+          enabled: false,
+          click: () => win.webContents.send('editor:command', 'beginEndSelectColumn')
+        },
         { type: 'separator' },
         {
           label: 'Line Operations',
