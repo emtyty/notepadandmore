@@ -18,9 +18,18 @@ const allAzureVarsSet = [
   AZURE_PUBLISHER_NAME,
 ].every(Boolean)
 
+// magika/@tensorflow are excluded from the bundle so no included package needs
+// a native rebuild. npmRebuild:false skips @electron/rebuild entirely, avoiding
+// the VS Build Tools requirement on Windows.
+const noRebuild = {
+  nodeGypRebuild: false,
+  npmRebuild: false,
+}
+
 module.exports = allAzureVarsSet
   ? {
       ...base,
+      ...noRebuild,
       win: {
         ...base.win,
         azureSignOptions: {
@@ -31,4 +40,4 @@ module.exports = allAzureVarsSet
         },
       },
     }
-  : base
+  : { ...base, ...noRebuild }
