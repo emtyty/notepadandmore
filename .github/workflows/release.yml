@@ -35,6 +35,16 @@ jobs:
         env:
           NODE_OPTIONS: --max-old-space-size=4096
 
+      - name: Verify signing certificate
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+        run: |
+          echo "$CSC_LINK" | base64 -d > /tmp/cert.p12
+          security import /tmp/cert.p12 -P "$CSC_KEY_PASSWORD" -A 2>&1 | tee /tmp/cert-import.log
+          rm /tmp/cert.p12
+          grep -q "Unknown format" /tmp/cert-import.log && echo "ERROR: certificate has wrong format" && exit 1 || echo "Certificate OK"
+
       - name: Publish macOS
         run: npx electron-builder --mac --publish always --config electron-builder.cjs
         env:
