@@ -1,0 +1,98 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+
+      - name: Publish macOS
+        run: npx electron-builder --mac --publish always
+        env:
+          # ── R2 is S3-compatible. Use provider: s3 with custom endpoint ────────────────────
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_RELEASES_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_RELEASES_SECRET_ACCESS_KEY }}
+          R2_RELEASES_ACCOUNT_ID: ${{ secrets.R2_RELEASES_ACCOUNT_ID }}
+          R2_RELEASES_BUCKET: ${{ secrets.R2_RELEASES_BUCKET }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+          # ── Apple notarization and signing ────────────────────
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          CSC_FOR_PULL_REQUEST: false
+
+  build-win:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+
+      - name: Publish Windows
+        run: npx electron-builder --win --publish always
+        env:
+          # ── R2 is S3-compatible. Use provider: s3 with custom endpoint ────────────────────
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_RELEASES_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_RELEASES_SECRET_ACCESS_KEY }}
+          R2_RELEASES_ACCOUNT_ID: ${{ secrets.R2_RELEASES_ACCOUNT_ID }}
+          R2_RELEASES_BUCKET: ${{ secrets.R2_RELEASES_BUCKET }}
+
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+          # Azure auth for Trusted Signing
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+
+          # Azure Trusted Signing config — read by electron-builder.cjs via
+          # process.env. All four must be present for the sign step to engage;
+          # if any are missing the cjs omits azureSignOptions and the build
+          # falls back to the unsigned path.
+          AZURE_PUBLISHER_NAME: ${{ secrets.AZURE_PUBLISHER_NAME }}
+          AZURE_TRUSTED_SIGNING_ENDPOINT: ${{ secrets.AZURE_TRUSTED_SIGNING_ENDPOINT }}
+          AZURE_CODE_SIGNING_ACCOUNT_NAME: ${{ secrets.AZURE_CODE_SIGNING_ACCOUNT_NAME }}
+          AZURE_CERT_PROFILE_NAME: ${{ secrets.AZURE_CERT_PROFILE_NAME }}
+
+          # Optional: reduce Azure CLI output in logs
+          AZURE_CORE_OUTPUT: none

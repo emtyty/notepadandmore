@@ -244,17 +244,45 @@ fileAssociations:
     role: Editor
 
 win:
+  icon: resources/icons/win/icon.ico
   target:
     - target: nsis
-      arch: [x64]
-  icon: resources/icons/win/icon.ico
+      arch: [x64, arm64]
+  # Azure Trusted Signing — electron-builder skips this block when any value
+  # resolves to an empty string (secrets absent = local / fork builds unsigned).
+  azureSignOptions:
+    publisherName: ${env.AZURE_PUBLISHER_NAME}
+    endpoint: ${env.AZURE_TRUSTED_SIGNING_ENDPOINT}
+    codeSigningAccountName: ${env.AZURE_CODE_SIGNING_ACCOUNT_NAME}
+    certificateProfileName: ${env.AZURE_CERT_PROFILE_NAME}
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  # perMachine=false runs the installer as the current user (no UAC). Per-user
+  # installs keep the file-association registry entries under HKCU\Software\
+  # Classes — Windows' "Open with → NovaPad" lookup works without admin.
+  perMachine: false
+  # menuCategory lets Windows group our context-menu entries into a submenu
+  # ("NovaPad → Open with NovaPad / Edit with NovaPad") on Windows 10/11.
+  menuCategory: NovaPad
+
+# Code-signing — Developer ID Application certificate
+#   Local build (build:mac): CSC_IDENTITY_AUTO_DISCOVERY=false skips
+#     Keychain lookup → unsigned .app. notarize.cjs exits cleanly.
+#   CI: secrets CSC_LINK (base64 .p12) + CSC_KEY_PASSWORD trigger signing.
+# afterSign runs after code-signing; build/notarize.cjs skips gracefully
+# when APPLE_* vars are absent.
+afterSign: 'build/notarize.cjs'
 
 mac:
   target:
     - target: dmg
-      arch: [universal]
+      arch: ['x64', 'arm64']
     - target: zip
-      arch: [universal]
+      arch: ['x64', 'arm64']
   artifactName: "${productName}-${version}-mac.${ext}"
   icon: resources/icons/mac/icon.icns
   category: public.app-category.developer-tools
@@ -291,18 +319,6 @@ mac:
           - public.css
           - public.javascript
 
-nsis:
-  oneClick: false
-  allowToChangeInstallationDirectory: true
-  createDesktopShortcut: true
-  createStartMenuShortcut: true
-  # perMachine=false runs the installer as the current user (no UAC). Per-user
-  # installs keep the file-association registry entries under HKCU\Software\
-  # Classes — Windows' "Open with → NovaPad" lookup works without admin.
-  perMachine: false
-  # menuCategory lets Windows group our context-menu entries into a submenu
-  # ("NovaPad → Open with NovaPad / Edit with NovaPad") on Windows 10/11.
-  menuCategory: NovaPad
 
 dmg:
   artifactName: "${productName}.${ext}"
@@ -311,6 +327,9 @@ dmg:
     height: 380
 
 publish:
-  provider: github
-  owner: haht-dev
-  repo: novapad-releases
+  - provider: s3
+    bucket: ${env.R2_RELEASES_BUCKET}
+    region: auto
+    endpoint: https://${env.R2_RELEASES_ACCOUNT_ID}.r2.cloudflarestorage.com
+    acl: null
+  - provider: github
