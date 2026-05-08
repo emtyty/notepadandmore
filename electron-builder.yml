@@ -318,10 +318,4 @@ dmg:
     width: 540
     height: 380
 
-publish:
-  - provider: s3
-    bucket: ${env.R2_RELEASES_BUCKET}
-    region: auto
-    endpoint: https://${env.R2_RELEASES_ACCOUNT_ID}.r2.cloudflarestorage.com
-    acl: null
-  - provider: github
+# publish config is built dynamically in electron-builder.cjs based on env vars

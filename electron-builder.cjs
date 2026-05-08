@@ -9,6 +9,9 @@ const {
   AZURE_CODE_SIGNING_ACCOUNT_NAME,
   AZURE_CERT_PROFILE_NAME,
   AZURE_PUBLISHER_NAME,
+  R2_RELEASES_ACCOUNT_ID,
+  R2_RELEASES_BUCKET,
+  GH_TOKEN,
 } = process.env
 
 const allAzureVarsSet = [
@@ -26,10 +29,31 @@ const noRebuild = {
   npmRebuild: false,
 }
 
+// Build publish targets only when env vars are present — avoids URL parse errors
+// when running locally without R2/GH credentials.
+const publish = []
+if (R2_RELEASES_ACCOUNT_ID && R2_RELEASES_BUCKET) {
+  publish.push({
+    provider: 's3',
+    bucket: R2_RELEASES_BUCKET,
+    region: 'auto',
+    endpoint: `https://${R2_RELEASES_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+    acl: null,
+  })
+}
+if (GH_TOKEN) {
+  publish.push({ provider: 'github' })
+}
+
+const config = {
+  ...base,
+  ...noRebuild,
+  ...(publish.length ? { publish } : {}),
+}
+
 module.exports = allAzureVarsSet
   ? {
-      ...base,
-      ...noRebuild,
+      ...config,
       win: {
         ...base.win,
         azureSignOptions: {
@@ -40,4 +64,4 @@ module.exports = allAzureVarsSet
         },
       },
     }
-  : { ...base, ...noRebuild }
+  : config
