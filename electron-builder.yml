@@ -248,14 +248,6 @@ win:
   target:
     - target: nsis
       arch: [x64, arm64]
-  # Azure Trusted Signing — electron-builder skips this block when any value
-  # resolves to an empty string (secrets absent = local / fork builds unsigned).
-  azureSignOptions:
-    publisherName: ${env.AZURE_PUBLISHER_NAME}
-    endpoint: ${env.AZURE_TRUSTED_SIGNING_ENDPOINT}
-    codeSigningAccountName: ${env.AZURE_CODE_SIGNING_ACCOUNT_NAME}
-    certificateProfileName: ${env.AZURE_CERT_PROFILE_NAME}
-
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
