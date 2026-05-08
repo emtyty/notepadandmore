@@ -13,6 +13,9 @@ concurrency:
 
 jobs:
   build-mac:
+    environment: Production
+
+    name: Build and Publish macOS
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -52,6 +55,9 @@ jobs:
           CSC_FOR_PULL_REQUEST: false
 
   build-win:
+    environment: Production
+    
+    name: Build and Publish Windows
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
