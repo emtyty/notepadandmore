@@ -1,8 +1,11 @@
 name: Release
 
+# Triggered by pushing a version tag, e.g.:
+#   git tag v1.0.0 && git push origin v1.0.0
 on:
   push:
-    branches: [master]
+    tags:
+      - 'v*.*.*'
 
 permissions:
   contents: write
