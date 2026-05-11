@@ -275,7 +275,7 @@ mac:
       arch: ['x64', 'arm64']
     - target: zip
       arch: ['x64', 'arm64']
-  artifactName: "${productName}-${version}-mac.${ext}"
+  artifactName: "${productName}-${version}-mac-${arch}.${ext}"
   icon: resources/icons/mac/icon.icns
   category: public.app-category.developer-tools
   darkModeSupport: true
@@ -311,9 +311,8 @@ mac:
           - public.css
           - public.javascript
 
-
 dmg:
-  artifactName: "${productName}.${ext}"
+  artifactName: "${productName}-${arch}.${ext}"
   window:
     width: 540
     height: 380
