@@ -1,17 +1,6 @@
 import { app, BrowserWindow } from 'electron'
 import { autoUpdater, UpdateInfo, ProgressInfo } from 'electron-updater'
 
-/**
- * Wraps electron-updater autoUpdater and forwards events to the renderer via IPC.
- *
- * Behavior:
- * - Silent auto-download on detection (autoDownload: true).
- * - Explicit restart required on install (autoInstallOnAppQuit: false) — users see
- *   a persistent toast with a "Restart now" action.
- * - No-op when the app is unpackaged or running under E2E_TEST.
- * - Tracks whether the last check was user-initiated (manual=true) so the renderer
- *   can suppress "no update" / error toasts on silent startup checks.
- */
 export class UpdateManager {
   private win: BrowserWindow
   private manualCheckInFlight = false
@@ -21,13 +10,34 @@ export class UpdateManager {
     this.win = win
     this.enabled = app.isPackaged && process.env['E2E_TEST'] !== '1'
 
-    if (!this.enabled) return
+    if (!this.enabled) {
+      this.log('info', 'disabled (unpackaged or E2E mode)')
+      return
+    }
 
     autoUpdater.autoDownload = true
     autoUpdater.autoInstallOnAppQuit = false
-    autoUpdater.logger = null
+
+    // Forward electron-updater internal logs to stdout.
+    autoUpdater.logger = {
+      info: (msg: unknown) => this.log('info', String(msg)),
+      warn: (msg: unknown) => this.log('warn', String(msg)),
+      error: (msg: unknown) => this.log('error', String(msg)),
+      debug: (msg: string) => this.log('debug', msg),
+    }
 
     this.wireEvents()
+  }
+
+  private log(level: 'info' | 'warn' | 'error' | 'debug', msg: string, data?: unknown): void {
+    const ts = new Date().toISOString()
+    const suffix = data !== undefined ? ` ${JSON.stringify(data)}` : ''
+    const line = `${ts} [update:${level}] ${msg}${suffix}`
+    if (level === 'error' || level === 'warn') {
+      console.error(line)
+    } else {
+      console.log(line)
+    }
   }
 
   private send(channel: string, payload?: unknown): void {
@@ -37,56 +47,63 @@ export class UpdateManager {
 
   private wireEvents(): void {
     autoUpdater.on('checking-for-update', () => {
+      this.log('info', 'checking-for-update', { manual: this.manualCheckInFlight })
       this.send('update:checking', { manual: this.manualCheckInFlight })
     })
 
     autoUpdater.on('update-available', (info: UpdateInfo) => {
+      this.log('info', 'update-available', { version: info.version, manual: this.manualCheckInFlight })
       this.send('update:available', { version: info.version, manual: this.manualCheckInFlight })
     })
 
     autoUpdater.on('update-not-available', (info: UpdateInfo) => {
+      this.log('info', 'update-not-available', { version: info.version, manual: this.manualCheckInFlight })
       this.send('update:not-available', { version: info.version, manual: this.manualCheckInFlight })
       this.manualCheckInFlight = false
     })
 
     autoUpdater.on('download-progress', (progress: ProgressInfo) => {
+      const pct = Math.round(progress.percent)
+      if (pct % 10 === 0) {
+        this.log('info', 'download-progress', {
+          percent: pct,
+          bytesPerSecond: Math.round(progress.bytesPerSecond),
+          transferred: progress.transferred,
+          total: progress.total,
+        })
+      }
       this.send('update:downloading', { percent: progress.percent })
     })
 
     autoUpdater.on('update-downloaded', (info: UpdateInfo) => {
+      this.log('info', 'update-downloaded', { version: info.version })
       this.send('update:downloaded', { version: info.version })
       this.manualCheckInFlight = false
     })
 
     autoUpdater.on('error', (err: Error) => {
+      this.log('error', 'update-error', { message: err.message, manual: this.manualCheckInFlight })
       this.send('update:error', { message: err.message, manual: this.manualCheckInFlight })
       this.manualCheckInFlight = false
     })
   }
 
-  /**
-   * Trigger an update check. `manual=true` means the user initiated via the
-   * Help menu — renderer should show feedback toasts. `manual=false` is the
-   * silent startup check — errors and "no update" are suppressed.
-   */
   async checkForUpdates(manual: boolean): Promise<void> {
     if (!this.enabled) return
+    this.log('info', 'checkForUpdates called', { manual })
     this.manualCheckInFlight = manual
     try {
       await autoUpdater.checkForUpdates()
     } catch (err) {
-      // The 'error' event will fire too; swallow here to avoid unhandled rejection.
+      // The 'error' event fires too; swallow here to avoid unhandled rejection.
       this.manualCheckInFlight = false
       void err
     }
   }
 
-  /**
-   * Quit and install the downloaded update. Caller must ensure the download
-   * has completed (i.e., 'update:downloaded' event was received).
-   */
   quitAndInstall(): void {
     if (!this.enabled) return
+    this.log('info', 'quitAndInstall called')
     autoUpdater.quitAndInstall()
   }
 }

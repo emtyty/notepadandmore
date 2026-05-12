@@ -102,7 +102,7 @@ interface ElectronAPI {
     install: () => Promise<void>
   }
 
-  on: (channel: string, callback: (...args: unknown[]) => void) => void
+  on: (channel: string, callback: (...args: unknown[]) => void) => () => void
   off: (channel: string) => void
   send: (channel: string, ...args: unknown[]) => void
 }

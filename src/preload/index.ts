@@ -95,7 +95,9 @@ const api = {
   },
 
   // IPC event listeners (main -> renderer)
-  on: (channel: string, callback: (...args: unknown[]) => void) => {
+  // Returns an unsubscribe function — call it in useEffect cleanup to remove
+  // exactly this listener without disturbing others on the same channel.
+  on: (channel: string, callback: (...args: unknown[]) => void): (() => void) => {
     const allowedChannels = [
       'menu:file-new', 'menu:file-open', 'menu:file-save', 'menu:file-save-as',
       'menu:file-save-all', 'menu:file-close', 'menu:file-close-all', 'menu:file-reload',
@@ -119,9 +121,10 @@ const api = {
       'update:checking', 'update:available', 'update:not-available',
       'update:downloading', 'update:downloaded', 'update:error'
     ]
-    if (allowedChannels.includes(channel)) {
-      ipcRenderer.on(channel, (_event, ...args) => callback(...args))
-    }
+    if (!allowedChannels.includes(channel)) return () => {}
+    const listener = (_event: Electron.IpcRendererEvent, ...args: unknown[]) => callback(...args)
+    ipcRenderer.on(channel, listener)
+    return () => ipcRenderer.removeListener(channel, listener)
   },
 
   off: (channel: string) => {
