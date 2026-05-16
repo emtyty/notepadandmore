@@ -31,6 +31,8 @@ interface UIState {
   showFindReplace: boolean
   findReplaceMode: 'find' | 'replace' | 'findInFiles'
   findInitialTerm: string
+  /** Whether the live Markdown preview pane is open next to the editor. */
+  showMarkdownPreview: boolean
   showAbout: boolean
   showBottomPanel: boolean
   activeBottomPanel: BottomPanelId
@@ -57,6 +59,8 @@ interface UIState {
   setWorkspaceFolder: (path: string | null) => void
   openFind: (mode?: 'find' | 'replace' | 'findInFiles', initialTerm?: string) => void
   closeFind: () => void
+  toggleMarkdownPreview: () => void
+  setMarkdownPreview: (v: boolean) => void
   setShowAbout: (v: boolean) => void
   setShowBottomPanel: (v: boolean) => void
   setActiveBottomPanel: (p: BottomPanelId) => void
@@ -83,6 +87,7 @@ export const useUIStore = create<UIState>((set, get) => ({
   showFindReplace: false,
   findReplaceMode: 'find',
   findInitialTerm: '',
+  showMarkdownPreview: false,
   showAbout: false,
   showBottomPanel: false,
   activeBottomPanel: 'findResults',
@@ -135,6 +140,8 @@ export const useUIStore = create<UIState>((set, get) => ({
   setWorkspaceFolder: (path) => set({ workspaceFolder: path }),
   openFind: (mode = 'find', initialTerm = '') => set({ showFindReplace: true, findReplaceMode: mode, findInitialTerm: initialTerm }),
   closeFind: () => set({ showFindReplace: false }),
+  toggleMarkdownPreview: () => set((s) => ({ showMarkdownPreview: !s.showMarkdownPreview })),
+  setMarkdownPreview: (v) => set({ showMarkdownPreview: v }),
   setShowAbout: (v) => set({ showAbout: v }),
   setShowBottomPanel: (v) => set({ showBottomPanel: v }),
   setActiveBottomPanel: (p) => set({ activeBottomPanel: p }),

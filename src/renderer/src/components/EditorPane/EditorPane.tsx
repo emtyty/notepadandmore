@@ -254,32 +254,44 @@ export const EditorPane: React.FC<EditorPaneProps> = ({ activeId }) => {
         const id = currentIdRef.current
         const model = editor.getModel()
         if (!id || !model) break
+        const buf = useEditorStore.getState().getBuffer(id)
+
+        // Markdown files: Ctrl+Alt+Shift+M toggles the live preview pane
+        // instead of attempting to beautify the source.
+        if (buf?.language === 'markdown') {
+          useUIStore.getState().toggleMarkdownPreview()
+          break
+        }
+
         const cfg = useConfigStore.getState()
         const indent = cfg.insertSpaces ? cfg.tabSize : '\t'
         const sel = editor.getSelection()
         const hasSelection = sel && !sel.isEmpty()
         const range = hasSelection ? sel : model.getFullModelRange()
         const text = model.getValueInRange(range)
-        const buf = useEditorStore.getState().getBuffer(id)
         const format = detectBeautifyFormat(text, buf?.language)
         if (!format) {
           useUIStore
             .getState()
-            .addToast('Cannot beautify — unrecognized format (JSON / SQL / XML).', 'warn')
+            .addToast('Cannot beautify — unrecognized format (JSON / SQL / XML / Markdown).', 'warn')
           break
         }
-        try {
-          const formatted = beautify(text, format, indent as string | number)
-          editor.executeEdits('beautify', [
-            { range, text: formatted, forceMoveMarkers: true }
-          ])
-          monaco.editor.setModelLanguage(model, format)
-          useEditorStore.getState().updateBuffer(id, { language: format })
-        } catch {
-          useUIStore
-            .getState()
-            .addToast(`Not valid ${format.toUpperCase()} — cannot beautify.`, 'warn')
-        }
+        // beautify() is now async because the SQL path lazy-loads sql-formatter
+        // (~1.6 MB) into its own chunk on first use, keeping the main bundle lean.
+        ;(async () => {
+          try {
+            const formatted = await beautify(text, format, indent as string | number, buf?.language)
+            editor.executeEdits('beautify', [
+              { range, text: formatted, forceMoveMarkers: true }
+            ])
+            monaco.editor.setModelLanguage(model, format)
+            useEditorStore.getState().updateBuffer(id, { language: format })
+          } catch {
+            useUIStore
+              .getState()
+              .addToast(`Not valid ${format.toUpperCase()} — cannot beautify.`, 'warn')
+          }
+        })()
         break
       }
     }

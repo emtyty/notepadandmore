@@ -182,4 +182,70 @@
   .viewport-highlight {
     background: hsl(var(--primary) / 0.15);
   }
+
+  /* ── Markdown Preview pane (react-markdown output) ──────────────────────── */
+  .markdown-body { color: hsl(var(--foreground)); line-height: 1.65; font-size: 14px; }
+  .markdown-body h1, .markdown-body h2, .markdown-body h3,
+  .markdown-body h4, .markdown-body h5, .markdown-body h6 {
+    font-weight: 700; line-height: 1.25; margin: 1.4em 0 0.5em; color: hsl(var(--foreground));
+  }
+  .markdown-body h1 { font-size: 1.85em; border-bottom: 1px solid hsl(var(--border)); padding-bottom: 0.25em; }
+  .markdown-body h2 { font-size: 1.45em; border-bottom: 1px solid hsl(var(--border)); padding-bottom: 0.2em; }
+  .markdown-body h3 { font-size: 1.2em; }
+  .markdown-body h4 { font-size: 1.05em; }
+  .markdown-body p { margin: 0.6em 0; }
+  .markdown-body a { color: hsl(var(--primary)); text-decoration: underline; }
+  .markdown-body ul, .markdown-body ol { padding-left: 1.6em; margin: 0.5em 0; }
+  .markdown-body li { margin: 0.2em 0; }
+  .markdown-body li > input[type="checkbox"] { margin-right: 0.4em; }
+  .markdown-body blockquote {
+    border-left: 3px solid hsl(var(--primary));
+    margin: 0.8em 0; padding: 0.3em 0.9em;
+    background: hsl(var(--muted) / 0.4);
+    color: hsl(var(--muted-foreground));
+    border-radius: 0 4px 4px 0;
+  }
+  .markdown-body code {
+    background: hsl(var(--muted));
+    border: 1px solid hsl(var(--border));
+    border-radius: 3px;
+    padding: 0.1em 0.35em;
+    font-family: 'JetBrains Mono', Consolas, Menlo, monospace;
+    font-size: 0.88em;
+  }
+  .markdown-body pre {
+    background: hsl(var(--muted));
+    border: 1px solid hsl(var(--border));
+    border-radius: 6px;
+    padding: 0.9em 1.1em;
+    overflow-x: auto;
+    margin: 0.9em 0;
+  }
+  .markdown-body pre code { background: none; border: none; padding: 0; font-size: 0.85em; }
+  .markdown-body table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+  .markdown-body th, .markdown-body td {
+    border: 1px solid hsl(var(--border));
+    padding: 0.45em 0.8em;
+    text-align: left;
+  }
+  .markdown-body th { background: hsl(var(--muted)); font-weight: 700; }
+  .markdown-body tr:nth-child(even) td { background: hsl(var(--muted) / 0.4); }
+  .markdown-body hr { border: none; border-top: 1px solid hsl(var(--border)); margin: 1.5em 0; }
+  .markdown-body img { max-width: 100%; border-radius: 4px; }
+  .markdown-body strong { color: hsl(var(--foreground)); }
+  .markdown-body del { color: hsl(var(--muted-foreground)); }
+  /* highlight.js github.css renders white-on-white in dark mode → invert tones */
+  .dark .markdown-body pre, .dark .markdown-body code { color: hsl(var(--foreground)); }
+  .dark .markdown-body .hljs-keyword,
+  .dark .markdown-body .hljs-built_in,
+  .dark .markdown-body .hljs-type { color: #c792ea; }
+  .dark .markdown-body .hljs-string,
+  .dark .markdown-body .hljs-regexp { color: #c3e88d; }
+  .dark .markdown-body .hljs-number,
+  .dark .markdown-body .hljs-literal { color: #f78c6c; }
+  .dark .markdown-body .hljs-comment { color: #676e95; font-style: italic; }
+  .dark .markdown-body .hljs-function,
+  .dark .markdown-body .hljs-title { color: #82aaff; }
+  .dark .markdown-body .hljs-variable,
+  .dark .markdown-body .hljs-attr { color: #f07178; }
 }

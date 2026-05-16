@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState, lazy, Suspense } from 'react'
 import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels'
 import { EditorPane } from './components/EditorPane/EditorPane'
 import { SettingsTab } from './components/SettingsTab/SettingsTab'
@@ -17,6 +17,12 @@ import { BottomPanelContainer } from './components/Panels/BottomPanelContainer'
 import { FindReplaceDialog } from './components/Dialogs/FindReplace/FindReplaceDialog'
 import { AboutDialog } from './components/Dialogs/AboutDialog/AboutDialog'
 import { Sidebar } from './components/Sidebar/Sidebar'
+// Lazy-loaded: react-markdown + remark-gfm + rehype-highlight + highlight.js +
+// merslim weigh ~1 MB together. Only fetched the first time the user opens
+// the preview pane (Ctrl+Alt+Shift+M on a .md file).
+const MarkdownPreviewPane = lazy(() =>
+  import('./components/MarkdownPreview/MarkdownPreviewPane').then((m) => ({ default: m.MarkdownPreviewPane }))
+)
 import { Toaster, toast } from './components/ui/sonner'
 import { useEditorStore } from './store/editorStore'
 import { useUIStore } from './store/uiStore'
@@ -35,7 +41,10 @@ export default function App() {
   const { activeId, buffers } = useEditorStore()
   const activeBuffer = buffers.find((b) => b.id === activeId)
   const activeKind = activeBuffer?.kind ?? 'file'
-  const { theme, showToolbar, showStatusBar, showBottomPanel, showSidebar, openFind, csvViewerOpen, csvViewerText, csvViewerFileName } = useUIStore()
+  const { theme, showToolbar, showStatusBar, showBottomPanel, showSidebar, openFind, csvViewerOpen, csvViewerText, csvViewerFileName, showMarkdownPreview } = useUIStore()
+  // Markdown preview pane only renders for actual markdown buffers — if the
+  // user toggles it on then switches to a non-markdown tab, the pane hides.
+  const previewVisible = showMarkdownPreview && activeBuffer?.language === 'markdown' && activeKind === 'file'
   const { openFiles, newFile, saveBuffer, saveActiveAs, closeBuffer, reloadBuffer, loadBuffer, restoreSession } = useFileOps()
   // Mount window-level keyboard (Alt+Left/Right or Ctrl+-) and mouse
   // back/forward button listeners that drive navigation history.
@@ -458,43 +467,64 @@ export default function App() {
                 </>
               )}
               <Panel id="editor-main" order={2} defaultSize={showSidebar ? 82 : 100} minSize={20}>
-                <div className="flex flex-col h-full overflow-hidden">
-                  <TabBar onClose={closeBuffer} onNewFile={newFile} />
-                  <div className="flex flex-1 overflow-hidden relative">
-                    {!activeId ? (
-                      // No active tab: show WelcomeScreen even if inactive virtual
-                      // tabs exist (e.g., a background-opened "What's New" tab on
-                      // fresh install). Otherwise we'd render an empty EditorPane.
-                      <WelcomeScreen
-                        onNewFile={newFile}
-                        onOpenFile={handleOpenFile}
-                        onOpenRecent={openFiles}
+                <PanelGroup direction="horizontal" id="editor-preview-split" className="h-full">
+                  <Panel id="editor-content" order={1} defaultSize={previewVisible ? 55 : 100} minSize={20}>
+                    <div className="flex flex-col h-full overflow-hidden">
+                      <TabBar onClose={closeBuffer} onNewFile={newFile} />
+                      <div className="flex flex-1 overflow-hidden relative">
+                        {!activeId ? (
+                          // No active tab: show WelcomeScreen even if inactive virtual
+                          // tabs exist (e.g., a background-opened "What's New" tab on
+                          // fresh install). Otherwise we'd render an empty EditorPane.
+                          <WelcomeScreen
+                            onNewFile={newFile}
+                            onOpenFile={handleOpenFile}
+                            onOpenRecent={openFiles}
+                          />
+                        ) : (
+                          <>
+                            {/* Monaco stays mounted so switching to a virtual tab preserves file view state */}
+                            <EditorPane activeId={activeId} />
+                            {activeKind === 'settings' && (
+                              <div className="absolute inset-0 bg-background z-10"><SettingsTab /></div>
+                            )}
+                            {activeKind === 'shortcuts' && (
+                              <div className="absolute inset-0 bg-background z-10"><ShortcutsTab /></div>
+                            )}
+                            {activeKind === 'whatsNew' && (
+                              <div className="absolute inset-0 bg-background z-10"><WhatsNewTab /></div>
+                            )}
+                            {activeKind === 'pluginManager' && (
+                              <div className="absolute inset-0 bg-background z-10"><PluginManagerTab /></div>
+                            )}
+                            {activeKind === 'pluginDetail' && activeBuffer?.pluginId && (
+                              <div className="absolute inset-0 bg-background z-10">
+                                <PluginDetailTab pluginId={activeBuffer.pluginId} />
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </Panel>
+                  {previewVisible && (
+                    <>
+                      <PanelResizeHandle
+                        id="md-preview-resize"
+                        className="w-1 bg-border cursor-col-resize shrink-0 transition-colors hover:bg-primary data-[resize-handle-active]:bg-primary"
                       />
-                    ) : (
-                      <>
-                        {/* Monaco stays mounted so switching to a virtual tab preserves file view state */}
-                        <EditorPane activeId={activeId} />
-                        {activeKind === 'settings' && (
-                          <div className="absolute inset-0 bg-background z-10"><SettingsTab /></div>
-                        )}
-                        {activeKind === 'shortcuts' && (
-                          <div className="absolute inset-0 bg-background z-10"><ShortcutsTab /></div>
-                        )}
-                        {activeKind === 'whatsNew' && (
-                          <div className="absolute inset-0 bg-background z-10"><WhatsNewTab /></div>
-                        )}
-                        {activeKind === 'pluginManager' && (
-                          <div className="absolute inset-0 bg-background z-10"><PluginManagerTab /></div>
-                        )}
-                        {activeKind === 'pluginDetail' && activeBuffer?.pluginId && (
-                          <div className="absolute inset-0 bg-background z-10">
-                            <PluginDetailTab pluginId={activeBuffer.pluginId} />
+                      <Panel id="md-preview" order={2} defaultSize={45} minSize={20}>
+                        <Suspense fallback={
+                          <div className="flex items-center justify-center h-full text-xs text-muted-foreground">
+                            Loading preview…
                           </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </div>
+                        }>
+                          <MarkdownPreviewPane />
+                        </Suspense>
+                      </Panel>
+                    </>
+                  )}
+                </PanelGroup>
               </Panel>
             </PanelGroup>
           </Panel>
