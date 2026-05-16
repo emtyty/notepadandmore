@@ -28,8 +28,40 @@ export function injectMarkStyles(): void {
     content: '🔖';
     font-size: 11px;
     line-height: 1;
+  }
+  /* Current Find match — vivid amber so it stays obvious when the editor
+     is unfocused and Monaco renders the selection in its muted color. */
+  .nmp-current-match {
+    background-color: rgba(255, 165, 0, 0.55) !important;
+    box-shadow: 0 0 0 1px rgba(255, 140, 0, 0.95) inset;
+    border-radius: 2px;
   }`
   document.head.appendChild(style)
+}
+
+// Per-model current-match decoration IDs (one decoration at a time per model)
+const _currentMatchIds = new Map<string, string[]>()
+function applyCurrentMatchHighlight(model: monaco.editor.ITextModel, range: monaco.IRange | null): void {
+  const oldIds = _currentMatchIds.get(model.id) ?? []
+  const newDecs = range ? [{
+    range,
+    options: {
+      description: 'find-current-match',
+      className: 'nmp-current-match',
+      stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
+      overviewRuler: { color: '#FF8C00', position: monaco.editor.OverviewRulerLane.Center },
+    }
+  }] : []
+  const newIds = model.deltaDecorations(oldIds, newDecs)
+  if (newIds.length === 0) _currentMatchIds.delete(model.id)
+  else _currentMatchIds.set(model.id, newIds)
+}
+function clearAllCurrentMatchHighlights(): void {
+  for (const [modelId, ids] of _currentMatchIds.entries()) {
+    const model = monaco.editor.getModels().find((m) => m.id === modelId)
+    if (model && ids.length > 0) model.deltaDecorations(ids, [])
+  }
+  _currentMatchIds.clear()
 }
 
 // ─── Per-model decoration IDs (keyed by model.id → styleIndex → ids[]) ──────
@@ -112,15 +144,19 @@ export function useSearchEngine() {
   )
 
   // ── Find Next / Prev ─────────────────────────────────────────────────────────
+  /** Enriched result so the dialog can show "Match X of Y". */
+  type FindResult = { match: monaco.editor.FindMatch | null; current: number; total: number }
+  const EMPTY_RESULT: FindResult = { match: null, current: 0, total: 0 }
+
   const findNext = useCallback(
-    (overrideOpts?: Partial<SearchOptions>): monaco.editor.FindMatch | null => {
+    (overrideOpts?: Partial<SearchOptions>): FindResult => {
       const opts = { ...useSearchStore.getState().options, ...overrideOpts }
       const editor = getEditor()
       const model = getModel()
-      if (!editor || !model) return null
+      if (!editor || !model) return EMPTY_RESULT
 
       const built = buildSearchPattern(opts)
-      if (!built) return null
+      if (!built) return EMPTY_RESULT
 
       const pos = editor.getPosition() ?? { lineNumber: 1, column: 1 }
       // Start searching from after current cursor (or selection end)
@@ -155,26 +191,38 @@ export function useSearchEngine() {
         lastFoundRef.current = match.range
         editor.setSelection(match.range)
         editor.revealRangeInCenterIfOutsideViewport(match.range)
-        editor.focus()
+        // Intentionally do NOT call editor.focus(): keep focus on the Find
+        // dialog so the user can press Enter again for the next match. The
+        // current-match decoration below stays vivid even when the editor
+        // is unfocused (Monaco's selection background goes muted in that state).
+        applyCurrentMatchHighlight(model, match.range)
+        const all = model.findMatches(built.pattern, true, built.isRegex, opts.isCaseSensitive,
+          opts.isWholeWord ? WORD_SEPARATORS : null, false, NO_FIND_MATCH_LIMIT)
+        const total = all.length
+        let current = 0
+        for (let i = 0; i < all.length; i++) {
+          if (all[i].range.startLineNumber === match.range.startLineNumber &&
+              all[i].range.startColumn === match.range.startColumn) { current = i + 1; break }
+        }
+        return { match, current, total }
       } else {
-        addToast(`"${opts.pattern}" not found.`, 'warn')
+        applyCurrentMatchHighlight(model, null)
         lastFoundRef.current = null
+        return EMPTY_RESULT
       }
-
-      return match
     },
-    [getEditor, getModel, addToast]
+    [getEditor, getModel]
   )
 
   const findPrev = useCallback(
-    (overrideOpts?: Partial<SearchOptions>): monaco.editor.FindMatch | null => {
+    (overrideOpts?: Partial<SearchOptions>): FindResult => {
       const opts = { ...useSearchStore.getState().options, ...overrideOpts }
       const editor = getEditor()
       const model = getModel()
-      if (!editor || !model) return null
+      if (!editor || !model) return EMPTY_RESULT
 
       const built = buildSearchPattern(opts)
-      if (!built) return null
+      if (!built) return EMPTY_RESULT
 
       const sel = editor.getSelection()
       const startPos = sel
@@ -208,15 +256,24 @@ export function useSearchEngine() {
         lastFoundRef.current = match.range
         editor.setSelection(match.range)
         editor.revealRangeInCenterIfOutsideViewport(match.range)
-        editor.focus()
+        // See findNext: keep focus on the Find dialog so repeat Enter just works.
+        applyCurrentMatchHighlight(model, match.range)
+        const all = model.findMatches(built.pattern, true, built.isRegex, opts.isCaseSensitive,
+          opts.isWholeWord ? WORD_SEPARATORS : null, false, NO_FIND_MATCH_LIMIT)
+        const total = all.length
+        let current = 0
+        for (let i = 0; i < all.length; i++) {
+          if (all[i].range.startLineNumber === match.range.startLineNumber &&
+              all[i].range.startColumn === match.range.startColumn) { current = i + 1; break }
+        }
+        return { match, current, total }
       } else {
-        addToast(`"${opts.pattern}" not found.`, 'warn')
+        applyCurrentMatchHighlight(model, null)
         lastFoundRef.current = null
+        return EMPTY_RESULT
       }
-
-      return match
     },
-    [getEditor, getModel, addToast]
+    [getEditor, getModel]
   )
 
   // ── Find All (current doc) ────────────────────────────────────────────────────
@@ -384,8 +441,8 @@ export function useSearchEngine() {
 
       // If nothing to replace, find next first
       if (!rangeToReplace) {
-        const match = findNext(overrideOpts)
-        if (match) rangeToReplace = match.range
+        const result = findNext(overrideOpts)
+        if (result.match) rangeToReplace = result.match.range
         else return
       }
 
@@ -724,6 +781,12 @@ export function useSearchEngine() {
     addToast('Search cancelled.', 'info')
   }, [setIsSearching, addToast])
 
+  /** Clear the current-match decoration across all models. Used when the
+   *  Find dialog closes so the highlight doesn't linger. */
+  const clearCurrentMatchHighlight = useCallback(() => {
+    clearAllCurrentMatchHighlights()
+  }, [])
+
   return {
     findNext,
     findPrev,
@@ -736,6 +799,7 @@ export function useSearchEngine() {
     clearMarks,
     bookmarkLines,
     findInFilesStreaming,
-    cancelFindInFiles
+    cancelFindInFiles,
+    clearCurrentMatchHighlight,
   }
 }

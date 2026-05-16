@@ -160,14 +160,35 @@ export function FindReplaceDialog() {
     if (showFindReplace) {
       if (findInitialTerm) setOptions({ pattern: findInitialTerm })
       setTimeout(() => { findInputRef.current?.focus(); findInputRef.current?.select() }, 50)
+      // Clear the vivid current-match decoration when the dialog closes so
+      // the editor returns to its normal appearance.
+      return () => { engine.clearCurrentMatchHighlight() }
     }
   }, [showFindReplace]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // When the user starts a new search or clears the keyword, the previous
+  // "Match X of Y" count is stale — clear it. If the keyword becomes empty,
+  // also clear the in-editor highlight so the document looks pristine.
+  useEffect(() => {
+    setStatus({ msg: '', type: 'none' })
+    if (!options.pattern) engine.clearCurrentMatchHighlight()
+  }, [options.pattern]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!showFindReplace) return null
 
   // ── Handlers ──
-  const handleFindNext = () => { const m = engine.findNext(); setStatus(m ? { msg: '', type: 'none' } : { msg: `"${options.pattern}" not found.`, type: 'warn' }) }
-  const handleFindPrev = () => { const m = engine.findPrev(); setStatus(m ? { msg: '', type: 'none' } : { msg: `"${options.pattern}" not found.`, type: 'warn' }) }
+  const handleFindNext = () => {
+    const { match, current, total } = engine.findNext()
+    setStatus(match
+      ? { msg: `Match ${current} of ${total}`, type: 'ok' }
+      : { msg: `"${options.pattern}" not found.`, type: 'warn' })
+  }
+  const handleFindPrev = () => {
+    const { match, current, total } = engine.findPrev()
+    setStatus(match
+      ? { msg: `Match ${current} of ${total}`, type: 'ok' }
+      : { msg: `"${options.pattern}" not found.`, type: 'warn' })
+  }
   const handleCount = () => { const n = engine.countAll(); setStatus({ msg: `${n} match${n !== 1 ? 'es' : ''} found.`, type: n > 0 ? 'ok' : 'warn' }) }
   const handleFindAll = () => { engine.findAll(); setStatus({ msg: 'Results shown in Find Results panel.', type: 'ok' }) }
   const handleFindAllOpenDocs = () => { engine.findAllInOpenDocs(); setStatus({ msg: 'Results shown in Find Results panel.', type: 'ok' }) }
@@ -185,8 +206,17 @@ export function FindReplaceDialog() {
   const handleCancelSearch = () => { engine.cancelFindInFiles(); setStatus({ msg: '', type: 'none' }) }
   const handleBrowseDir = async () => { const result = await (window.api as any).file.openDirDialog?.(); if (result) setFifDir(result) }
 
-  const findInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === 'Enter') { e.shiftKey ? handleFindPrev() : handleFindNext() } }
-  const replaceInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === 'Enter') handleReplaceOne() }
+  // preventDefault is essential: handleFindNext/handleReplaceOne may move
+  // focus to Monaco via editor.focus(). Without preventing the default
+  // action, Chromium dispatches the Enter keydown's default ("insert
+  // newline") against whatever element holds focus when the action fires —
+  // which is now Monaco's textarea — and the document gets a stray newline.
+  const findInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') { e.preventDefault(); e.shiftKey ? handleFindPrev() : handleFindNext() }
+  }
+  const replaceInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') { e.preventDefault(); handleReplaceOne() }
+  }
 
   const tabNames: { id: DialogTab; label: string }[] = [
     { id: 'find', label: 'Find' }, { id: 'replace', label: 'Replace' },
@@ -271,7 +301,7 @@ export function FindReplaceDialog() {
             <>
               <div className="flex items-center gap-2">
                 <span className="text-base text-muted-foreground w-14 shrink-0">Find:</span>
-                <SearchInput value={options.pattern} onChange={(v) => setOptions({ pattern: v })} placeholder="Search pattern…" history={patternHistory} onKeyDown={(e) => { if (e.key === 'Enter') handleFindInFiles() }} autoFocus inputRef={findInputRef} />
+                <SearchInput value={options.pattern} onChange={(v) => setOptions({ pattern: v })} placeholder="Search pattern…" history={patternHistory} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleFindInFiles() } }} autoFocus inputRef={findInputRef} />
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-base text-muted-foreground w-14 shrink-0">Directory:</span>
@@ -322,7 +352,7 @@ export function FindReplaceDialog() {
             <>
               <div className="flex items-center gap-2">
                 <span className="text-base text-muted-foreground w-14 shrink-0">Find:</span>
-                <SearchInput value={options.pattern} onChange={(v) => setOptions({ pattern: v })} placeholder="Pattern to mark…" history={patternHistory} onKeyDown={(e) => { if (e.key === 'Enter') handleMarkAll() }} autoFocus inputRef={findInputRef} />
+                <SearchInput value={options.pattern} onChange={(v) => setOptions({ pattern: v })} placeholder="Pattern to mark…" history={patternHistory} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleMarkAll() } }} autoFocus inputRef={findInputRef} />
               </div>
               <SearchOptionsPanel />
               <div className="flex items-center gap-2 mt-1">
